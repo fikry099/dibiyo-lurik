@@ -160,20 +160,18 @@
 'use client'
 
 import React, { useEffect, useState, Suspense } from "react";
-import nextDynamic from "next/dynamic"; // Gunakan alias nextDynamic agar tidak tabrakan
+import nextDynamic from "next/dynamic"; 
 import { ShoppingCart } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import CheckoutSection from "../../../../components/cs/produk/keranjang/CheckoutSection"; 
 
-// Menggunakan alias nextDynamic yang aman
 const CartItemDynamic = nextDynamic(() => import("../../../../components/cs/produk/keranjang/CartItem"), { ssr: false });
 
-// 1. Komponen Internal yang memproses Logika Keranjang
 function KeranjangContent() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const searchParams = useSearchParams(); // Aman karena sudah dibungkus Suspense di bawah
+  const searchParams = useSearchParams(); 
   const isCheckout = searchParams.has('checkout');
 
   useEffect(() => { fetchCart(); }, []);
@@ -311,7 +309,6 @@ function KeranjangContent() {
   );
 }
 
-// 2. Main Export yang membungkus komponen utama dengan Suspense murni
 export default function KeranjangPage() {
   return (
     <Suspense fallback={<div className="p-6 text-stone-500">Memuat Keranjang...</div>}>
