@@ -1,12 +1,16 @@
 'use client'
 
+export const dynamic = 'force-dynamic'; // Konfigurasi route Next.js
+
 import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic"; 
 import { ShoppingCart } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
+
 import CheckoutSection from "../../../../components/cs/produk/keranjang/CheckoutSection"; 
 
-const CartItemDynamic = dynamic(() => import("../../../../components/cs/produk/keranjang/CartItem"), { ssr: false });
+// Gunakan nama dynamicImport di sini
+const CartItemDynamic = dynamicImport(() => import("../../../../components/cs/produk/keranjang/CartItem"), { ssr: false });
 
 export default function KeranjangPage() {
   const [cartItems, setCartItems] = useState([]);
