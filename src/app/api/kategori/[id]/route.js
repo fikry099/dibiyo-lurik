@@ -1,7 +1,6 @@
 // /api/kategori/[id]/route.js
 import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
-import { checkFKReferences, formatFKErrorMessage } from '@/lib/crud-helper'
 
 // =====================================================
 // PATCH: Update Kategori Berdasarkan ID
@@ -61,16 +60,23 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ message: 'ID kategori wajib diisi' }, { status: 400 })
     }
 
-    // Cek apakah kategori ini masih dipakai oleh tabel produk (Foreign Key Check)
-    const fkResult = await checkFKReferences(id, [
-      { table: 'produk', column: 'kategori_id', label: 'produk' },
-    ])
-    
-    if (fkResult.used) {
-      return NextResponse.json({ message: formatFKErrorMessage(fkResult.usedIn) }, { status: 409 })
+    // Cek manual apakah kategori ini masih dipakai oleh tabel produk (Foreign Key Check)
+    const { data: countData, error: countError } = await supabaseAdmin
+      .from('produk')
+      .select('id', { count: 'exact', head: true })
+      .eq('kategori_id', id)
+
+    if (countError) throw countError
+
+    // Jika ada produk yang menggunakan kategori ini, batalkan penghapusan
+    if (countData && countData.length > 0) {
+      return NextResponse.json(
+        { message: 'Gagal menghapus: Kategori ini masih digunakan oleh data produk.' },
+        { status: 409 }
+      )
     }
 
-    // Eksekusi hapus data
+    // Eksekusi hapus data jika aman
     const { error } = await supabaseAdmin
       .from('kategori')
       .delete()
