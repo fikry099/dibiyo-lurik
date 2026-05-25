@@ -1,0 +1,162 @@
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
+import { Package, ShoppingBag, RefreshCw, ClipboardList } from 'lucide-react'
+
+// Pemuatan dinamis (Dynamic Import)
+const StatCards = dynamic(() => import('@/app/components/kp-produk/StatCards'), { ssr: false })
+const LatestProductsTable = dynamic(() => import('@/app/components/kp-produk/LatestProductsTable'), { ssr: false })
+const LatestPreOrdersTable = dynamic(() => import('@/app/components/kp-produk/LatestPreOrdersTable'), { ssr: false })
+const RevenueChart = dynamic(() => import('@/app/components/owner/RevenueChart'), { ssr: false })
+
+export default function DashboardPage() {
+  // Main Data (Summary & Terlaris)
+  const [mainData, setMainData] = useState(null)
+  const [loadingMain, setLoadingMain] = useState(true)
+
+  // Lazy Data (Pre-order & Revenue)
+  const [preOrders, setPreOrders] = useState([])
+  const [loadingPO, setLoadingPO] = useState(true)
+  const [revenue, setRevenue] = useState(Array(12).fill(0))
+  const [loadingRevenue, setLoadingRevenue] = useState(false)
+
+  useEffect(() => {
+    const fetchMainData = async () => {
+      try {
+        const res = await fetch('/api/dashboard')
+        const result = await res.json()
+        if (res.ok) {
+          setMainData(result)
+          if (result.isOwner) {
+            fetchRevenueData()
+          }
+        }
+      } catch (err) {
+        console.error('Gagal memuat data inti dashboard:', err)
+      } finally {
+        setLoadingMain(false)
+      }
+    }
+
+    const fetchPOData = async () => {
+      try {
+        const res = await fetch('/api/dashboard/pre-order')
+        const result = await res.json()
+        if (res.ok) setPreOrders(result)
+      } catch (err) {
+        console.error('Gagal memuat data pre-order:', err)
+      } finally {
+        setLoadingPO(false)
+      }
+    }
+
+    const fetchRevenueData = async () => {
+      setLoadingRevenue(true)
+      try {
+        const res = await fetch('/api/dashboard/revenue')
+        const result = await res.json()
+        if (res.ok) setRevenue(result)
+      } catch (err) {
+        console.error('Gagal memuat data omzet:', err)
+      } finally {
+        setLoadingRevenue(false)
+      }
+    }
+
+    fetchMainData()
+    fetchPOData()
+  }, [])
+
+  const stats = [
+    { label: 'Produk Tersedia', value: mainData?.summary?.produkTersedia || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: Package },
+    { label: 'Produk Sold', value: mainData?.summary?.produkSold || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: ShoppingBag },
+    { label: 'Produk Belum di-Proses', value: mainData?.summary?.poBelumDiproses || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: RefreshCw },
+    { label: 'Produk Sedang di-Proses', value: mainData?.summary?.poSedangDiproses || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: ClipboardList },
+  ]
+
+  return (
+    <div className="mx-auto space-y-6"> 
+      <header className="mb-4">
+        <h2 className="text-3xl font-semibold text-[#A47352] pb-3 border-b border-[#A47352]/30 tracking-wide">
+          Dashboard
+        </h2>
+      </header>
+
+      {/* 1. BAGIAN STAT CARDS (SUMMARY) */}
+      {loadingMain ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 animate-pulse">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex flex-col justify-between h-28 p-5 bg-[#F4EAE1]/40 border rounded-xl border-[#DDB892]/30">
+              <div className="w-2/3 h-4 bg-gray-200 rounded"></div>
+              <div className="w-1/3 h-8 mt-2 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <StatCards stats={stats} />
+      )}
+
+      {/* 2. BAGIAN GRAFIK PENDAPATAN */}
+      {loadingMain ? (
+        <div className="flex flex-col justify-between p-6 bg-[#F4EAE1]/40 border h-80 animate-pulse rounded-2xl border-[#DDB892]/30">
+          <div className="w-1/4 h-5 bg-gray-200 rounded"></div>
+          <div className="w-full mt-4 bg-gray-200 rounded h-44"></div>
+        </div>
+      ) : (
+        mainData?.isOwner && (
+          <div className="space-y-3">
+            <span className="text-[#A47352] font-semibold text-lg underline underline-offset-4 decoration-1 inline-block pl-1">
+              Grafik Pendapatan
+            </span>
+            {loadingRevenue ? (
+              <div className="flex flex-col justify-between p-6 bg-[#F4EAE1]/40 border h-80 animate-pulse rounded-2xl border-[#DDB892]/30">
+                <div className="w-1/4 h-5 bg-gray-200 rounded"></div>
+                <div className="w-full mt-4 bg-gray-200 rounded h-44"></div>
+              </div>
+            ) : (
+              <div className="bg-[#F4EAE1]/30 border border-[#DDB892]/40 rounded-2xl p-1 shadow-sm">
+                <RevenueChart dataArray={revenue} />
+              </div>
+            )}
+          </div>
+        )
+      )}
+
+      {/* 3. TABEL DATA UTAMA */}
+      <div className="space-y-8">
+        {/* TABEL A: Produk Terlaris */}
+        {loadingMain ? (
+          <div className="p-6 space-y-4 bg-[#F4EAE1]/20 border animate-pulse rounded-2xl border-[#DDB892]/30">
+            <div className="w-1/5 h-5 bg-gray-200 rounded"></div>
+            <div className="mt-4 space-y-2">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="w-full h-12 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-[#F4EAE1]/20 border border-[#DDB892]/30 rounded-2xl p-1 shadow-sm transition-all duration-300">
+            <LatestProductsTable products={mainData?.produkTerlaris || []} />
+          </div>
+        )}
+        
+        {/* TABEL B: Pre-Order Terbaru */}
+        {loadingPO ? (
+          <div className="p-6 space-y-4 bg-[#F4EAE1]/20 border animate-pulse rounded-2xl border-[#DDB892]/30">
+            <div className="w-1/5 h-5 bg-gray-200 rounded"></div>
+            <div className="mt-4 space-y-2">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="w-full h-12 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-[#F4EAE1]/20 border border-[#DDB892]/30 rounded-2xl p-1 shadow-sm transition-all duration-300">
+            <LatestPreOrdersTable preOrders={preOrders} />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
