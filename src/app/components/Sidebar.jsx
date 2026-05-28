@@ -1,4 +1,9 @@
+
+
+
 // 'use client'
+
+// export const dynamic = 'force-dynamic'; 
 
 // import React, { useState, useEffect } from 'react'
 // import Link from 'next/link'
@@ -43,12 +48,12 @@
 //     const handleUpdateCartCount = (e) => {
 //       const ditambahkan = e.detail?.count || 1;
 //       setCartCount((prev) => prev + ditambahkan);
-//       setAnimateBadge(true); // Jalankan animasi memantul
+//       setAnimateBadge(true); 
 //     };
 
 //     window.addEventListener("updateCartCount", handleUpdateCartCount);
 //     return () => window.removeEventListener("updateCartCount", handleUpdateCartCount);
-//   }, []); // Kosong agar terpasang sekali saja di awal dan terus mendengarkan event
+//   }, []); 
 
 
 //   // FIX 2: Efek untuk fetch data awal saat pertama kali masuk sistem atau ganti role
@@ -140,7 +145,7 @@
 //         { name: 'Lebar 110', path: '/dashboard/kp/rsg/lebar110' }
 //       ] 
 //     },
-//      {
+//     {
 //       name: 'Produk', path: '/dashboard/owner/md/produk', 
 //       icon: <Package size={20} />, 
 //       roles: ['owner']
@@ -164,7 +169,7 @@
 //         { name: 'Pre Order Custom', path: role === 'customer_service' ? '/dashboard/cs/po/custom/' :null}      
 //       ]
 //     },
-//      { 
+//     { 
 //       id: 'po-kp',
 //       name: 'Pre Order', 
 //       icon: <ShoppingCart size={20} />, 
@@ -370,31 +375,31 @@
 // }
 
 
-
 'use client'
 
-export const dynamic = 'force-dynamic'; // Paksa komponen dibaca dinamis di client-side untuk mencegah error build 404
+export const dynamic = 'force-dynamic'; 
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { 
   LayoutDashboard, Package, ShoppingCart, 
-  Database, FileText, User, LogOut, ChevronDown, ClipboardList
+  Database, FileText, User, LogOut, ChevronDown, ClipboardList,
+  Menu, X // Tambahkan icon Menu (Garis Tiga) dan X
 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Swal from 'sweetalert2';
 import NProgress from 'nprogress';
 import LogoutModal from '@/app/components/LogoutModal';
 
 // =====================================================================
-// FIX: Fungsi Helper untuk mengambil nilai cookie di client side (Ditambahkan Kembali)
+// FIX: Ubah kembali fungsi getCookie agar memotong string dengan benar
 // =====================================================================
 const getCookie = (name) => {
   if (typeof document === 'undefined') return null
   const value = `; ${document.cookie}`
   const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) return parts.pop().split(';').shift()
+  if (parts.length === 2) return parts.pop().split(';').shift() // Menggunakan ';' kembali
   return null
 }
 
@@ -410,23 +415,21 @@ export default function Sidebar() {
   
   const [cartCount, setCartCount] = useState(0)
   const [animateBadge, setAnimateBadge] = useState(false)
+  
+  // STATE BARU: Untuk mengontrol buka-tutup sidebar
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
-  // =====================================================================
-  // FIX 1: Kembalikan Event Listener di Sidebar (Taruh di paling atas useEffect)
-  // =====================================================================
   useEffect(() => {
     const handleUpdateCartCount = (e) => {
       const ditambahkan = e.detail?.count || 1;
       setCartCount((prev) => prev + ditambahkan);
-      setAnimateBadge(true); // Jalankan animasi memantul
+      setAnimateBadge(true); 
     };
 
     window.addEventListener("updateCartCount", handleUpdateCartCount);
     return () => window.removeEventListener("updateCartCount", handleUpdateCartCount);
-  }, []); // Kosong agar terpasang sekali saja di awal dan terus mendengarkan event
+  }, []); 
 
-
-  // FIX 2: Efek untuk fetch data awal saat pertama kali masuk sistem atau ganti role
   useEffect(() => {
     const fetchInitialCartCount = async () => {
       try {
@@ -445,7 +448,6 @@ export default function Sidebar() {
     }
   }, [role]) 
 
-  // Reset trigger animasi setelah selesai memantul
   useEffect(() => {
     if (animateBadge) {
       const timer = setTimeout(() => setAnimateBadge(false), 300);
@@ -458,6 +460,10 @@ export default function Sidebar() {
     if (userRole) {
       setRole(userRole.toLowerCase())
     }
+    
+    // Sinkronisasi state awal sidebar dengan layout utama via CustomEvent
+    const event = new CustomEvent("sidebarToggle", { detail: { isCollapsed: false } });
+    window.dispatchEvent(event);
   }, [])
 
   useEffect(() => {
@@ -467,6 +473,14 @@ export default function Sidebar() {
       setOpenSubMenu('Pre-Order')
     }
   }, [pathname])
+
+  // Fungsi trigger toggle sidebar yang mengirimkan sinyal ke Layout Utama
+  const toggleSidebar = () => {
+    const nextState = !isCollapsed;
+    setIsCollapsed(nextState);
+    const event = new CustomEvent("sidebarToggle", { detail: { isCollapsed: nextState } });
+    window.dispatchEvent(event);
+  }
 
   const masterMenuItems = [
     { 
@@ -595,11 +609,9 @@ export default function Sidebar() {
 
   const filteredMenuItems = masterMenuItems.filter(item => item.roles.includes(role))
 
-
-const handleLogout = async () => {
+  const handleLogout = async () => {
     setIsLoggingOut(true);
     NProgress.start();
-
     try {
       const res = await fetch('/api/auth/logout', { method: 'POST' });
       if (res.ok) {
@@ -617,13 +629,29 @@ const handleLogout = async () => {
 
   return (
     <>
-    <aside className="w-64 bg-[#8B5E3C] text-white flex flex-col fixed h-full shadow-xl select-none z-40">
-      {/* Brand Header */}
-      <div className="p-6">
-        <h1 className="pb-4 text-2xl font-bold tracking-wide border-b border-white/20">Dibyo Lurik</h1>
+    <aside className={`bg-[#8B5E3C] text-white flex flex-col fixed h-full shadow-xl select-none z-40 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      
+      {/* Header Brand + Tombol Garis Tiga / X */}
+      <div className={`p-5 flex items-center justify-between border-b border-white/20 ${isCollapsed ? 'flex-col gap-4' : 'flex-row'}`}>
+        {!isCollapsed && (
+          <motion.h1 
+            initial={{ opacity: 0, x: -10 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            className="text-xl font-bold tracking-wide whitespace-nowrap"
+          >
+            Dibyo Lurik
+          </motion.h1>
+        )}
+        
+        <button 
+          onClick={toggleSidebar} 
+          className="p-2 transition-colors rounded-lg hover:bg-white/10 text-white/90 focus:outline-none"
+        >
+          {isCollapsed ? <Menu size={22} /> : <X size={22} />}
+        </button>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+      <nav className="flex-1 px-3 mt-4 space-y-1 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
         {filteredMenuItems.map((item, index) => {
           const hasSubMenu = !!item.subMenu
           const menuKey = `${item.name}-${index}-${role}`;
@@ -636,27 +664,36 @@ const handleLogout = async () => {
             return (
               <div key={menuKey} className="space-y-1">
                 <button
-                  onClick={() => setOpenSubMenu(openSubMenu === item.name ? '' : item.name)}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
+                  onClick={() => {
+                    if (isCollapsed) toggleSidebar(); // Otomatis buka sidebar jika user klik icon saat tertutup
+                    setOpenSubMenu(openSubMenu === item.name ? '' : item.name);
+                  }}
+                  className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 ${
+                    isCollapsed ? 'justify-center' : 'justify-between'
+                  } ${
                     isMainActive ? 'bg-white/25 font-semibold shadow-inner' : 'hover:bg-white/10 text-white/90'
                   }`}
+                  title={isCollapsed ? item.name : undefined}
                 >
                   <div className="flex items-center gap-3">
-                    {item.icon}
-                    <span className="text-sm">{item.name}</span>
+                    <div className="shrink-0">{item.icon}</div>
+                    {!isCollapsed && <span className="text-sm whitespace-nowrap">{item.name}</span>}
                   </div>
-                  <ChevronDown 
-                    size={16} 
-                    className={`transition-transform duration-200 text-white/70 ${
-                      openSubMenu === item.name ? 'rotate-180' : ''
-                    }`} 
-                  />
+                  {!isCollapsed && (
+                    <ChevronDown 
+                      size={16} 
+                      className={`transition-transform duration-200 text-white/70 ${
+                        openSubMenu === item.name ? 'rotate-180' : ''
+                      }`} 
+                    />
+                  )}
                 </button>
                 
                 {/* SubMenu Container */}
-                {openSubMenu === item.name && (
+                {!isCollapsed && openSubMenu === item.name && (
                   <div className="mt-1 ml-6 space-y-1 transition-all border-l border-white/20">
                     {item.subMenu.map((sub) => {
+                      if (!sub.path) return null;
                       const [pathOnly, queryString] = sub.path.split('?')
                       const currentParams = new URLSearchParams(searchParams.toString())
                       const targetParams = new URLSearchParams(queryString)
@@ -692,11 +729,14 @@ const handleLogout = async () => {
             <div key={menuKey} className="space-y-1">
               <Link
                 href={item.path || '#'}
-                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${
+                className={`flex items-center p-3 rounded-xl transition-all duration-200 ${
+                  isCollapsed ? 'justify-center' : 'gap-3'
+                } ${
                   isMainActive ? 'bg-white/25 font-semibold shadow-inner' : 'hover:bg-white/10 text-white/90'
                 }`}
+                title={isCollapsed ? item.name : undefined}
               >
-                <div className="relative">
+                <div className="relative shrink-0">
                   {item.icon}
                   {item.hasBadge && cartCount > 0 && (
                     <motion.span
@@ -708,7 +748,7 @@ const handleLogout = async () => {
                     </motion.span>
                   )}
                 </div>
-                <span className="text-sm">{item.name}</span>
+                {!isCollapsed && <span className="text-sm whitespace-nowrap">{item.name}</span>}
               </Link>
             </div>
           )
@@ -716,25 +756,26 @@ const handleLogout = async () => {
       </nav>
 
       {/* Bagian Tombol Logout */}
-      <div className="p-4 border-t border-white/10">
+      <div className="p-3 border-t border-white/10">
         <button 
           onClick={() => setShowLogoutModal(true)}
           disabled={isLoggingOut}
-          className="flex items-center w-full gap-3 p-3 transition-all hover:bg-red-500/20 rounded-xl text-white/80 hover:text-white group disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`flex items-center w-full p-3 transition-all hover:bg-red-500/20 rounded-xl text-white/80 hover:text-white group disabled:opacity-50 disabled:cursor-not-allowed ${
+            isCollapsed ? 'justify-center' : 'gap-3'
+          }`}
+          title={isCollapsed ? 'Logout' : undefined}
         >
           {isLoggingOut ? (
-            <div className="w-5 h-5 border-2 border-white rounded-full animate-spin border-t-transparent" />
+            <div className="w-5 h-5 border-2 border-white rounded-full animate-spin border-t-transparent shrink-0" />
           ) : (
-            <LogOut size={20} className="transition-transform group-hover:translate-x-1" />
+            <LogOut size={20} className={`shrink-0 transition-transform ${!isCollapsed && 'group-hover:translate-x-1'}`} />
           )}
-          <span className="text-sm font-medium">
-            {isLoggingOut ? 'Mengeluarkan...' : 'Logout'}
-          </span>
+          {!isCollapsed && <span className="text-sm font-medium">Logout</span>}
         </button>
       </div>
     </aside>
 
-      <LogoutModal 
+    <LogoutModal 
       isOpen={showLogoutModal} 
       onClose={() => setShowLogoutModal(false)}
       onConfirm={handleLogout}
