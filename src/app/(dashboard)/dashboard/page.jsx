@@ -79,7 +79,7 @@ export default function DashboardPage() {
     <div className="w-full mx-auto space-y-6"> 
       
       <header className="mb-2">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-[#A47352] pb-2 sm:pb-3 border-b border-[#A47352]/30 tracking-wide">
+        <h2 className="text-lg sm:text-[26px] font-medium text-black pb-2 sm:pb-3 border-b border-[#A47352]/30 tracking-wide">
           Dashboard
         </h2>
       </header>
@@ -108,7 +108,7 @@ export default function DashboardPage() {
       ) : (
         mainData?.isOwner && (
           <div className="space-y-3">
-            <span className="text-[#A47352] font-semibold text-base sm:text-lg underline underline-offset-4 decoration-1 inline-block pl-1">
+            <span className="inline-block pl-1 text-base font-semibold text-black sm:text-lg">
               Grafik Pendapatan
             </span>
             {loadingRevenue ? (
@@ -117,7 +117,7 @@ export default function DashboardPage() {
                 <div className="w-full mt-4 bg-gray-200 rounded h-36 sm:h-44"></div>
               </div>
             ) : (
-              <div className="bg-[#F4EAE1]/30 border border-[#DDB892]/40 rounded-2xl p-2 sm:p-4 shadow-sm w-full overflow-hidden">
+              <div className="bg-white border border-[#F4EAE1]/40 rounded-2xl p-2 sm:p-4 shadow-sm w-full overflow-hidden">
                 <RevenueChart dataArray={revenue} />
               </div>
             )}
@@ -138,7 +138,7 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-[#F4EAE1]/20 border border-[#DDB892]/30 rounded-2xl p-2 sm:p-2 shadow-sm transition-all duration-300 w-full overflow-hidden">
+          <div className="bg-white border border-[#DDB892]/30 rounded-2xl  shadow-sm transition-all duration-300 w-full overflow-hidden">
             <LatestProductsTable products={mainData?.produkTerlaris || []} />
           </div>
         )}
@@ -153,7 +153,7 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-[#F4EAE1]/20 border border-[#DDB892]/30 rounded-2xl p-2 sm:p-2 shadow-sm transition-all duration-300 w-full overflow-hidden">
+          <div className="bg-white border border-[#DDB892]/30 rounded-2xl  shadow-sm transition-all duration-300 w-full overflow-hidden">
             <LatestPreOrdersTable preOrders={preOrders} />
           </div>
         )}

@@ -2,18 +2,14 @@ import React from 'react'
 
 export default function LatestPreOrdersTable({ preOrders }) {
   return (
-    // Penyesuaian p-3 di mobile, meningkat ke sm:p-5 di desktop
-    <div className="p-3 sm:p-5 bg-[#F4EAE1]/50 rounded-2xl w-full">
-      {/* Judul responsif: text-lg di mobile, text-xl di desktop */}
-      <h3 className="text-lg sm:text-xl font-bold text-[#8B5E3C] mb-4 pl-1">
-        Pre-Order Terbaru
-      </h3>
+    <div className="w-full p-3 bg-white sm:p-5 rounded-2xl">
+      <span className="inline-block pl-1 mb-4 text-base font-semibold text-black sm:text-lg">
+        Pre Order Terbaru
+      </span>
 
-      {/* Container scrollable dengan block-level */}
-      <div className="overflow-x-auto rounded-xl border border-[#DDB892]/20 bg-white shadow-sm w-full block">
-        {/* Mengunci min-w-[900px] agar 9 kolom data ini tidak berdempetan di layar HP */}
+      <div className="overflow-x-auto rounded-lg border border-[#F4EAE1]/20 bg-[#F4EAE1] shadow-sm w-full block">
         <table className="w-full text-left border-collapse min-w-[900px]"><thead>
-            <tr className="bg-[#B58253] text-white text-sm font-medium">
+            <tr className="bg-[#1A335A] text-white text-[12px] font-medium">
               <th className="p-3 text-center w-14">No</th>
               <th className="p-3">Id Pre-order</th>
               <th className="p-3">Nama Pelanggan</th>
@@ -24,7 +20,7 @@ export default function LatestPreOrdersTable({ preOrders }) {
               <th className="p-3 text-center">Estimasi Selesai</th>
               <th className="p-3 text-center">Status Produksi</th>
             </tr>
-          </thead><tbody className="text-sm text-gray-700 divide-y divide-gray-100">
+          </thead><tbody className="text-sm text-gray-700 divide-y divide-[gray-100]">
             {(!preOrders || preOrders.length === 0) ? (
               <tr>
                 <td colSpan="9" className="p-4 italic text-center text-gray-400">

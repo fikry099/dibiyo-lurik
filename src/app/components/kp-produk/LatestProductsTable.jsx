@@ -2,15 +2,15 @@ import React from 'react'
 
 export default function LatestProductsTable({ products }) {
   return (
-    <div className="p-3 sm:p-5 bg-[#F4EAE1]/50 rounded-2xl w-full">
-      <h3 className="text-lg sm:text-xl font-bold text-[#8B5E3C] mb-4 pl-1">
+    <div className="w-full p-3 bg-white rounded-lg sm:p-5">
+      <h3 className="inline-block pl-1 mb-4 text-base font-semibold text-black sm:text-lg">
         Produk Terlaris
       </h3>
       
-      <div className="overflow-x-auto rounded-xl border border-[#DDB892]/20 bg-white shadow-sm w-full block">
+      <div className="overflow-x-auto rounded-lg border border-[#DDB892]/20 bg-[#FDFDFD] shadow-sm w-full block">
         {/* Memastikan tidak ada baris baru berisi spasi kosong tersembunyi langsung di bawah tag table */}
         <table className="w-full text-left border-collapse min-w-[600px]"><thead>
-            <tr className="bg-[#B58253] text-white text-sm font-medium">
+            <tr className="bg-[#1A335A] text-white text-[12px] font-medium">
               <th className="p-3 text-center w-14">No</th>
               <th className="p-3">Kode Produk</th>
               <th className="p-3">Motif</th>
@@ -18,7 +18,7 @@ export default function LatestProductsTable({ products }) {
               <th className="p-3 text-center">Lebar</th>
               <th className="p-3 text-center">Jumlah Terjual</th>
             </tr>
-          </thead><tbody className="text-sm text-gray-700 divide-y divide-gray-100">
+          </thead><tbody className="text-[12px] text-gray-700 divide-y divide-gray-100">
             {(!products || products.length === 0) ? (
               <tr>
                 <td colSpan="6" className="p-4 italic text-center text-gray-400">

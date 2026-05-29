@@ -66,7 +66,7 @@ export default function DashboardLayout({ children }) {
   }, [router])
 
   return (
-    <div className="flex min-h-screen bg-[#FDF9F5]">
+    <div className="flex min-h-screen bg-slate-100">
       <Suspense fallback={<div className="w-64 bg-[#8B5E3C] min-h-screen animate-pulse" />}>
         <Sidebar />
       </Suspense>
