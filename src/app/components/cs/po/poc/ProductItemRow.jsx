@@ -13,25 +13,25 @@ export default function ProductItemRow({
   canRemove 
 }) {
   return (
-    <div className="relative border border-[#A47352] bg-[#E3C2AC59] rounded-[12px] p-4 flex flex-col md:flex-row gap-4 items-center w-full font-inter">
+    <div className="relative border border-black bg-[#5AE3ED1C] rounded-[12px] p-4 flex flex-col md:flex-row gap-4 items-center w-full font-inter">
       
       {/* Tombol Hapus */}
       {canRemove && (
         <button 
           type="button"
           onClick={() => removeItem(item.id)} 
-          className="absolute top-2 right-2 text-[#A47352] hover:text-rose-600 transition-colors"
+          className="absolute text-black transition-colors top-2 right-2 hover:text-rose-600"
         >
           <X size={16} strokeWidth={2.5} />
         </button>
       )}
 
       {/* Box Upload */}
-      <label className="flex flex-col items-center justify-center h-[90px] w-[140px] border border-dashed border-[#A47352] bg-transparent rounded-[10px] cursor-pointer hover:bg-[#A47352]/10 overflow-hidden relative flex-shrink-0 transition-colors">
+      <label className="flex flex-col items-center justify-center h-[90px] w-[140px] border border-dashed border-black bg-transparent rounded-[10px] cursor-pointer hover:bg-black/10 overflow-hidden relative flex-shrink-0 transition-colors">
         {item.image ? (
           <img src={item.image} alt="Sketsa" className="object-cover w-full h-full" />
         ) : (
-          <div className="flex flex-col items-center justify-center text-[#A47352]">
+          <div className="flex flex-col items-center justify-center text-black">
             <Upload size={18} strokeWidth={2} />
             <span className="text-[9px] mt-1 text-center font-bold">Upload Photo</span>
           </div>
@@ -40,13 +40,13 @@ export default function ProductItemRow({
       </label>
 
       {/* Container Input (Menggunakan flex agar lebih fleksibel) */}
-      <div className="flex-1 w-full grid grid-cols-2 md:grid-cols-5 gap-3 items-end text-[#A47352]">
+      <div className="grid items-end flex-1 w-full grid-cols-2 gap-3 text-black md:grid-cols-5">
         
         {/* Lebar */}
         <div className="flex flex-col space-y-1">
           <label className="text-[10px] font-bold">Lebar Kain</label>
           <select 
-            className="h-[34px] w-full px-2 bg-[#D4C5B9]/40 border border-[#A47352] rounded-[8px] font-bold text-[11px] outline-none" 
+            className="h-[34px] w-full px-2 bg-[#F1E9E987] border border-black rounded-[8px] font-bold text-[11px] outline-none" 
             value={item.lebar} 
             onChange={(e) => updateItem(item.id, "lebar", e.target.value)}
           >
@@ -61,7 +61,7 @@ export default function ProductItemRow({
         <div className="flex flex-col space-y-1">
           <label className="text-[10px] font-bold">Pilih Pewarna</label>
           <select 
-            className="h-[34px] w-full px-2 bg-[#D4C5B9]/40 border border-[#A47352] rounded-[8px] font-bold text-[11px] outline-none" 
+            className="h-[34px] w-full px-2 bg-[#F1E9E987] border border-black rounded-[8px] font-bold text-[11px] outline-none" 
             value={item.jenis_pewarna} 
             onChange={(e) => updateItem(item.id, "jenis_pewarna", e.target.value)}
           >
@@ -75,12 +75,12 @@ export default function ProductItemRow({
         {/* Jumlah */}
         <div className="flex flex-col space-y-1">
           <label className="text-[10px] font-bold">Jumlah</label>
-          <div className="flex items-center border border-[#A47352] bg-[#D4C5B9]/40 rounded-[8px] h-[34px] w-full overflow-hidden">
-            <button type="button" onClick={() => updateItem(item.id, "qty", Math.max(1, item.qty - 1))} className="px-2 h-full flex items-center justify-center font-bold">
+          <div className="flex items-center border border-black bg-[#F1E9E987] rounded-[8px] h-[34px] w-full overflow-hidden">
+            <button type="button" onClick={() => updateItem(item.id, "qty", Math.max(1, item.qty - 1))} className="flex items-center justify-center h-full px-2 font-bold">
               <Minus size={10} />
             </button>
             <span className="flex-1 text-center font-bold text-[11px]">{item.qty}</span>
-            <button type="button" onClick={() => updateItem(item.id, "qty", item.qty + 1)} className="px-2 h-full flex items-center justify-center font-bold">
+            <button type="button" onClick={() => updateItem(item.id, "qty", item.qty + 1)} className="flex items-center justify-center h-full px-2 font-bold">
               <Plus size={10} />
             </button>
           </div>
@@ -92,13 +92,13 @@ export default function ProductItemRow({
           <input 
             type="number" 
             value={item.panjang} 
-            className="h-[34px] w-full px-2 bg-[#D4C5B9]/40 border border-[#A47352] rounded-[8px] font-bold text-[11px] outline-none" 
+            className="h-[34px] w-full px-2 bg-[#F1E9E987] border border-black rounded-[8px] font-bold text-[11px] outline-none" 
             onChange={(e) => updateItem(item.id, "panjang", e.target.value)} 
           />
         </div>
 
         {/* Harga */}
-        <div className="flex flex-col space-y-1 justify-center md:items-center">
+        <div className="flex flex-col justify-center space-y-1 md:items-center">
           <label className="text-[10px] font-bold">Harga</label>
           <span className="font-black text-[13px] pt-1">
             Rp {calculateTotal(item).toLocaleString('id-ID')}

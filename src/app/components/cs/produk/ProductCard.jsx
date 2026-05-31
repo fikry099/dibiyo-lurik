@@ -32,6 +32,14 @@ export default function ProductCard({ product, onAddReguler, onBuy }) {
             alt={motifNama} 
             className="object-cover w-full h-full transition-transform duration-500 ease-out hover:scale-110"
           />
+
+          {/* BADGE STATUS: Sekarang dipindah ke sini agar tumpang tindih di kanan atas depan gambar */}
+          <span
+            style={{ backgroundColor: isReady ? '#2379FF' : '#FC4B4B' }}
+            className="absolute top-3 left-3 z-10 px-2.5 py-1.5 rounded text-white text-[9px] font-bold min-w-[80px] text-center shadow-md select-none backdrop-blur-[1px]"
+          >
+            {isReady ? 'Produk Tersedia' : 'Produk Habis'}
+          </span>
         </div>
       </div>
 
@@ -49,30 +57,23 @@ export default function ProductCard({ product, onAddReguler, onBuy }) {
         </div>
       </div>
 
-      {/* Footer Status Badge + Aksi */}
-      <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-4">
-        <span
-          style={{ backgroundColor: isReady ? '#76CBF9' : '#FF695E' }}
-          className="px-2 py-1.5 rounded-full text-white text-[9px] font-bold min-w-[80px] text-center shadow-sm select-none"
-        >
-          {isReady ? 'Ready' : 'Sold'}
-        </span>
-
+      {/* Footer Aksi (Sekarang hanya berisi tombol, membuat space tombol jadi lebih lega) */}
+      <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-4">
         <div className="flex items-center gap-2">
           {/* Tombol Pre-Order Reguler */}
           <button 
             type="button"
             onClick={() => onAddReguler && onAddReguler(product)}
-            className="h-[30px] px-4 rounded-[10px] bg-[#4CD0B1] hover:bg-[#3bbf9f] text-white text-[9px] font-bold transition-all duration-200 shadow-sm flex items-center justify-center hover:shadow-md active:scale-[0.96]"
+            className="h-[30px] px-4 rounded-md bg-[#1DB793] hover:bg-[#15755f] text-white text-[9px] font-bold transition-all duration-200 shadow-sm flex items-center justify-center hover:shadow-md active:scale-[0.96]"
           >
-            + Pre-Order Reguler
+            + Pre Order Reguler
           </button>
           
           {/* Tombol Beli */}
           <button 
             type="button"
             onClick={() => onBuy && onBuy(product)} 
-            className="h-[30px] px-4 rounded-[10px] bg-[#F0A864] hover:bg-[#df9955] text-white text-[9px] font-bold transition-all duration-200 shadow-sm flex items-center justify-center hover:shadow-md active:scale-[0.96]"
+            className="h-[30px] px-4 rounded-md bg-[#F0A864] hover:bg-[#df9955] text-white text-[9px] font-bold transition-all duration-200 shadow-sm flex items-center justify-center hover:shadow-md active:scale-[0.96]"
           >
             Beli
           </button>

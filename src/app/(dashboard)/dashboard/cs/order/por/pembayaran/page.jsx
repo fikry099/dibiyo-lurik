@@ -43,7 +43,7 @@ export default function PembayaranPOR() {
 
     // Transformasi item agar sesuai dengan kebutuhan API (memastikan data yang dikirim bersih)
     const itemsPayload = orderData.items.map(item => ({
-      produk_id: item.id, // Sesuaikan dengan field di database Anda (id atau produk_id)
+      produk_id: item.id, 
       lebar: Number(item.lebar),
       panjang: Number(item.panjang),
       jumlah: Number(item.qty)
@@ -97,10 +97,10 @@ export default function PembayaranPOR() {
       </div>
 
       {/* Bagian 1: Detail Pembayaran */}
-      <div className="relative p-6 bg-[#E3C2AC59] border shadow-sm rounded-2xl border-stone-200">
+      <div className="relative p-6 bg-[#5AE3ED1C] shadow-sm rounded-lg ">
         <button 
           onClick={() => router.push("/dashboard/cs/order/por")} 
-          className="absolute flex items-center gap-2 px-3 py-1 text-sm font-medium transition-all bg-[#A47352] border border-[#A47352] rounded-xl top-4 right-4 text-[#f7efe9] hover:bg-[#a7704bc7]"
+          className="absolute flex items-center gap-2 px-3 py-1 text-sm font-medium transition-all bg-[#1A335A] border border-[#1A335A] rounded-xl top-4 right-4 text-[#f7efe9] hover:bg-[#284d87]"
         >
           <CornerDownLeft size={16} /> kembali
         </button>
@@ -112,17 +112,17 @@ export default function PembayaranPOR() {
         <div className="space-y-4">
           {/* Toggle DP/Lunas */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-stone-600">Status Pembayaran</label>
+            <label className="text-xs font-bold text-black">Status Pembayaran</label>
             <div className="flex gap-4">
               <button 
                 onClick={() => setStatusBayar('dp')} 
-                className={`flex-1 py-3 font-bold rounded-xl border transition-all ${statusBayar === 'dp' ? 'bg-[#A47352] text-white border-[#A47352]' : 'bg-white/50 text-stone-500 border-stone-300'}`}
+                className={`flex-1 py-3 font-bold rounded-xl border transition-all ${statusBayar === 'dp' ? 'bg-[#1A335A] text-white border-[#1A335A]' : 'bg-white/50 text-stone-500 border-stone-300'}`}
               >
                 DP
               </button>
               <button 
                 onClick={() => setStatusBayar('lunas')} 
-                className={`flex-1 py-3 font-bold rounded-xl border transition-all ${statusBayar === 'lunas' ? 'bg-[#A47352] text-white border-[#A47352]' : 'bg-white/50 text-stone-500 border-stone-300'}`}
+                className={`flex-1 py-3 font-bold rounded-xl border transition-all ${statusBayar === 'lunas' ? 'bg-[#1A335A] text-white border-[#1A335A]' : 'bg-white/50 text-stone-500 border-stone-300'}`}
               >
                 Lunas
               </button>
@@ -131,12 +131,12 @@ export default function PembayaranPOR() {
 
           {/* Nominal */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-stone-600">Nominal {statusBayar === 'dp' ? 'DP' : 'Pembayaran'}</label>
+            <label className="text-xs font-bold text-black">Nominal {statusBayar === 'dp' ? 'DP' : 'Pembayaran'}</label>
             <input 
               type="number" 
               placeholder="Rp" 
               value={formData.nominal}
-              className="w-full p-3 bg-[#E3C2AC59] border rounded-lg border-[#A47352] outline-none" 
+              className="w-full p-3 bg-[#5AE3ED1C] border rounded-lg border-[#1A335A] text-black outline-none" 
               onChange={(e) => setFormData({...formData, nominal: e.target.value})} 
             />
           </div>
@@ -144,10 +144,10 @@ export default function PembayaranPOR() {
           {/* Grid Metode & Diskon */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-600">Metode Pembayaran</label>
+              <label className="text-xs font-bold text-black">Metode Pembayaran</label>
               <select 
                 value={formData.metode}
-                className="w-full p-3 bg-[#E3C2AC59] border rounded-lg border-[#A47352] outline-none appearance-none"
+                className="w-full p-3 bg-[#5AE3ED1C] border rounded-lg border-[#1A335A] text-black outline-none appearance-none"
                 onChange={(e) => setFormData({...formData, metode: e.target.value})}
               >
                 <option value="cash">Cash</option>
@@ -155,21 +155,21 @@ export default function PembayaranPOR() {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-600">Diskon (optional)</label>
+              <label className="text-xs font-bold text-black">Diskon (optional)</label>
               <input 
                 type="number" 
                 placeholder="%" 
                 value={formData.diskon}
-                className="w-full p-3 bg-[#E3C2AC59] border rounded-lg border-[#A47352] outline-none" 
+                className="w-full p-3 bg-[#5AE3ED1C] border rounded-lg border-[#1A335A] text-black outline-none" 
                 onChange={(e) => setFormData({...formData, diskon: e.target.value})} 
               />
             </div>
-            <div className="p-4 bg-[#DCC7B0] rounded-xl text-stone-800">
-              <p className="text-[10px] font-bold mb-2 uppercase opacity-70">Total Harga</p>
-              <div className="flex justify-between text-xs py-1 border-b border-[#A47352]/20">
+            <div className="p-4 bg-[#5AE3ED1C] rounded-xl text-stone-800">
+              <p className="text-[10px] font-bold mb-2 uppercase opacity-80">Total Harga</p>
+              <div className="flex justify-between text-xs py-1 border-b border-[#1A335A]/20">
                 <span>Sub Total</span> <span>Rp.{subTotal.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-xs py-1 border-b border-[#A47352]/20">
+              <div className="flex justify-between text-xs py-1 border-b border-[#1A335A]/20">
                 <span>Diskon</span> <span>{formData.diskon}%</span>
               </div>
               <div className="flex justify-between pt-2 text-sm font-bold">
@@ -180,28 +180,28 @@ export default function PembayaranPOR() {
         </div>
       {/* Grid Estimasi & Status */}
       <div className="grid grid-cols-1 gap-6 mt-6 md:grid-cols-2">
-        <div className="p-6 bg-[#E3C2AC59] border shadow-sm rounded-2xl border-stone-200 space-y-4">
+        <div className="p-6 bg-[#5AE3ED1C] border shadow-sm rounded-2xl border-stone-200 space-y-4">
           <h2 className="flex items-center gap-2 font-semibold text-stone-700">
             <CalendarDays size={20} /> Estimasi Produk Jadi
           </h2>
           <div className="space-y-1">
-            <label className="text-xs font-bold text-stone-600">Tanggal Estimasi Selesai</label>
+            <label className="text-xs font-bold text-black">Tanggal Estimasi Selesai</label>
             <input 
               type="date" 
               value={formData.tgl_selesai}
-              className="w-full p-4 bg-[#E3C2AC59] border rounded-xl border-[#A47352] outline-none text-stone-500" 
+              className="w-full p-4 bg-[#FFD454B5] border rounded-xl border-[#1A335A] text-black outline-none" 
               onChange={(e) => setFormData({...formData, tgl_selesai: e.target.value})} 
             />
           </div>
         </div>
 
-        <div className="p-6 bg-[#E3C2AC59] border shadow-sm rounded-2xl border-stone-200 space-y-4">
+        <div className="p-6 bg-[#5AE3ED1C] border shadow-sm rounded-2xl border-stone-200 space-y-4">
           <h2 className="flex items-center gap-2 font-semibold text-stone-700">
             <Factory size={20} /> Status Produksi
           </h2>
           <div className="space-y-1">
-            <label className="text-xs font-bold text-stone-600">Pilih Status Produksi</label>
-            <div className="w-full p-4 bg-[#f0e6df] border rounded-xl border-[#A47352] text-stone-400 font-medium italic">
+            <label className="text-xs font-bold text-black">Status Produksi</label>
+            <div className="w-full p-4 bg-[#A63636] border rounded-xl border-[#1A335A] text-stone-200 font-medium italic">
               Dalam Proses
             </div>
           </div>
@@ -209,11 +209,11 @@ export default function PembayaranPOR() {
       </div>
       {/* Tambahkan bagian ini setelah Grid Estimasi & Status */}
 <div className="mt-4 space-y-1">
-  <label className="text-xs font-bold text-stone-600">Catatan (Optional)</label>
+  <label className="text-xs font-bold text-black">Catatan (Optional)</label>
   <textarea 
     placeholder="Tambahkan catatan untuk pesanan ini..."
     value={formData.catatan}
-    className="w-full p-4 bg-[#E3C2AC59] border rounded-xl border-[#A47352] outline-none min-h-[100px]"
+    className="w-full p-4 bg-[#5AE3ED1C] border rounded-xl border-[#1A335A] text-black outline-none min-h-[100px]"
     onChange={(e) => setFormData({...formData, catatan: e.target.value})}
   />
 </div>
@@ -223,9 +223,9 @@ export default function PembayaranPOR() {
       {/* Button Submit */}
       <button 
         onClick={handleSubmit} 
-        className="w-full py-4 bg-[#10B981] text-white rounded-xl font-bold text-lg hover:bg-[#059669] shadow-lg transition-all"
+        className="w-full py-4 bg-[#F2B600] text-white rounded-xl font-bold text-lg hover:bg-[#d7a201] shadow-lg transition-all"
       >
-        Submit Pre-Order Reguler
+        Submit Pre Order Reguler
       </button>
 
       {/* Overlay Animasi Sukses (Kertas Remas) */}

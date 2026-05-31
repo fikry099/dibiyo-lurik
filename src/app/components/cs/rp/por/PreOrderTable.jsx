@@ -1,44 +1,95 @@
-'use client'
-import React from 'react';
+'use client';
+import React, { useState } from 'react';
 import { Eye } from 'lucide-react';
+import PORegulerDetailModal from './PORegulerDetailModal';
 
 export default function PreOrderTable({ data }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPO, setSelectedPO] = useState(null);
+
+  const handleOpenModal = (item) => {
+    setSelectedPO(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedPO(null);
+    setIsModalOpen(false);
+  };
+
   return (
-    <div className="w-full overflow-hidden bg-white border rounded-lg shadow-sm border-stone-200">
-      <table className="w-full text-sm text-left">
-        <thead className="bg-[#A67C5B] text-white">
-          <tr>
-            <th className="px-6 py-4">No.</th>
-            <th className="px-6 py-4">Tanggal</th>
-            <th className="px-6 py-4">Id Pre-Order</th>
-            <th className="px-6 py-4">Nama Pelanggan</th>
-            <th className="px-6 py-4">Nomor Telepon</th>
-            <th className="px-6 py-4">Jumlah PO</th>
-            <th className="px-6 py-4">Total Harga</th>
-            <th className="px-6 py-4 text-center">Aksi</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-stone-100">{data.map((item, index) => (
-          <tr key={item.id} className="hover:bg-stone-50">
-            <td className="px-6 py-4 text-stone-600">{index + 1}</td>
-            <td className="px-6 py-4 text-stone-600">
-              {new Date(item.created_at).toLocaleDateString('id-ID')}
-            </td>
-            <td className="px-6 py-4 font-bold text-[#8B5E3C]">ID {item.id.slice(0, 8)}</td>
-            <td className="px-6 py-4 text-stone-600">{item.nama_customer}</td>
-            <td className="px-6 py-4 text-stone-600">{item.kontak_customer}</td>
-            <td className="px-6 py-4 text-stone-600">1</td>
-            <td className="px-6 py-4 font-semibold text-stone-600">
-              Rp {item.total_harga?.toLocaleString('id-ID') || 0}
-            </td>
-            <td className="px-6 py-4 text-center">
-              <button className="flex items-center gap-1 mx-auto bg-[#10B981] text-white px-3 py-1 rounded-md text-xs hover:bg-[#059669]">
-                <Eye size={14} /> Detail
-              </button>
-            </td>
-          </tr>
-        ))}</tbody>
-      </table>
-    </div>
+    <>
+      <div className="w-full overflow-x-auto rounded-sm">
+        <table className="w-full text-sm text-left border-collapse">
+          <thead className="bg-[#1A335A] text-white text-xs tracking-wider">
+            <tr>
+              <th className="px-4 py-3.5 font-medium text-center w-12">No.</th>
+              <th className="px-6 py-3.5 font-medium">Tanggal</th>
+              <th className="px-6 py-3.5 font-medium">Id Pre-Order</th>
+              <th className="px-6 py-3.5 font-medium">Nama Pelanggan</th>
+              <th className="px-6 py-3.5 font-medium">Nomor Telepon</th>
+              <th className="px-6 py-3.5 font-medium text-center">Jumlah PO</th>
+              <th className="px-6 py-3.5 font-medium">Total Harga</th>
+              <th className="px-4 py-3.5 font-medium text-center w-24">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-stone-200 text-stone-800">
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-6 py-10 text-center text-stone-400">
+                  Tidak ada data pre-order ditemukan.
+                </td>
+              </tr>
+            ) : (
+              data.map((item, index) => {
+                // Menghitung jumlah total item/jenis PO secara dinamis
+                const totalJumlahPO = item.items ? item.items.reduce((acc, curr) => acc + (curr.jumlah || 1), 0) : 1;
+
+                return (
+                  <tr key={item.id} className="transition-colors hover:bg-stone-50/60">
+                    <td className="px-4 py-4 font-normal text-center">
+                      {index + 1}.
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {new Date(item.created_at).toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      }).replace(/\//g, '-')}
+                    </td>
+                    <td className="px-6 py-4 font-normal text-stone-600 whitespace-nowrap">
+                      {item.id ? `ID ${item.id.slice(0, 8).toUpperCase()}` : '-'}
+                    </td>
+                    <td className="px-6 py-4 font-normal">{item.nama_customer || '-'}</td>
+                    <td className="px-6 py-4 font-normal text-stone-600">{item.kontak_customer || '-'}</td>
+                    <td className="px-6 py-4 font-normal text-center">{totalJumlahPO}</td>
+                    <td className="px-6 py-4 font-normal whitespace-nowrap">
+                      Rp. {item.total_harga?.toLocaleString('id-ID') || 0},00
+                    </td>
+                    <td className="px-3 py-3 text-center align-middle">
+                      {/* Tombol aksi pemicu modal */}
+                      <button 
+                        onClick={() => handleOpenModal(item)}
+                        className="inline-flex flex-col items-center justify-center gap-1 bg-[#F2B600] text-white px-2 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#d6a100] transition-colors shadow-sm mx-auto min-w-[50px]"
+                      >
+                        <span>Detail</span>
+                        <Eye size={14} strokeWidth={3} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Komponen Modal yang dikendalikan State */}
+      <PORegulerDetailModal 
+        isOpen={isModalOpen} 
+        onClose={handleCloseModal} 
+        item={selectedPO} 
+      />
+    </>
   );
 }

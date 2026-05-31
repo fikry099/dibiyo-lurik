@@ -51,9 +51,8 @@ async function localRecalculateTotalPOR(poId) {
     .eq('id', poId);
 }
 
-
 // =====================================================
-// GET - list PO reguler (Tanpa nomor_po dan created_by)
+// GET - list PO reguler (Fleksibel untuk Antrean & Riwayat)
 // =====================================================
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -62,14 +61,42 @@ export async function GET(request) {
   const offset = (page - 1) * limit;
   const filterStatus = searchParams.get('status');
   const filterPembayaran = searchParams.get('status_pembayaran');
+  
+  // Ambil parameter status_penerimaan dari query string, default-nya 'belum_diambil'
+  const filterPenerimaan = searchParams.get('status_penerimaan') || 'belum_diambil';
 
   let query = supabaseAdmin
     .from('pre_order_reguler')
     .select(`
-      id, nama_customer, kontak_customer, tanggal_selesai, status, 
-      metode_pembayaran, status_pembayaran, total_dp, diskon, total_harga, 
-      created_at
+      id, 
+      nama_customer, 
+      kontak_customer, 
+      alamat_customer, 
+      tanggal_selesai, 
+      status, 
+      metode_pembayaran, 
+      status_pembayaran, 
+      status_penerimaan,
+      total_dp, 
+      diskon, 
+      total_harga, 
+      created_at,
+      items:item_pre_order_reguler(
+        id,
+        jumlah,
+        panjang,
+        lebar,
+        harga_per_meter,
+        subtotal,
+        produk:produk(
+          id,
+          gambar_url,
+          kode_produk
+        )
+      )
     `, { count: 'exact' });
+
+  query = query.eq('status_penerimaan', filterPenerimaan);
 
   if (filterStatus) query = query.eq('status', filterStatus);
   if (filterPembayaran) query = query.eq('status_pembayaran', filterPembayaran);
@@ -111,6 +138,7 @@ export async function POST(request) {
         catatan: body.catatan || null,
         total_harga: 0,
         status: 'dalam_proses',
+        status_penerimaan: 'belum_diambil',
       })
       .select()
       .single();
@@ -160,6 +188,45 @@ export async function POST(request) {
       .single();
 
     return NextResponse.json({ data: poComplete }, { status: 201 });
+
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+}
+
+
+// =====================================================
+// PATCH - Konfirmasi Penerimaan Barang oleh Customer
+// =====================================================
+export async function PATCH(request) {
+  try {
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID Pesanan wajib disertakan' }, { status: 400 });
+    }
+
+    // Update status penerimaan menjadi 'sudah_diambil'
+    const { data, error } = await supabaseAdmin
+      .from('pre_order_reguler')
+      .update({ 
+        status_penerimaan: 'sudah_diambil',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Status penerimaan barang berhasil dikonfirmasi', 
+      data 
+    }, { status: 200 });
 
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });

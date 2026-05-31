@@ -15,9 +15,6 @@ import Swal from 'sweetalert2';
 import NProgress from 'nprogress';
 import LogoutModal from '@/app/components/LogoutModal';
 
-// =====================================================================
-// FIX: Ubah kembali fungsi getCookie agar memotong string dengan benar
-// =====================================================================
 const getCookie = (name) => {
   if (typeof document === 'undefined') return null
   const value = `; ${document.cookie}`
@@ -38,8 +35,6 @@ export default function Sidebar() {
   
   const [cartCount, setCartCount] = useState(0)
   const [animateBadge, setAnimateBadge] = useState(false)
-  
-  // STATE BARU: Untuk mengontrol buka-tutup sidebar
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   useEffect(() => {
@@ -83,21 +78,25 @@ export default function Sidebar() {
     if (userRole) {
       setRole(userRole.toLowerCase())
     }
-    
-    // Sinkronisasi state awal sidebar dengan layout utama via CustomEvent
     const event = new CustomEvent("sidebarToggle", { detail: { isCollapsed: false } });
     window.dispatchEvent(event);
   }, [])
 
+  // Auto-expand sub-menu berdasarkan URL aktif saat halaman pertama kali dimuat
   useEffect(() => {
-    if (pathname.startsWith('/dashboard/kepala-produksi/produk')) {
-      setOpenSubMenu('Produk')
-    } else if (pathname.includes('/pre-order')) {
-      setOpenSubMenu('Pre-Order')
+    if (pathname.startsWith('/dashboard/kp/md') || pathname.startsWith('/dashboard/kp/md/produk')) {
+      setOpenSubMenu('Master Data')
+    } else if (pathname.includes('/rsg/')) {
+      setOpenSubMenu('Rekap Stok Gulungan')
+    } else if (pathname.includes('/po')) {
+      setOpenSubMenu('Pre Order')
+    } else if (pathname.includes('/rp/')) {
+      setOpenSubMenu('Riwayat Pemesanan')
+    } else if (pathname.includes('/laporan/')) {
+      setOpenSubMenu('Laporan')
     }
   }, [pathname])
 
-  // Fungsi trigger toggle sidebar yang mengirimkan sinyal ke Layout Utama
   const toggleSidebar = () => {
     const nextState = !isCollapsed;
     setIsCollapsed(nextState);
@@ -128,15 +127,14 @@ export default function Sidebar() {
     { 
       name: 'Master Data', 
       icon: <Package size={20} />, 
-      path: role === 'owner' ? '/dashboard/owner/produk' : null, 
       roles: ['kepala_produksi'], 
-      subMenu: role !== 'owner' ? [
+      subMenu: [
         { name: 'Kategori', path: '/dashboard/kp/md/kategori' },
         { name: 'Motif', path: '/dashboard/kp/md/motif' },
         { name: 'Rak', path: '/dashboard/kp/md/rak' },
         { name: 'Daftar Harga', path: '/dashboard/kp/md/dh' },
         { name: 'Gulungan', path: '/dashboard/kp/md/gulungan' }
-      ] : undefined
+      ]
     },
     {
       name: 'Produk', path: '/dashboard/kp/md/produk', 
@@ -172,24 +170,18 @@ export default function Sidebar() {
       icon: <ShoppingCart size={20} />, 
       roles: ['cs', 'customer_service'],
       subMenu: [
-        { name: 'Pre Order Reguler', path: role === 'customer_service' ? '/dashboard/cs/po/reguler/' : null}, 
-        { name: 'Pre Order Custom', path: role === 'customer_service' ? '/dashboard/cs/po/custom/' :null}      
+        { name: 'Pre Order Reguler', path: '/dashboard/cs/po/reguler' }, 
+        { name: 'Pre Order Custom', path: '/dashboard/cs/po/custom' }      
       ]
     },
     { 
       id: 'po-kp',
       name: 'Pre Order', 
       icon: <ShoppingCart size={20} />, 
-      roles: ['cs', 'kepala_produksi'],
+      roles: ['kepala_produksi'],
       subMenu: [
-          { 
-          name: 'Pre Order Reguler', 
-          path: '/dashboard/kp/po?tipe=reguler' 
-        }, 
-        { 
-          name: 'Pre Order Custom', 
-          path: '/dashboard/kp/po?tipe=custom' 
-        }
+        { name: 'Pre Order Reguler', path: '/dashboard/kp/po?tipe=reguler' }, 
+        { name: 'Pre Order Custom', path: '/dashboard/kp/po?tipe=custom' }
       ]
     },
     { 
@@ -198,8 +190,8 @@ export default function Sidebar() {
       icon: <ShoppingCart size={20} />, 
       roles: ['owner'],
       subMenu: [
-        { name: 'Pre Order Reguler', path: role === 'owner' ? '/dashboard/owner/po/reguler/' : null}, 
-        { name: 'Pre Order Custom', path: role === 'owner' ? '/dashboard/owner/po/custom/' :null}      
+        { name: 'Pre Order Reguler', path: '/dashboard/owner/po/reguler' }, 
+        { name: 'Pre Order Custom', path: '/dashboard/owner/po/custom' }      
       ]
     },
     { 
@@ -207,7 +199,7 @@ export default function Sidebar() {
       icon: <ClipboardList size={20} />, 
       roles: ['cs', 'customer_service'],
       subMenu: [
-        {name: 'Order', path: '/dashboard/cs/rp/order'},
+        { name: 'Order', path: '/dashboard/cs/rp/order' },
         { name: 'Pre Order Reguler', path: '/dashboard/cs/rp/por' },
         { name: 'Pre Order Custom', path: '/dashboard/cs/rp/poc' }
       ] 
@@ -217,7 +209,7 @@ export default function Sidebar() {
       icon: <FileText size={20} />, 
       roles: ['owner'],
        subMenu: [
-        {name: 'Order', path: '/dashboard/owner/laporan/order'},
+        { name: 'Order', path: '/dashboard/owner/laporan/order' },
         { name: 'Pre Order Reguler', path: '/dashboard/owner/laporan/por' },
         { name: 'Pre Order Custom', path: '/dashboard/owner/laporan/poc' }
       ] 
@@ -250,14 +242,13 @@ export default function Sidebar() {
     }
   };
 
-return (
+  return (
     <>
     <aside className={`bg-[#1A335A] text-white flex flex-col fixed h-full shadow-xl select-none z-40 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
       
       {/* Header Brand */}
       <div className={`p-5 flex items-center justify-between border-b border-white/20 ${isCollapsed ? 'flex-col justify-center' : 'flex-row'}`}>
         <div className="flex items-center gap-1 overflow-hidden">
-          {/* Logo bisa diklik untuk membuka sidebar jika dalam kondisi tertutup */}
           <button 
             onClick={isCollapsed ? toggleSidebar : undefined}
             className={`shrink-0 focus:outline-none transition-transform active:scale-95 ${isCollapsed ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
@@ -281,7 +272,6 @@ return (
           )}
         </div>
         
-        {/* Tombol X hanya muncul ketika sidebar terbuka */}
         {!isCollapsed && (
           <button 
             onClick={toggleSidebar} 
@@ -294,11 +284,24 @@ return (
 
       <nav className="flex-1 px-3 mt-4 space-y-1 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
         {filteredMenuItems.map((item, index) => {
-          const hasSubMenu = !!item.subMenu
+          const hasSubMenu = !!item.subMenu && item.subMenu.length > 0;
           const menuKey = `${item.name}-${index}-${role}`;
-          const isMainActive = hasSubMenu 
-            ? item.subMenu.some(sub => pathname === sub.path)
-            : pathname === item.path
+          
+          // Deteksi apakah salah satu anak (sub-menu) sedang aktif secara presisi
+          const isChildActive = hasSubMenu && item.subMenu.some(sub => {
+            if (!sub.path) return false;
+            const [pathOnly, queryString] = sub.path.split('?');
+            const isSamePath = pathname.replace(/\/$/, '') === pathOnly.replace(/\/$/, '');
+            
+            if (queryString) {
+              const currentParams = new URLSearchParams(searchParams.toString());
+              const targetParams = new URLSearchParams(queryString);
+              return isSamePath && [...targetParams.entries()].every(([key, value]) => currentParams.get(key) === value);
+            }
+            return isSamePath;
+          });
+
+          const isMainActive = !hasSubMenu && pathname === item.path;
 
           // JIKA MENU MEMILIKI SUBMENU
           if (hasSubMenu) {
@@ -312,12 +315,14 @@ return (
                   className={`w-full flex items-center p-3 rounded-lg transition-all duration-200 relative ${
                     isCollapsed ? 'justify-center' : 'justify-between'
                   } ${
-                    isMainActive ? 'bg-[#F2B600] font-semibold shadow-inner text-white' : 'hover:bg-[#F2B600]/10 text-white/90'
+                    isChildActive 
+                      ? 'bg-white/10 font-semibold text-white' 
+                      : 'hover:bg-[#F2B600]/10 text-white/90'
                   }`}
                   title={isCollapsed ? item.name : undefined}
                 >
-                  {/* Kotak indikator aktif setinggi penuh tombol menu */}
-                  {isMainActive && (
+                  {/* Indikator garis vertikal emas tipis di kiri */}
+                  {isChildActive && (
                     <span className="absolute -left-3 top-0 w-1.5 h-full bg-[#F2B600] rounded-r-lg shadow-md z-50" />
                   )}
 
@@ -340,27 +345,26 @@ return (
                   <div className="mt-1 ml-6 space-y-1 transition-all border-l border-white/20">
                     {item.subMenu.map((sub) => {
                       if (!sub.path) return null;
-                      const [pathOnly, queryString] = sub.path.split('?')
-                      const currentParams = new URLSearchParams(searchParams.toString())
-                      const targetParams = new URLSearchParams(queryString)
+                      const [pathOnly, queryString] = sub.path.split('?');
+                      const isSamePath = pathname.replace(/\/$/, '') === pathOnly.replace(/\/$/, '');
+                      
+                      let isSubActive = isSamePath;
+                      if (queryString) {
+                        const currentParams = new URLSearchParams(searchParams.toString());
+                        const targetParams = new URLSearchParams(queryString);
+                        isSubActive = isSamePath && [...targetParams.entries()].every(([key, value]) => currentParams.get(key) === value);
+                      }
 
-                      const isSamePath = pathname.replace(/\/$/, '') === pathOnly.replace(/\/$/, '')
-                      const isSameQuery = [...targetParams.entries()].every(
-                        ([key, value]) => currentParams.get(key) === value
-                      )
-
-                      const isSubActive = isSamePath && isSameQuery
                       return (
                         <Link
                           key={`${item.name}-${sub.name}`}
-                          href={sub.path || '#'}
+                          href={sub.path}
                           className={`flex items-center ml-3 p-2.5 text-sm rounded-lg transition-all duration-150 relative ${
                             isSubActive 
                               ? 'bg-[#F2B600] text-white font-medium shadow-sm' 
                               : 'text-white/70 hover:text-white hover:bg-[#F2B600]/5'
                           }`}
                         >
-                          {/* Kotak indikator aktif setinggi penuh tombol submenu */}
                           {isSubActive && (
                             <span className="absolute top-0 z-50 w-1 h-full bg-[#F2B600] rounded-r-lg shadow-md -left-9" />
                           )}
@@ -374,7 +378,7 @@ return (
             )
           }
           
-          // JIKA MENU STANDAR
+          // JIKA MENU STANDAR (Dashboard, Order, dll)
           return (
             <div key={menuKey} className="space-y-1">
               <Link
@@ -386,7 +390,6 @@ return (
                 }`}
                 title={isCollapsed ? item.name : undefined}
               >
-                {/* Kotak indikator aktif setinggi penuh tombol menu standar */}
                 {isMainActive && (
                   <span className="absolute -left-3 top-0 w-1.5 h-full bg-[#F2B600] rounded-r-lg shadow-md z-50" />
                 )}
@@ -438,5 +441,4 @@ return (
     />
     </>
   )
-
 }

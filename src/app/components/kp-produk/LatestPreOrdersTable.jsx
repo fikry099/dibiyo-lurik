@@ -3,7 +3,7 @@ import React from 'react'
 export default function LatestPreOrdersTable({ preOrders }) {
   return (
     <div className="w-full p-3 bg-white sm:p-5 rounded-2xl">
-      <span className="inline-block pl-1 mb-4 text-base font-semibold text-black sm:text-lg">
+      <span className="inline-block pl-1 mb-4 text-base text-black font-reguler sm:text-lg">
         Pre Order Terbaru
       </span>
 

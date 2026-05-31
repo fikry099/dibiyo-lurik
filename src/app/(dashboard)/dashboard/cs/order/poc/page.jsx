@@ -7,7 +7,7 @@ export default function PreOrderCustomPage() {
   return (
     <div className="w-full h-full">
       {/* Judul Utama Halaman */}
-      <h1 className="text-2xl font-bold text-[#A47352] mb-6 border-b pb-2 border-[#D4C5B9]">Pre-Order Custom</h1>
+      <h1 className="text-lg sm:text-[24px] font-medium text-black mb-6 border-b pb-2 border-[#D4C5B9]">Pre Order Custom</h1>
       
       {/* Container Utama */}
       <AddPreOrderCustomContainer />

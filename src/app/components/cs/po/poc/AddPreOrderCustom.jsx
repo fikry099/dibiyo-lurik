@@ -83,19 +83,22 @@ export default function AddPreOrderCustom() {
 
   // Aksi saat klik tombol lanjut ke pembayaran
   const handleNextPage = () => {
-    isMovingToPayment.current = true; // Set true agar datanya tidak ikut terhapus di fungsi cleanup
+    isMovingToPayment.current = true; 
     router.push("/dashboard/cs/order/poc/pembayaran");
   };
 
   return (
-    <div className="w-full mx-auto bg-[#F5EBE1] border border-[#D4C5B9] rounded-[24px] p-6 space-y-6 font-inter shadow-sm">
+    <div className="w-full mx-auto bg-[#5AE3ED1C] border rounded-lg p-6 space-y-3 font-inter shadow-sm">
       
-      {/* Header Bar internal */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <h1 className="text-md font-reguler text-[#1A335A] tracking-wide capitalize">
+          Pre Order Custom
+        </h1>
+        
         <button 
           type="button"
           onClick={() => router.back()} 
-          className="flex items-center gap-1.5 bg-[#A47352] text-white text-xs px-4 py-1.5 rounded-full font-medium transition-all hover:bg-[#8c5f3f] active:scale-[0.98]"
+          className="flex items-center gap-1.5 bg-[#1A335A] text-white text-xs px-4 py-1 rounded-full font-medium transition-all hover:bg-[#274b84] active:scale-[0.98]"
         >
           <CornerDownLeft size={14} strokeWidth={2.5} />
           <span>kembali</span>
@@ -137,8 +140,8 @@ export default function AddPreOrderCustom() {
         disabled={!isFormValid()}
         className={`w-full py-4 rounded-[12px] font-bold text-sm transition-all shadow-md 
           ${isFormValid() 
-            ? "bg-[#A47352] hover:bg-[#8c5f3f] text-white active:scale-[0.99]" 
-            : "bg-stone-300 text-stone-500 cursor-not-allowed"}`}
+            ? "bg-[#F2B600] hover:bg-[#ca9804] text-white active:scale-[0.99]" 
+            : "bg-stone-300 text-stone-600 cursor-not-allowed"}`}
       >
         Lanjut Pembayaran
       </button>

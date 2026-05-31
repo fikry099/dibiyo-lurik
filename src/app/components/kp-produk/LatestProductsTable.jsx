@@ -3,7 +3,7 @@ import React from 'react'
 export default function LatestProductsTable({ products }) {
   return (
     <div className="w-full p-3 bg-white rounded-lg sm:p-5">
-      <h3 className="inline-block pl-1 mb-4 text-base font-semibold text-black sm:text-lg">
+      <h3 className="inline-block pl-1 mb-4 text-base text-black font-reguler sm:text-lg">
         Produk Terlaris
       </h3>
       

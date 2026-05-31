@@ -41,7 +41,7 @@ export default function ProductSelectionModal({ isOpen, onClose, onAddItems }) {
           <div>
             <h2 className="text-2xl font-bold text-stone-800">Pilih Item</h2>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-stone-100"><X size={20} /></button>
+          <button onClick={onClose} className="p-2 bg-black rounded-full hover:bg-stone-500"><X size={20} /></button>
         </div>
 
         {/* Search & Filter Bar */}
@@ -109,7 +109,7 @@ export default function ProductSelectionModal({ isOpen, onClose, onAddItems }) {
         <button
           disabled={selectedProducts.length === 0}
           onClick={() => { onAddItems(selectedProducts); onClose(); }}
-          className="w-full py-4 mt-6 bg-[#8B5E3C] text-white rounded-2xl font-bold disabled:bg-stone-300"
+          className="w-full py-4 mt-6 bg-[#F2B600] text-white rounded-2xl hover:bg-[#d8a201] font-bold disabled:bg-stone-300"
         >
           Tambahkan {selectedProducts.length > 0 ? `(${selectedProducts.length})` : ""} Item
         </button>

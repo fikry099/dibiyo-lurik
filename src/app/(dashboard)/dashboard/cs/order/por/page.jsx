@@ -129,62 +129,62 @@ export default function AddPreOrderReguler() {
       </div>
 
       {/* Data Customer */}
-      <div className="relative p-6 bg-[#E3C2AC59] border shadow-sm rounded-2xl border-stone-200">
+      <div className="relative p-6 bg-[#5AE3ED1C] border shadow-sm rounded-lg">
         <button
           onClick={() => router.push("/dashboard/cs/order")}
-          className="absolute flex items-center gap-2 px-3 py-1 text-sm font-medium transition-all bg-[#A47352] border border-[#A47352] rounded-xl top-4 right-4 text-[#f7efe9] hover:bg-[#a7704bc7]"
+          className="absolute flex items-center gap-2 px-3 py-1 text-sm font-medium transition-all bg-[#1A335A] border border-[#1A335A] rounded-xl top-4 right-4 text-[#f7efe9] hover:bg-[#264982]"
         >
           <CornerDownLeft size={16} /> kembali
         </button>
         <h2 className="mb-4 font-semibold text-stone-700">Data Customer</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-stone-600">
+            <label className="text-xs font-semibold text-black">
               Nama Customer
             </label>
             <input
               placeholder="Nama Customer"
               value={customer.nama}
-              className="w-full p-2 bg-[#E3C2AC59] border rounded-lg border-[#A47352]"
+              className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A] "
               onChange={(e) =>
                 setCustomer({ ...customer, nama: e.target.value })
               }
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-stone-600">
+            <label className="text-xs font-semibold text-black">
               No Telpon
             </label>
             <input
               placeholder="No Telpon"
               value={customer.telpon}
-              className="w-full p-2 bg-[#E3C2AC59] border rounded-lg border-[#A47352]"
+              className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
               onChange={(e) =>
                 setCustomer({ ...customer, telpon: e.target.value })
               }
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-stone-600">
+            <label className="text-xs font-semibold text-black">
               Tanggal Pre-Order Reguler
             </label>
             <input
               type="date"
               value={customer.tgl}
-              className="w-full p-2 bg-[#E3C2AC59] border rounded-lg border-[#A47352]"
+              className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
               onChange={(e) =>
                 setCustomer({ ...customer, tgl: e.target.value })
               }
             />
           </div>
           <div className="col-span-1 space-y-1 md:col-span-3">
-            <label className="text-xs font-semibold text-stone-600">
+            <label className="text-xs font-semibold text-black">
               Alamat
             </label>
             <textarea
               placeholder="Alamat lengkap..."
               value={customer.alamat}
-              className="w-full h-20 p-2 bg-[#E3C2AC59] border rounded-lg border-[#A47352]"
+              className="w-full h-20 p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
               onChange={(e) =>
                 setCustomer({ ...customer, alamat: e.target.value })
               }
@@ -193,16 +193,16 @@ export default function AddPreOrderReguler() {
         </div>
         {/* Data Produk */}
 
-       <div className="p-6 bg-[#E3C2AC59] border shadow-sm rounded-2xl border-stone-200 mt-3">
+       <div className="p-6 bg-[#5AE3ED1C] border shadow-sm rounded-lg mt-3">
   <h2 className="mb-4 font-semibold text-stone-700">Data Produk</h2>
   {orderData.items.map((item, index) => ( // Pastikan menggunakan 'item'
     <div
       key={index}
-      className="relative flex flex-col md:flex-row items-center gap-4 p-4 mb-4 bg-[#E3C2AC59] border border-[#A47352] rounded-xl"
+      className="relative flex flex-col md:flex-row items-center gap-4 p-4 mb-4 bg-[#F1E9E987] border border-[#1A335A] rounded-xl"
     >
       <button
         onClick={() => removeItem(index)}
-        className="absolute transition-colors top-2 right-2 text-stone-500 hover:text-red-600"
+        className="absolute text-black transition-colors top-2 right-2 hover:text-red-600"
       >
         <X size={16} />
       </button>
@@ -217,26 +217,26 @@ export default function AddPreOrderReguler() {
         {/* Kolom 1: Gunakan item.kode_produk, dsb */}
         <div className="flex flex-col gap-2 min-w-[150px]">
           <div>
-            <p className="text-xs text-stone-500">Kode Produksi</p>
-            <p className="text-sm font-bold">{item.kode_produk}</p>
+            <p className="text-xs text-gray-500">Kode Produksi</p>
+            <p className="text-sm font-bold text-black">{item.kode_produk}</p>
           </div>
           <div>
-            <p className="text-xs text-stone-500">Kategori</p>
-            <p className="text-sm font-semibold">{item.kategori?.nama || "-"}</p>
+            <p className="text-xs text-gray-500">Kategori</p>
+            <p className="text-sm font-semibold text-black">{item.kategori?.nama || "-"}</p>
           </div>
           <div>
-            <p className="text-xs text-stone-500">Motif</p>
-            <p className="text-sm font-semibold">{item.motif?.nama || "-"}</p>
+            <p className="text-xs text-gray-500">Motif</p>
+            <p className="text-sm font-semibold text-black">{item.motif?.nama || "-"}</p>
           </div>
         </div>
 
         {/* Kolom 2: Pastikan binding input ke item, bukan product */}
-        <div className="flex flex-wrap items-center flex-1 gap-4 border-t md:border-t-0 md:border-l border-[#A47352]/20 pt-4 md:pt-0 md:pl-4">
+        <div className="flex flex-wrap items-center flex-1 gap-4 border-t md:border-t-0 md:border-l border-[#1A335A]/20 pt-4 md:pt-0 md:pl-4">
           
           <div className="w-32">
-            <p className="text-xs text-stone-500">Lebar Kain</p>
+            <p className="text-xs text-black">Lebar Kain</p>
             <select
-              className="w-full p-2 bg-[#E3C2AC59] rounded-md border-b border-[#A47352] outline-none text-sm"
+              className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm"
               value={item.lebar || ""}
               onChange={(e) => updateProductField(index, "lebar", Number(e.target.value))}
             >
@@ -248,9 +248,9 @@ export default function AddPreOrderReguler() {
           </div>
 
           <div className="w-32">
-            <p className="text-xs text-stone-500">Jenis Pewarna</p>
+            <p className="text-xs text-black">Jenis Pewarna</p>
             <select
-              className="w-full p-2 bg-[#E3C2AC59] rounded-md border-b border-[#A47352] outline-none text-sm"
+              className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm"
               value={item.jenis_pewarna || ""}
               onChange={(e) => updateProductField(index, "jenis_pewarna", e.target.value)}
               disabled={!item.lebar}
@@ -266,8 +266,8 @@ export default function AddPreOrderReguler() {
 
                   {/* Jumlah Order */}
       <div>
-        <p className="text-xs text-stone-500">Jumlah Order</p>
-        <div className="flex items-center bg-[#E3C2AC59] rounded-md border border-[#A47352] w-24">
+        <p className="text-xs text-black">Jumlah Order</p>
+        <div className="flex items-center bg-[#5AE3ED1C] text-black rounded-md border border-[#1A335A] w-24">
           <button onClick={() => updateProductField(index, "qty", Math.max(1, (item.qty || 1) - 1))} className="px-2 py-2.5">
             <Minus size={12} />
           </button>
@@ -280,22 +280,22 @@ export default function AddPreOrderReguler() {
 
       {/* Panjang (m) */}
       <div className="w-24">
-        <p className="text-xs text-stone-500">Panjang (m)</p>
+        <p className="text-xs text-black">Panjang (m)</p>
         <input
           type="number"
           value={item.panjang || ""}
-          className="w-full p-1.5 border bg-[#E3C2AC59] rounded-md border-[#A47352] text-sm"
+          className="w-full p-1.5 border bg-[#5AE3ED1C] text-black rounded-md border-[#1A335A] text-sm"
           onChange={(e) => updateProductField(index, "panjang", parseFloat(e.target.value) || 0)}
         />
       </div>
 
       {/* Total Harga */}
       <div className="flex-1 min-w-[120px]">
-        <p className="text-xs text-stone-500">Total Harga</p>
+        <p className="text-xs text-black">Total Harga</p>
         <input
           disabled
           value={`Rp ${(item.totalHargaItem || 0).toLocaleString()}`}
-          className="w-full p-2 border bg-[#E3C2AC59] rounded-md border-[#A47352] text-xs font-bold"
+          className="w-full p-2 border bg-[#5AE3ED1C] text-black rounded-md border-[#1A335A] text-xs font-bold"
         />
       </div>
                 </div>
@@ -306,7 +306,7 @@ export default function AddPreOrderReguler() {
         {/* Tombol Tambah Item */}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="w-full mt-4 py-4 border-2 border-dashed border-[#A47352]/50 rounded-xl text-[#A47352] font-semibold hover:bg-[#A47352]/10 transition-all"
+          className="w-full mt-4 py-4 border-2 border-dashed border-[#1A335A]/50 rounded-xl text-[#1A335A] font-semibold hover:bg-[#1A335A]/10 transition-all"
         >
           + Tambah Item
         </button>
@@ -320,7 +320,7 @@ export default function AddPreOrderReguler() {
 
       <button
         onClick={() => router.push("/dashboard/cs/order/por/pembayaran")}
-        className="w-full py-4 bg-[#8B5E3C] text-white rounded-xl font-bold text-lg hover:bg-[#724d31]"
+        className="w-full py-4 bg-[#F2B600] text-white rounded-xl font-bold text-lg hover:bg-[#d7a201]"
       >
         Lanjut Pembayaran
       </button>

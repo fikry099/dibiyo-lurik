@@ -6,7 +6,7 @@ export default function ProdukSearchBar({ searchQuery, setSearchQuery, onOpenFil
       <div className="relative flex-1">
         <Search className="absolute left-4 top-3 text-stone-400" size={18} />
         <input
-          className="w-full pl-11 pr-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:border-[#8B5E3C] focus:ring-1 focus:ring-[#8B5E3C] outline-none"
+          className="w-full pl-11 pr-4 py-2.5 bg-[#5AE3ED1C] border border-[#1A335A] rounded-lg text-gray-500 hover:bg-blue-50 text-sm focus:border-[#adf4f91c] focus:ring-1 focus:ring-[#adf4f91c]"
           placeholder="Cari motif atau kode..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}

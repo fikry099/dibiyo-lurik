@@ -7,61 +7,61 @@ import "react-datepicker/dist/react-datepicker.css";
 
 export default function CustomerForm({ customer, setCustomer }) {
   return (
-    <div className="bg-[#E3C2AC59] border border-[#A47352]/40 rounded-[20px] p-6 shadow-sm font-inter space-y-5">
+    <div className="bg-[#5AE3ED1C] border border-[#1A335A] rounded-lg p-6 shadow-sm font-inter space-y-5">
       
       {/* CSS Global untuk DatePicker */}
       <style jsx global>{`
         .react-datepicker-wrapper { width: 100%; }
         .react-datepicker {
-          border: 1px solid #A47352 !important;
-          background-color: #F5EBE1 !important;
+          border: 1px solid #1A335A !important;
+          background-color: #DBFDFF !important;
           font-family: inherit;
         }
         .react-datepicker__header {
-          background-color: #E3C2AC !important;
-          border-bottom: 1px solid #A47352 !important;
+          background-color: #00000069 !important;
+          border-bottom: 1px solid #1A335A !important;
         }
-        .react-datepicker__day--selected { background-color: #A47352 !important; }
+        .react-datepicker__day--selected { background-color: #FFD454B5 !important; }
         .react-datepicker__current-month, 
         .react-datepicker__day-name,
-        .react-datepicker__day { color: #A47352 !important; }
+        .react-datepicker__day { color: #000 !important; }
       `}</style>
 
       {/* Judul Sub-bab */}
-      <div className="flex items-center gap-2 text-[#A47352] font-semibold text-sm select-none">
+      <div className="flex items-center gap-2 text-sm font-semibold text-black select-none">
         <User size={18} strokeWidth={2.5} className="opacity-90" />
-        <h2 className="text-[#A47352]">Data Customer</h2>
+        <h2 className="text-black">Data Customer</h2>
       </div>
       
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 text-xs">
+      <div className="grid grid-cols-1 gap-4 text-xs md:grid-cols-3">
         
         {/* Nama Customer */}
         <div className="space-y-1.5">
-          <label className="text-[11px] text-[#A47352] font-bold tracking-wide">Nama Customer</label>
+          <label className="text-[11px] text-black font-bold tracking-wide">Nama Customer</label>
           <input 
             type="text"
             placeholder="Masukkan Nama" 
             value={customer.nama} 
-            className="w-full h-[38px] px-3 bg-[#F5EBE1]/40 border border-[#A47352] rounded-[10px] text-[#A47352] placeholder-[#A47352]/60 outline-none focus:border-[#A47352] transition-colors" 
+            className="w-full h-[38px] px-3 bg-[#F1E9E987] border border-black rounded-[10px] text-black placeholder-black/60 outline-none focus:border-black transition-colors" 
             onChange={(e) => setCustomer({ ...customer, nama: e.target.value })} 
           />
         </div>
 
         {/* No Telpon */}
         <div className="space-y-1.5">
-          <label className="text-[11px] text-[#A47352] font-bold tracking-wide">No Telpon</label>
+          <label className="text-[11px] text-black font-bold tracking-wide">No Telpon</label>
           <input 
             type="text"
             placeholder="Masukkan No Telpon" 
             value={customer.telpon} 
-            className="w-full h-[38px] px-3 bg-[#F5EBE1]/40 border border-[#A47352] rounded-[10px] text-[#A47352] placeholder-[#A47352]/60 outline-none focus:border-[#A47352] transition-colors" 
+            className="w-full h-[38px] px-3 bg-[#F1E9E987] border border-black rounded-[10px] text-black placeholder-black/60 outline-none focus:border-black transition-colors" 
             onChange={(e) => setCustomer({ ...customer, telpon: e.target.value })} 
           />
         </div>
 
         {/* Tanggal PO dengan Ikon */}
         <div className="space-y-1.5">
-          <label className="text-[11px] text-[#A47352] font-bold tracking-wide">Tanggal PO</label>
+          <label className="text-[11px] text-black font-bold tracking-wide">Tanggal PO</label>
           <div className="relative w-full">
             <DatePicker
               selected={customer.tgl ? new Date(customer.tgl) : null}
@@ -69,22 +69,22 @@ export default function CustomerForm({ customer, setCustomer }) {
               dateFormat="yyyy-MM-dd"
               placeholderText="Pilih Tanggal"
               wrapperClassName="w-full"
-              className="w-full h-[38px] px-3 bg-[#F5EBE1]/40 border border-[#A47352] rounded-[10px] text-[#A47352] font-bold outline-none focus:border-[#A47352] transition-colors cursor-pointer placeholder-[#A47352]/60"
+              className="w-full h-[38px] px-3 bg-[#F1E9E987] border border-black rounded-[10px] text-black font-bold outline-none focus:border-black transition-colors cursor-pointer placeholder-black/60"
             />
             <Calendar 
               size={14} 
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A47352] pointer-events-none" 
+              className="absolute text-black -translate-y-1/2 pointer-events-none right-3 top-1/2" 
             />
           </div>
         </div>
 
         {/* Alamat */}
         <div className="col-span-1 md:col-span-3 space-y-1.5">
-          <label className="text-[11px] text-[#A47352] font-bold tracking-wide">Alamat</label>
+          <label className="text-[11px] text-black font-bold tracking-wide">Alamat</label>
           <textarea 
             placeholder="Alamat lengkap..." 
             value={customer.alamat} 
-            className="w-full h-[60px] p-3 bg-[#F5EBE1]/40 border border-[#A47352] rounded-[10px] text-[#A47352] placeholder-[#A47352]/60 outline-none focus:border-[#A47352] transition-colors resize-none" 
+            className="w-full h-[60px] p-3 bg-[#F1E9E987] border border-black rounded-[10px] text-black placeholder-black/60 outline-none focus:border-black transition-colors resize-none" 
             onChange={(e) => setCustomer({ ...customer, alamat: e.target.value })} 
           />
         </div>

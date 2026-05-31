@@ -10,7 +10,7 @@ const generateNomorOrder = () => {
 };
 
 // =====================================================
-// GET - list orders (Tetap seperti kode lama Anda)
+// GET - list orders (BERSIH DARI KOMENTAR)
 // =====================================================
 export const GET = async (request) => {
   try {
@@ -24,10 +24,25 @@ export const GET = async (request) => {
     let query = supabaseAdmin
       .from('orders')
       .select(`
-        id, nomor_order, tanggal_order, metode_pembayaran, diskon, total_harga,
-        items:item_order(
-          jumlah_order, subtotal,
-          gulungan:gulungan_id(lebar, produk:produk_id(motif:motif_id(nama)))
+        id, 
+        nomor_order, 
+        tanggal_order, 
+        metode_pembayaran, 
+        diskon, 
+        total_harga,
+        items:item_order (
+          jumlah_order, 
+          subtotal,
+          harga_per_meter,
+          gulungan:gulungan_id (
+            lebar, 
+            produk:produk_id (
+              kode_produk,  
+              gambar_url, 
+              kategori:kategori_id ( nama ),
+              motif:motif_id ( nama )
+            )
+          )
         ),
         created_at
       `, { count: 'exact' });
@@ -45,6 +60,7 @@ export const GET = async (request) => {
       meta: { total: count, page, limit } 
     }, { status: 200 });
   } catch (err) {
+    console.error("=== API ORDERS GET ERROR ===", err);
     return NextResponse.json({ message: 'Gagal memuat orders: ' + err.message }, { status: 500 });
   }
 };

@@ -112,9 +112,14 @@ export default function CsProdukPage() {
     setIsModalOpen(true);
   };
 
-  return (
+return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-stone-800">Daftar Produk Kain</h1>
+      {/* Container judul dengan penyesuaian overflow */}
+      <div className="overflow-x-visible">
+        <h2 className="px-4 pb-2  sm:pb-5 -mx-4 text-lg sm:text-[24px] font-medium tracking-wide border-b border-gray-500 text-stone-800 sm:-mx-6 sm:px-6">
+          Daftar Produk Kain
+        </h2>
+      </div>
 
       {/* Baris Search, Filter, dan Tambah */}
       <div className="flex items-center w-full gap-3">
@@ -126,7 +131,7 @@ export default function CsProdukPage() {
           <div className="relative md:w-[280px]"> 
             <button 
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="flex items-center justify-start gap-2 w-full px-6 py-2.5 text-sm transition-colors bg-white border border-stone-200 rounded-xl text-stone-600 hover:bg-stone-50"
+              className="flex items-center justify-start gap-2 w-full px-6 py-2.5 text-sm transition-colors bg-[#5AE3ED1C] border border-[#1A335A] rounded-lg text-gray-500 hover:bg-blue-50"
             >
               <SlidersHorizontal size={16} /> <span>Filter</span>
             </button>
@@ -145,10 +150,10 @@ export default function CsProdukPage() {
 
           <Link 
             href="/dashboard/cs/order/poc"
-            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#8B5E3C] text-white rounded-xl text-sm font-medium hover:bg-[#724d31] transition-all whitespace-nowrap shrink-0"
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#1A335A] text-white rounded-lg text-sm font-medium hover:bg-[#284e86] transition-all whitespace-nowrap shrink-0"
           >
             <Plus size={18} className="text-white shrink-0" /> 
-            <span>Tambah Pre-Order Custom</span>
+            <span>Tambah Pre Order Custom</span>
           </Link>
         </div>
       </div>

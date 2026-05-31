@@ -8,16 +8,16 @@ export default function CartItem({ item, onChange, onRemove }) {
   const lebar         = item.gulungan?.lebar ?? 0;
   const panjangTotal  = item.gulungan?.panjang_total ?? 0;
   const panjangSisa   = item.gulungan?.panjang_sisa ?? 0;
-  const hargaPerMeter = item.gulungan?.harga_per_meter ?? 0; // Sesuai log JSON asli kamu
+  const hargaPerMeter = item.gulungan?.harga_per_meter ?? 0; 
 
   // Rumus total harga: Panjang yang diinput * Harga per meter
   const totalHarga = (item.input_panjang || 0) * hargaPerMeter;
 
   return (
-    <div className="bg-[#E3C2AC59] p-4 rounded-lg flex items-center gap-4 shadow-sm border border-[#E3C2AC]/20">
+    <div className="bg-[#5AE3ED]/5 p-2 rounded-lg flex items-center gap-4 shadow-sm border border-[#E3C2AC]/20">
       
       {/* Gambar Mini Status Gulungan */}
-      <div className="w-24 h-20 shrink-0 relative rounded-lg overflow-hidden border border-[#E3C2AC]/30 bg-stone-100 flex items-center justify-center">
+      <div className="w-28 h-20 shrink-0 relative rounded-lg overflow-hidden border border-[#E3C2AC]/30 bg-stone-100 flex items-center justify-center">
         <img
           src={item.gulungan?.produk?.gambar_url || '/placeholder-kain.jpg'}
           className="object-cover w-full h-full opacity-80"

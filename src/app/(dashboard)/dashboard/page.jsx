@@ -75,11 +75,11 @@ export default function DashboardPage() {
     { label: 'Produk Sedang di-Proses', value: mainData?.summary?.poSedangDiproses || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: ClipboardList },
   ]
 
-  return (
+return (
     <div className="w-full mx-auto space-y-6"> 
       
-      <header className="mb-2">
-        <h2 className="text-lg sm:text-[26px] font-medium text-black pb-2 sm:pb-3 border-b border-[#A47352]/30 tracking-wide">
+      <header className="mb-2 overflow-x-visible">
+        <h2 className="text-lg sm:text-[24px] font-medium text-black pb-2 sm:pb-5 border-b border-gray-500 tracking-wide -mx-4 px-4 sm:-mx-6 sm:px-6">
           Dashboard
         </h2>
       </header>

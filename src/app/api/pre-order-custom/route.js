@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // =====================================================
-// GET - list PO custom
+// GET - list PO custom (Fleksibel untuk Antrean & Riwayat)
 // =====================================================
 export async function GET(request) {
   try {
@@ -27,6 +27,10 @@ export async function GET(request) {
     
     const filterStatus = searchParams.get('status');
     const filterPembayaran = searchParams.get('status_pembayaran');
+    
+    // PERUBAHAN 1: Ambil parameter status_penerimaan, default ke 'belum_diambil'
+    const filterPenerimaan = searchParams.get('status_penerimaan') || 'belum_diambil';
+
     let query = supabaseAdmin
       .from('pre_order_custom')
       .select(`
@@ -38,6 +42,7 @@ export async function GET(request) {
         status, 
         metode_pembayaran, 
         status_pembayaran, 
+        status_penerimaan,
         total_dp, 
         diskon, 
         total_harga, 
@@ -53,6 +58,9 @@ export async function GET(request) {
           gambar_custom
         )
       `, { count: 'exact' });
+
+    // Terapkan filter status_penerimaan secara dinamis
+    query = query.eq('status_penerimaan', filterPenerimaan);
 
     if (filterStatus) query = query.eq('status', filterStatus);
     if (filterPembayaran) query = query.eq('status_pembayaran', filterPembayaran);
@@ -273,5 +281,44 @@ export async function POST(request) {
       message: 'Gagal: ' + err.message,
       debug_details: err 
     }, { status: 500 });
+  }
+}
+
+
+// =====================================================
+// PATCH - Konfirmasi Penerimaan Barang Custom oleh Customer
+// =====================================================
+export async function PATCH(request) {
+  try {
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID Pesanan wajib disertakan' }, { status: 400 });
+    }
+
+    // PERUBAHAN 3: Mengubah target tabel ke 'pre_order_custom'
+    const { data, error } = await supabaseAdmin
+      .from('pre_order_custom')
+      .update({ 
+        status_penerimaan: 'sudah_diambil',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Status penerimaan barang custom berhasil dikonfirmasi', 
+      data 
+    }, { status: 200 });
+
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
