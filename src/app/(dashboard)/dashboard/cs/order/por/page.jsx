@@ -84,30 +84,36 @@ export default function AddPreOrderReguler() {
     setOrderData({ ...orderData, items: newItems });
   };
 
-  // 1. Fungsi Update yang menerima index
-  const updateProductField = (index, field, value) => {
-    const newItems = [...orderData.items];
-    newItems[index] = { ...newItems[index], [field]: value };
+const updateProductField = (index, field, value) => {
+  const newItems = [...orderData.items];
+  newItems[index] = { ...newItems[index], [field]: value };
 
-    // Logika cari harga otomatis saat lebar/jenis berubah
-    if (field === "lebar" || field === "jenis_pewarna") {
-      const found = daftarHarga.find(
-        (d) =>
-          d.lebar === (field === "lebar" ? value : newItems[index].lebar) &&
-          d.jenis_pewarna ===
-            (field === "jenis_pewarna" ? value : newItems[index].jenis_pewarna),
-      );
-      newItems[index].harga = found ? parseFloat(found.harga_per_meter) : 0;
-    }
+  // Ambil motif_id dari item produk yang bersangkutan
+  const currentMotifId = newItems[index].motif_id || newItems[index].motif?.id;
 
-    // Kalkulasi total
-    newItems[index].totalHargaItem =
-      newItems[index].harga *
-      (newItems[index].panjang || 0) *
-      (newItems[index].qty || 1);
+  // Logika cari harga otomatis wajib menyertakan motif_id agar sinkron dengan API Backend
+  if (field === "lebar" || field === "jenis_pewarna") {
+    const targetLebar = field === "lebar" ? Number(value) : Number(newItems[index].lebar);
+    const targetPewarna = field === "jenis_pewarna" ? value : newItems[index].jenis_pewarna;
 
-    setOrderData({ ...orderData, items: newItems });
-  };
+    const found = daftarHarga.find(
+      (d) =>
+        Number(d.lebar) === targetLebar &&
+        d.jenis_pewarna === targetPewarna &&
+        d.motif_id === currentMotifId // <-- KUNCI DI SINI
+    );
+    
+    newItems[index].harga = found ? parseFloat(found.harga_per_meter) : 0;
+  }
+
+  // Kalkulasi total per item
+  newItems[index].totalHargaItem =
+    (newItems[index].harga || 0) *
+    (newItems[index].panjang || 0) *
+    (newItems[index].qty || 1);
+
+  setOrderData({ ...orderData, items: newItems });
+};
 
   const removeItem = (index) => {
     // Pastikan setidaknya tersisa 1 item agar tidak kosong total

@@ -1,15 +1,14 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { CornerDownLeft, ReceiptText, CalendarDays, Factory } from 'lucide-react'
+import { CornerDownLeft, ReceiptText, CalendarDays, Factory, Loader2 } from 'lucide-react'
 import Swal from 'sweetalert2'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStore } from '../../../../../../store/useOrderStore'
 
 export default function PembayaranPOR() {
   const router = useRouter()
   const { orderData, setOrderData } = useOrderStore()
-  const [isAnimating, setIsAnimating] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // State Lokal sesuai Gambar
   const [statusBayar, setStatusBayar] = useState(orderData.paymentData?.statusBayar || 'dp')
@@ -35,11 +34,8 @@ export default function PembayaranPOR() {
   const total = subTotal - (subTotal * (Number(formData.diskon) / 100));
 
   const handleSubmit = async () => {
-    Swal.fire({ 
-      title: 'Memproses...', 
-      allowOutsideClick: false, 
-      didOpen: () => Swal.showLoading() 
-    })
+    // Aktifkan state loading di button & cegah double submit
+    setIsSubmitting(true)
 
     // Transformasi item agar sesuai dengan kebutuhan API (memastikan data yang dikirim bersih)
     const itemsPayload = orderData.items.map(item => ({
@@ -70,25 +66,31 @@ export default function PembayaranPOR() {
       })
 
       if (res.ok) {
-        Swal.close()
-        setIsAnimating(true)
+        // Tampilkan feedback sukses tanpa blocking loader terpisah
+        await Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: 'Pre-Order Reguler berhasil disimpan.',
+          timer: 1500,
+          showConfirmButton: false
+        })
         
         // Reset Store
         setOrderData({ customer: { nama: "", telpon: "", tgl: "", alamat: "" }, items: [], paymentData: null })
 
-        setTimeout(() => {
-          router.push('/dashboard/cs/po/reguler')
-        }, 2000)
+        // Langsung redirect tanpa menunggu delay animasi lagi
+        router.push('/dashboard/cs/po/reguler')
       } else {
         const result = await res.json()
-        // Tambahkan log untuk melihat pesan error dari server
         console.error("Error from server:", result); 
         Swal.fire({ icon: 'error', title: 'Gagal', text: result.error || 'Terjadi kesalahan' })
+        setIsSubmitting(false)
       }
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Oops...', text: 'Terjadi kesalahan jaringan' })
+      setIsSubmitting(false)
     }
-}
+  }
 
   return (
     <div className="w-full mx-auto space-y-6">
@@ -178,85 +180,68 @@ export default function PembayaranPOR() {
             </div>
           </div>
         </div>
-      {/* Grid Estimasi & Status */}
-      <div className="grid grid-cols-1 gap-6 mt-6 md:grid-cols-2">
-        <div className="p-6 bg-[#5AE3ED1C] border shadow-sm rounded-2xl border-stone-200 space-y-4">
-          <h2 className="flex items-center gap-2 font-semibold text-stone-700">
-            <CalendarDays size={20} /> Estimasi Produk Jadi
-          </h2>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-black">Tanggal Estimasi Selesai</label>
-            <input 
-              type="date" 
-              value={formData.tgl_selesai}
-              className="w-full p-4 bg-[#FFD454B5] border rounded-xl border-[#1A335A] text-black outline-none" 
-              onChange={(e) => setFormData({...formData, tgl_selesai: e.target.value})} 
-            />
-          </div>
-        </div>
 
-        <div className="p-6 bg-[#5AE3ED1C] border shadow-sm rounded-2xl border-stone-200 space-y-4">
-          <h2 className="flex items-center gap-2 font-semibold text-stone-700">
-            <Factory size={20} /> Status Produksi
-          </h2>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-black">Status Produksi</label>
-            <div className="w-full p-4 bg-[#A63636] border rounded-xl border-[#1A335A] text-stone-200 font-medium italic">
-              Dalam Proses
+        {/* Grid Estimasi & Status */}
+        <div className="grid grid-cols-1 gap-6 mt-6 md:grid-cols-2">
+          <div className="p-6 bg-[#5AE3ED1C] border shadow-sm rounded-2xl border-stone-200 space-y-4">
+            <h2 className="flex items-center gap-2 font-semibold text-stone-700">
+              <CalendarDays size={20} /> Estimasi Produk Jadi
+            </h2>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-black">Tanggal Estimasi Selesai</label>
+              <input 
+                type="date" 
+                value={formData.tgl_selesai}
+                className="w-full p-4 bg-[#FFD454B5] border rounded-xl border-[#1A335A] text-black outline-none" 
+                onChange={(e) => setFormData({...formData, tgl_selesai: e.target.value})} 
+              />
+            </div>
+          </div>
+
+          <div className="p-6 bg-[#5AE3ED1C] border shadow-sm rounded-2xl border-stone-200 space-y-4">
+            <h2 className="flex items-center gap-2 font-semibold text-stone-700">
+              <Factory size={20} /> Status Produksi
+            </h2>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-black">Status Produksi</label>
+              <div className="w-full p-4 bg-[#A63636] border rounded-xl border-[#1A335A] text-stone-200 font-medium italic">
+                Dalam Proses
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      {/* Tambahkan bagian ini setelah Grid Estimasi & Status */}
-<div className="mt-4 space-y-1">
-  <label className="text-xs font-bold text-black">Catatan (Optional)</label>
-  <textarea 
-    placeholder="Tambahkan catatan untuk pesanan ini..."
-    value={formData.catatan}
-    className="w-full p-4 bg-[#5AE3ED1C] border rounded-xl border-[#1A335A] text-black outline-none min-h-[100px]"
-    onChange={(e) => setFormData({...formData, catatan: e.target.value})}
-  />
-</div>
+
+        {/* Catatan */}
+        <div className="mt-4 space-y-1">
+          <label className="text-xs font-bold text-black">Catatan (Optional)</label>
+          <textarea 
+            placeholder="Tambahkan catatan untuk pesanan ini..."
+            value={formData.catatan}
+            className="w-full p-4 bg-[#5AE3ED1C] border rounded-xl border-[#1A335A] text-black outline-none min-h-[100px]"
+            onChange={(e) => setFormData({...formData, catatan: e.target.value})}
+          />
+        </div>
       </div>
 
-
-      {/* Button Submit */}
+      {/* Button Submit dengan Loading Indicator internal */}
       <button 
         onClick={handleSubmit} 
-        className="w-full py-4 bg-[#F2B600] text-white rounded-xl font-bold text-lg hover:bg-[#d7a201] shadow-lg transition-all"
+        disabled={isSubmitting}
+        className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${
+          isSubmitting 
+            ? 'bg-amber-600/70 cursor-not-allowed' 
+            : 'bg-[#F2B600] hover:bg-[#d7a201]'
+        }`}
       >
-        Submit Pre Order Reguler
-      </button>
-
-      {/* Overlay Animasi Sukses (Kertas Remas) */}
-      <AnimatePresence>
-        {isAnimating && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="flex flex-col items-center justify-center w-48 h-48 overflow-hidden bg-white rounded-lg shadow-2xl"
-              initial={{ scale: 1.5, rotate: 0, borderRadius: "20%" }}
-              animate={{ 
-                scale: [1.5, 0.4, 0], 
-                rotate: [0, 180, 720],
-                x: [0, 100, 500],
-                y: [0, -100, -500],
-                borderRadius: ["20%", "50%", "50%"] 
-              }}
-              transition={{ duration: 1.8, ease: "easeInOut" }}
-            >
-              <div className="p-4 text-center">
-                <ReceiptText size={48} className="mx-auto mb-2 text-stone-400" />
-                <p className="text-sm font-bold text-stone-800">Saving Order...</p>
-              </div>
-            </motion.div>
-          </motion.div>
+        {isSubmitting ? (
+          <>
+            <Loader2 className="animate-spin" size={22} />
+            Memproses Pre Order...
+          </>
+        ) : (
+          'Submit Pre Order Reguler'
         )}
-      </AnimatePresence>
+      </button>
     </div>
   )
 }

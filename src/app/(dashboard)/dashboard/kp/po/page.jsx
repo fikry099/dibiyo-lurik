@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense } from 'react';
@@ -6,17 +5,19 @@ import ManagePOContent from '../../../../components/kp-produk/po/ManagePOContent
 
 export default function ManagePOPage() {
   return (
-    <div className="space-y-3">
+    <div className="w-full mx-auto space-y-4 text-black font-inter">
       {/* Header Utama Navigasi & Deskripsi Alur Informasi */}
-      <header className="border-b border-gray-150 pb-1">
-        <h2 className="text-2xl font-bold text-[#A47352]">Pre-Order Produk</h2>
-        <p className="text-xs text-gray-500 mt-1.5 max-w-2xl leading-relaxed">
+      <div className="relative overflow-x-visible">
+        <h2 className="text-lg sm:text-[24px] font-medium text-black pb-2 sm:pb-5 border-b border-gray-500 tracking-wide -mx-4 px-4 sm:-mx-6 sm:px-6">
+          Pre Order Produk
+        </h2>
+        <p className="max-w-2xl mt-2 text-xs leading-relaxed text-gray-500">
           Pusat Informasi Pre-Order — Kelola data pesanan reguler dan custom pelanggan Anda di sini.
         </p>
-      </header>
+      </div>
 
       {/* Komponen Utama dengan Suspense Wrapper */}
-      <Suspense fallback={<div className="p-10 text-[#A47352] font-medium">Memuat halaman...</div>}>
+      <Suspense fallback={<div className="p-10 text-[#1A335A] font-semibold animate-pulse text-center text-sm">Memuat halaman...</div>}>
         <ManagePOContent />
       </Suspense>
     </div>

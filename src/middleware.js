@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
-import supabasePublic from '@/lib/supabase-public' // Pastikan ini bisa diakses di middleware
+import supabasePublic from '@/lib/supabase-public'
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl
   const response = NextResponse.next()
 
+  // 1. Bypass asset statis Next.js & favicon (Kecuali API agar rolling session tetap jalan saat fetch data)
   if (
-    pathname.startsWith('/api/') || 
     pathname.startsWith('/_next/') || 
     pathname.startsWith('/favicon.ico')
   ) {
@@ -18,22 +18,26 @@ export async function middleware(request) {
   const userRole = request.cookies.get('user-role')?.value?.toLowerCase()
 
   const isAuthPage = pathname.startsWith('/auth')
-  const isDashboardPage = pathname.startsWith('/dashboard') || pathname.startsWith('/kepala-produksi')
+  
+  // Perluas jangkauan deteksi halaman terproteksi sesuai konfigurasi matcher Anda
+  const isDashboardPage = 
+    pathname.startsWith('/dashboard') || 
+    pathname.startsWith('/kp') ||
+    pathname.startsWith('/cs') ||
+    pathname.startsWith('/owner')
 
   // --- LOGIKA ROLLING SESSION & AUTO REFRESH ---
   if (hasToken) {
-    // Jika masih bergerak di sistem, perpanjang umur cookie access token ke 5 menit lagi
     const currentAccessToken = request.cookies.get('sb-access-token').value
     response.cookies.set('sb-access-token', currentAccessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 300, // Reset kembali ke 5 menit
+      maxAge: 300, // Reset kembali ke 5 menit tiap kali ada aktivitas/fetch
     })
   } else if (!hasToken && refreshToken) {
     try {
-      // Jika access token habis tapi masih aktif bergerak, perbarui sesi pakai refresh token
       const { data, error } = await supabasePublic.auth.setSession({
         access_token: '',
         refresh_token: refreshToken
@@ -61,15 +65,22 @@ export async function middleware(request) {
     }
   }
 
-  // KONDISI 1: User sudah login tapi memaksa ke halaman login -> Lempar ke dashboard
-  if (hasToken && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // JIKA REQUEST ADALAH ROUTE API, KEMBALIKAN RESPONSE DENGAN COOKIE TERBARU
+  if (pathname.startsWith('/api/')) {
+    return response;
   }
 
-  // KONDISI 2: User BELUM login tapi memaksa masuk ke dashboard -> Lempar ke login
+  // KONDISI 1: User sudah login dipaksa ke login -> Lempar ke dashboard
+  if (hasToken && isAuthPage) {
+    const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
+    // FIX: Gunakan .getAll() sebelum .forEach()
+    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie.name, cookie.value))
+    return redirectResponse
+  }
+
+  // KONDISI 2: User BELUM login memaksa masuk ke dashboard -> Lempar ke login
   if (!hasToken && isDashboardPage) {
     const loginRedirect = NextResponse.redirect(new URL('/auth/login', request.url))
-    // Hapus sisa cookie lama jika ada kebocoran
     loginRedirect.cookies.delete('sb-access-token')
     loginRedirect.cookies.delete('sb-refresh-token')
     loginRedirect.cookies.delete('user-role')
@@ -78,33 +89,43 @@ export async function middleware(request) {
 
   // KONDISI 3: Role-Based Access Control
   if (hasToken) {
+    let targetURL = null
     if (userRole === 'customer_service') {
-      if (pathname.startsWith('/dashboard/kepala-produksi') || pathname.startsWith('/dashboard/owner')) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
+      if (pathname.startsWith('/dashboard/kp') || pathname.startsWith('/dashboard/owner')) {
+        targetURL = '/dashboard'
       }
     }
-    if (userRole === 'kepala-produksi' || userRole === 'kepala_produksi') {
+    if (userRole === 'kepala_produksi') {
       if (pathname.startsWith('/dashboard/cs') || pathname.startsWith('/dashboard/owner')) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
+        targetURL = '/dashboard'
       }
     }
     if (userRole === 'owner') {
-      if (pathname.startsWith('/dashboard/cs') || pathname.startsWith('/dashboard/kepala-produksi')) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
+      if (pathname.startsWith('/dashboard/cs') || pathname.startsWith('/dashboard/kp')) {
+        targetURL = '/dashboard'
       }
+    }
+
+    if (targetURL) {
+      const roleRedirect = NextResponse.redirect(new URL(targetURL, request.url))
+      // FIX: Gunakan .getAll() sebelum .forEach()
+      response.cookies.getAll().forEach((cookie) => roleRedirect.cookies.set(cookie.name, cookie.value))
+      return roleRedirect
     }
   }
 
   // KONDISI 4: Penanganan halaman root murni (/)
   if (pathname === '/') {
-    if (hasToken) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    } else {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
-    }
+    const rootRedirect = hasToken 
+      ? NextResponse.redirect(new URL('/dashboard', request.url))
+      : NextResponse.redirect(new URL('/auth/login', request.url))
+    
+    // FIX: Gunakan .getAll() sebelum .forEach()
+    response.cookies.getAll().forEach((cookie) => rootRedirect.cookies.set(cookie.name, cookie.value))
+    return rootRedirect
   }
 
-  return response
+  return response;
 }
 
 export const config = {
@@ -115,5 +136,6 @@ export const config = {
     '/kp/:path*',
     '/cs/:path*',
     '/owner/:path*',
+    '/api/:path*' 
   ],
 }

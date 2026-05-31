@@ -20,8 +20,8 @@ export default function ManagePOContent() {
   const [status, setStatus] = useState('');
   const [statusPembayaran, setStatusPembayaran] = useState('');
 
-  const fetchPOData = () => {
-    setLoading(true);
+  const fetchPOData = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     
     // 1. Tentukan path endpoint berdasarkan tipe dokumen
     const apiPath = tipe === 'reguler' ? '/api/pre-order-reguler' : '/api/pre-order-custom';
@@ -33,22 +33,28 @@ export default function ManagePOContent() {
 
     const url = `${apiPath}?${queryParams.join('&')}`;
 
-    fetch(url)
-      .then(res => res.json())
-      .then(res => {
-        setData(res.data || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+    try {
+      const res = await fetch(url);
+      const resJson = await res.json();
+      setData(resJson.data || []);
+    } catch (err) {
+      console.error(err);
+      setData([]);
+    } finally {
+      if (isInitial) setLoading(false);
+    }
   };
 
   // Trigger fetch ulang setiap kali tipe halaman, filter status, atau filter bayar berubah
   useEffect(() => {
-    fetchPOData();
+    fetchPOData(true);
   }, [tipe, status, statusPembayaran]);
+
+  // Fungsi callback pasca penghapusan sukses (Optimistic Update)
+  const handleDeleteSuccess = (deletedId) => {
+    setData((prevData) => prevData.filter(item => item.id !== deletedId));
+    fetchPOData(false); // Refetch data terbaru di background tanpa nunggu skeleton
+  };
 
   // Pencarian lokal berbasis nama customer
   const filteredData = Array.isArray(data) 
@@ -57,8 +63,8 @@ export default function ManagePOContent() {
 
   return (
     <>
-      <div className="border border-[#D4C5B9] font-inter shadow-sm bg-white rounded-lg overflow-hidden">
-        {/* Sub-Komponen Filter dengan State Props Baru */}
+      <div className="overflow-hidden bg-white border rounded-lg shadow-sm border-stone-200 font-inter">
+        {/* Sub-Komponen Filter */}
         <POFilter 
           search={search} 
           setSearch={setSearch} 
@@ -70,7 +76,13 @@ export default function ManagePOContent() {
         />
 
         {/* Sub-Komponen Tabel */}
-        <POTable data={filteredData} loading={loading} setSelectedItem={setSelectedItem} />
+        <POTable 
+          data={filteredData} 
+          loading={loading} 
+          setSelectedItem={setSelectedItem} 
+          onDeleteSuccess={handleDeleteSuccess}
+          tipe={tipe}
+        />
       </div>
 
       {/* Modal Detail */}
@@ -79,7 +91,7 @@ export default function ManagePOContent() {
           item={selectedItem}
           tipe={tipe}
           onClose={() => setSelectedItem(null)}
-          onRefresh={fetchPOData}
+          onRefresh={() => fetchPOData(false)}
         />
       )}
     </>

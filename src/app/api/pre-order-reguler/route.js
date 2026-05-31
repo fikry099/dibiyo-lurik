@@ -10,15 +10,19 @@ function localCalculateItemSubtotal(panjang, jumlah, hargaPerMeter) {
   return Number(panjang || 0) * Number(jumlah || 0) * Number(hargaPerMeter || 0);
 }
 
-// 2. Mencari harga per meter berdasarkan jenis pewarna, motif, dan lebar data
+// 2. TENTUKAN HARGA BERDASARKAN JENIS PEWARNA, MOTIF_ID, DAN LEBAR
 async function localLookupHargaPerMeter(jenisPewarna, motifId, lebar) {
-  const { data: hargaData } = await supabaseAdmin
-    .from('master_harga_reguler')
+  const { data: hargaData, error } = await supabaseAdmin
+    .from('daftar_harga') // <-- UBAH DARI 'master_harga_reguler' MENJADI 'daftar_harga'
     .select('harga_per_meter')
     .eq('jenis_pewarna', jenisPewarna)
-    .eq('motif_id', motifId)
-    .eq('lebar', lebar)
+    .eq('motif_id', motifId) // <-- SEKARANG FILTER BERDASARKAN MOTIF_ID JUGA
+    .eq('lebar', Number(lebar))
     .maybeSingle();
+
+  if (error) {
+    console.error("Error saat lookup daftar_harga:", error.message);
+  }
 
   return hargaData ? Number(hargaData.harga_per_meter) : 0;
 }
@@ -42,7 +46,10 @@ async function localRecalculateTotalPOR(poId) {
     .single();
 
   const diskon = header ? Number(header.diskon || 0) : 0;
-  const totalHarga = Math.max(0, sumItems - diskon);
+  
+  // Jika diskon berupa persen (misal 10%), rumusnya: sumItems - (sumItems * (diskon / 100))
+  // Jika diskon Anda berupa nominal rupiah langsung, gunakan: sumItems - diskon
+  const totalHarga = Math.max(0, sumItems - (sumItems * (diskon / 100)));
 
   // Update kembali header-nya
   await supabaseAdmin
@@ -50,7 +57,6 @@ async function localRecalculateTotalPOR(poId) {
     .update({ total_harga: totalHarga })
     .eq('id', poId);
 }
-
 // =====================================================
 // GET - list PO reguler (Fleksibel untuk Antrean & Riwayat)
 // =====================================================

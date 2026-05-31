@@ -18,10 +18,11 @@ export default function DashboardLayout({ children }) {
     return () => window.removeEventListener("sidebarToggle", handleSidebarToggle)
   }, [])
 
-  // --- DETEKSI IDLE 1 MENIT (UNTUK TESTING) ---
+  // --- DETEKSI IDLE ---
   useEffect(() => {
     let idleTimer;
-    const IDLE_TIMEOUT = 10 * 60 * 1000;
+    const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 Menit
+    let lastActivity = Date.now();
 
     const triggerLogout = async () => {
       NProgress.start()
@@ -30,35 +31,34 @@ export default function DashboardLayout({ children }) {
         if (res.ok) {
           router.replace('/auth/login')
           router.refresh()
-        } else {
         }
       } catch (error) {
+        console.error("Logout error:", error)
       } finally {
         NProgress.done()
       }
     }
 
-    const resetIdleTimer = (e) => {
-      if (e) {
-         } else {
-      }
+    const resetIdleTimer = () => {
+      // Jeda 1 detik untuk optimasi performa DOM event listener
+      if (Date.now() - lastActivity < 1000) return;
+      lastActivity = Date.now();
 
-      clearTimeout(idleTimer)
-      // Set ulang timer ke 1 menit ke depan
-      idleTimer = setTimeout(triggerLogout, IDLE_TIMEOUT)
-    }
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(triggerLogout, IDLE_TIMEOUT);
+    };
 
-    // Event listener yang menandakan user "aktif bergerak"
     const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart']
+    
     activityEvents.forEach((event) => {
-      window.addEventListener(event, resetIdleTimer)
+      window.addEventListener(event, resetIdleTimer, { passive: true })
     })
 
-    resetIdleTimer()
+    // Inisialisasi timer pertama saat halaman dimuat
+    idleTimer = setTimeout(triggerLogout, IDLE_TIMEOUT);
 
-    // Clean up event listener saat unmount
     return () => {
-      clearTimeout(idleTimer)
+      if (idleTimer) clearTimeout(idleTimer)
       activityEvents.forEach((event) => {
         window.removeEventListener(event, resetIdleTimer)
       })
@@ -67,7 +67,8 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      <Suspense fallback={<div className="w-64 bg-[#8B5E3C] min-h-screen animate-pulse" />}>
+      {/* Ubah warna fallback pulse ke Navy #1A335A sesuai tema baru */}
+      <Suspense fallback={<div className="w-64 bg-[#1A335A] min-h-screen animate-pulse" />}>
         <Sidebar />
       </Suspense>
 
@@ -77,4 +78,3 @@ export default function DashboardLayout({ children }) {
     </div>
   )
 }
-
