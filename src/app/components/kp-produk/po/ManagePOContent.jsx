@@ -16,17 +16,17 @@ export default function ManagePOContent() {
   const [search, setSearch] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
 
-  // State Filter Baru untuk Sinkronisasi ke API Backend
+  // State Filter untuk Sinkronisasi ke API Backend
   const [status, setStatus] = useState('');
   const [statusPembayaran, setStatusPembayaran] = useState('');
 
   const fetchPOData = async (isInitial = false) => {
     if (isInitial) setLoading(true);
     
-    // 1. Tentukan path endpoint berdasarkan tipe dokumen
+    // Tentukan path endpoint berdasarkan tipe dokumen
     const apiPath = tipe === 'reguler' ? '/api/pre-order-reguler' : '/api/pre-order-custom';
     
-    // 2. Susun query params sesuai kebutuhan route backend
+    // Susun query params sesuai kebutuhan route backend
     let queryParams = [`page=1`, `limit=50`];
     if (status) queryParams.push(`status=${status}`);
     if (statusPembayaran) queryParams.push(`status_pembayaran=${statusPembayaran}`);
@@ -64,6 +64,7 @@ export default function ManagePOContent() {
   return (
     <>
       <div className="overflow-hidden bg-white border rounded-lg shadow-sm border-stone-200 font-inter">
+
         {/* Sub-Komponen Filter */}
         <POFilter 
           search={search} 

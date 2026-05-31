@@ -68,11 +68,23 @@ export default function POTable({ data, loading, setSelectedItem, onDeleteSucces
         if (onDeleteSuccess) onDeleteSuccess(item.id);
       }
     });
+
+  };
+
+  // Helper warna untuk Status Pembayaran (Dibuat dinamis agar lebih informatif)
+  const getPaymentStatusColor = (statusPembayaran) => {
+    switch(statusPembayaran?.toLowerCase()) {
+      case 'belum_bayar': return 'bg-red-500';
+      case 'dp': return 'bg-orange-400';
+      case 'lunas': return 'bg-green-600';
+      default: return 'bg-[#8B5E3C]';
+    }
   };
 
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full text-center border-collapse text-[11px] font-inter">
+
+    <div className="w-full overflow-x-auto bg-white border-t border-[#E0D3C9] rounded-b-lg overflow-hidden">
+      <table className="w-full text-left border-collapse min-w-[900px]">
         <thead>
           <tr className="bg-[#1A335A] text-white text-xs font-bold">
             <th className="px-3 py-3 font-bold rounded-l-md">No.</th>
@@ -124,10 +136,12 @@ export default function POTable({ data, loading, setSelectedItem, onDeleteSucces
                     
                     {/* BUTTON EYE DETAIL */}
                     <button 
+                      type="button"
                       onClick={() => setSelectedItem(item)}
                       className="bg-[#F2B600] hover:bg-[#d4a001] text-white p-2.5 rounded-md shadow-sm transition-colors"
                       title="Lihat Detail"
                     >
+
                       <Eye size={13} strokeWidth={2.5} />
                     </button>
 
