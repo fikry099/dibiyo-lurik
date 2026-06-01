@@ -1,110 +1,220 @@
-// // /api/pre-order-custom/[id]
-// // GET   — detail POC lengkap (semua role)
-// // PATCH — update field umum (CS only)
-// // DELETE — hapus POC (CS only)
-// //
-// // Note: update STATUS pakai dedicated endpoints:
-// //   POST /[id]/start-produksi   → sedang_diproses
-// //   POST /[id]/finish-produksi  → selesai_diproses
-// //   POST /[id]/mark-paid        → status_pembayaran lunas
+import { NextResponse } from 'next/server';
+import supabaseAdmin from '@/lib/supabase-admin';
 
-// import { withAuth } from '@/lib/api-helper'
-// import {
-//   successResponse,
-//   errorResponse,
-//   notFoundResponse,
-//   forbiddenResponse,
-// } from '@/lib/response-helper'
-// import { safeParseBody } from '@/lib/validation'
-// import supabaseAdmin from '@/lib/supabase-admin'
+// =====================================================
+// GET - Detail Pre-Order Custom (POC) Beserta Items
+// =====================================================
+export async function GET(request, { params }) {
+  try {
+    const { id } = await params;
+    if (!id) {
+      return NextResponse.json({ message: 'ID wajib diisi' }, { status: 400 });
+    }
 
-// // =====================================================
-// // GET - detail POC dengan items custom specs
-// // =====================================================
-// export const GET = withAuth(async ({ params }) => {
-//   const { id } = await params
-//   if (!id) return errorResponse('ID wajib diisi', 400)
+    const { data, error } = await supabaseAdmin
+      .from('pre_order_custom')
+      .select(`
+        id, 
+        nama_customer, 
+        kontak_customer, 
+        alamat_customer,
+        tanggal_selesai, 
+        status, 
+        metode_pembayaran, 
+        status_pembayaran, 
+        status_penerimaan,
+        total_dp, 
+        diskon, 
+        total_harga, 
+        catatan,
+        created_at,
+        updated_at,
+        item_pre_order_custom (
+          id,
+          lebar,
+          jenis_pewarna,
+          panjang,
+          jumlah,
+          harga_per_meter,
+          subtotal,
+          gambar_custom
+        )
+      `)
+      .eq('id', id)
+      .single();
 
-//   const { data, error } = await supabaseAdmin
-//     .from('pre_order_custom')
-//     .select(`
-//       id, nama_customer, no_telpon, alamat,
-//       tanggal_po, tanggal_estimasi,
-//       status_produksi, status_pembayaran,
-//       nominal_dp, diskon, total_harga, metode_pembayaran,
-//       created_at, updated_at,
-//       item_pre_order_custom(
-//         id, motif, lebar, warna, jumlah,
-//         panjang_kain, harga_per_meter, keterangan
-//       )
-//     `)
-//     .eq('id', id)
-//     .single()
+    if (error || !data) {
+      return NextResponse.json({ message: 'Pre-Order Custom tidak ditemukan' }, { status: 404 });
+    }
 
-//   if (error || !data) return notFoundResponse('Pre-order custom tidak ditemukan')
+    return NextResponse.json({ data }, { status: 200 });
 
-//   return successResponse(data)
-// })
+  } catch (err) {
+    return NextResponse.json({ message: err.message }, { status: 500 });
+  }
+}
 
-// // =====================================================
-// // PATCH - update field umum POC (CS only)
-// // =====================================================
-// export const PATCH = withAuth(async ({ request, params, profile }) => {
-//   const { id } = await params
-//   if (!id) return errorResponse('ID wajib diisi', 400)
+// =====================================================
+// PATCH - Update Field Umum & Sinkronisasi Items POC
+// =====================================================
+export async function PATCH(request, { params }) {
+  try {
+    const { id } = await params;
+    if (!id) {
+      return NextResponse.json({ message: 'ID wajib diisi' }, { status: 400 });
+    }
 
-//   if (profile?.role !== 'customer_service') {
-//     return forbiddenResponse('Hanya Customer Service yang bisa edit pre-order')
-//   }
+    const body = await request.json();
+    
+    // 1. Ekstrak data untuk tabel induk (STATUS DIHAPUS DARI CONTROL CS)
+    const allowedFields = [
+      'nama_customer', 
+      'kontak_customer', 
+      'alamat_customer', 
+      'tanggal_selesai', 
+      'metode_pembayaran', 
+      'status_pembayaran', 
+      // 'status', <-- Dihapus total agar status produksi tidak ter-overwrite secara sengaja/tidak sengaja
+      'total_dp', 
+      'diskon', 
+      'total_harga', 
+      'catatan'
+    ];
 
-//   const body = await safeParseBody(request)
-//   if (!body) return errorResponse('Body harus JSON valid', 400)
+    const updateData = {};
+    
+    for (const key of allowedFields) {
+      if (body[key] !== undefined) {
+        if (key === 'nama_customer' && typeof body[key] === 'string') {
+          updateData[key] = body[key].trim();
+        } else if (['metode_pembayaran', 'status_pembayaran'].includes(key) && body[key] !== null) {
+          updateData[key] = body[key].toString().toLowerCase();
+        } else if (['total_dp', 'diskon', 'total_harga'].includes(key)) {
+          updateData[key] = Number(body[key] || 0);
+        } else {
+          updateData[key] = body[key];
+        }
+      }
+    }
 
-//   const allowed = [
-//     'nama_customer', 'no_telpon', 'alamat',
-//     'tanggal_estimasi', 'nominal_dp', 'diskon',
-//     'metode_pembayaran', 'total_harga',
-//   ]
+    updateData.updated_at = new Date().toISOString();
 
-//   const updateData = {}
-//   for (const key of allowed) {
-//     if (body[key] !== undefined) updateData[key] = body[key]
-//   }
+    // Jalankan update data induk
+    const { error: poError } = await supabaseAdmin
+      .from('pre_order_custom')
+      .update(updateData)
+      .eq('id', id);
 
-//   if (Object.keys(updateData).length === 0) {
-//     return errorResponse('Tidak ada field yang diupdate', 400)
-//   }
+    if (poError) throw poError;
 
-//   const { data, error } = await supabaseAdmin
-//     .from('pre_order_custom')
-//     .update(updateData)
-//     .eq('id', id)
-//     .select('id, nama_customer, status_produksi, status_pembayaran')
-//     .single()
+    // 2. PROSES SINKRONISASI ITEMS
+    if (body.items && Array.isArray(body.items)) {
+      
+      const { data: currentDbItems, error: fetchItemsError } = await supabaseAdmin
+        .from('item_pre_order_custom')
+        .select('id')
+        .eq('pre_order_custom_id', id);
 
-//   if (error) return errorResponse('Gagal update: ' + error.message, 500)
-//   if (!data) return notFoundResponse('Pre-order custom tidak ditemukan')
+      if (fetchItemsError) throw fetchItemsError;
 
-//   return successResponse(data, 'Pre-order custom berhasil diupdate')
-// })
+      // Filter Item terhapus
+      const incomingIds = body.items.filter(i => i.id).map(i => i.id);
+      const idsToDelete = currentDbItems
+        .filter(dbItem => !incomingIds.includes(dbItem.id))
+        .map(dbItem => dbItem.id);
 
-// // =====================================================
-// // DELETE - hapus POC (CS only)
-// // =====================================================
-// export const DELETE = withAuth(async ({ params, profile }) => {
-//   const { id } = await params
-//   if (!id) return errorResponse('ID wajib diisi', 400)
+      if (idsToDelete.length > 0) {
+        const { error: deleteError } = await supabaseAdmin
+          .from('item_pre_order_custom')
+          .delete()
+          .in('id', idsToDelete);
+          
+        if (deleteError) throw deleteError;
+      }
 
-//   if (profile?.role !== 'customer_service') {
-//     return forbiddenResponse('Hanya Customer Service yang bisa hapus pre-order')
-//   }
+      // Pisahkan Data Baru (Insert) & Data Lama (Update) untuk menjamin struktur key JSON seragam
+      const itemsToInsert = [];
+      const itemsToUpdate = [];
 
-//   const { error } = await supabaseAdmin
-//     .from('pre_order_custom')
-//     .delete()
-//     .eq('id', id)
+      body.items.forEach(item => {
+        const payload = {
+          pre_order_custom_id: id,
+          lebar: Number(item.lebar),
+          jenis_pewarna: item.jenis_pewarna || null,
+          panjang: Number(item.panjang),
+          jumlah: Number(item.jumlah),
+          harga_per_meter: Number(item.harga_per_meter),
+          subtotal: Number(item.subtotal),
+          gambar_custom: item.gambar_custom || null,
+        };
 
-//   if (error) return errorResponse('Gagal hapus: ' + error.message, 500)
+        if (item.id) {
+          payload.id = item.id;
+          itemsToUpdate.push(payload);
+        } else {
+          itemsToInsert.push(payload);
+        }
+      });
 
-//   return successResponse(null, 'Pre-order custom berhasil dihapus')
-// })
+      // Eksekusi Insert untuk item-item baru
+      if (itemsToInsert.length > 0) {
+        const { error: insertError } = await supabaseAdmin
+          .from('item_pre_order_custom')
+          .insert(itemsToInsert);
+
+        if (insertError) throw insertError;
+      }
+
+      // Eksekusi Upsert untuk meng-update item-item lama yang diubah
+      if (itemsToUpdate.length > 0) {
+        const { error: upsertError } = await supabaseAdmin
+          .from('item_pre_order_custom')
+          .upsert(itemsToUpdate);
+
+        if (upsertError) throw upsertError;
+      }
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Pre-Order Custom beserta item spesifikasinya berhasil diperbarui', 
+    }, { status: 200 });
+
+  } catch (err) {
+    return NextResponse.json({ message: 'Gagal update: ' + err.message }, { status: 500 });
+  }
+}
+
+// =====================================================
+// DELETE - Hapus Data Pre-Order Custom Beserta Items-nya
+// =====================================================
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = await params;
+    if (!id) {
+      return NextResponse.json({ message: 'ID wajib diisi' }, { status: 400 });
+    }
+
+    const { error: itemsError } = await supabaseAdmin
+      .from('item_pre_order_custom')
+      .delete()
+      .eq('pre_order_custom_id', id);
+
+    if (itemsError) throw itemsError;
+
+    const { error: poError } = await supabaseAdmin
+      .from('pre_order_custom')
+      .delete()
+      .eq('id', id);
+
+    if (poError) throw poError;
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Pre-Order Custom beserta seluruh item spesifikasinya berhasil dihapus' 
+    }, { status: 200 });
+
+  } catch (err) {
+    return NextResponse.json({ message: 'Gagal hapus: ' + err.message }, { status: 500 });
+  }
+}

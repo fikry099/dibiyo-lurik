@@ -173,6 +173,7 @@ export default function PreOrderCustomPage() {
           <POCustomTable 
             data={filteredData} 
             onConfirmReceipt={handleConfirmReceiptSuccess} 
+            onSuccess={() => fetchData(false)}
           />
         )}
       </div>
