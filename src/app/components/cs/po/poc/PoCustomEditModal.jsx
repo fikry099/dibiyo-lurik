@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { X, User, Box, CreditCard, Calendar, Upload, Plus, Trash2, Minus } from "lucide-react";
+import { X, User, Box, CreditCard, Calendar, Upload, Plus, Trash2, Minus, ChevronDown } from "lucide-react";
 import Swal from "sweetalert2";
 import { supabase } from "@/lib/supabaseClient";
+
+// Import react-datepicker dan styles-nya
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // =====================================================
 // KONSTANTA STYLE
@@ -12,7 +16,6 @@ const LABEL = "block text-black font-medium mb-1";
 const INPUT_CYAN = "w-full border border-[#1A335A] bg-[#5AE3ED1C] rounded-lg p-2 focus:outline-none";
 const INPUT_WHITE = "w-full border border-[#1A335A] rounded-lg bg-white p-1.5 focus:outline-none";
 
-// Helper format ribuan
 const formatRibuan = (val) => (Number(String(val).replace(/\D/g, "")) || 0).toLocaleString("id-ID");
 const parseRibuan = (str) => Number(String(str).replace(/\D/g, "")) || 0;
 
@@ -38,6 +41,12 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
   const [produksi, setProduksi] = useState({ tanggal_selesai: "", status: "dalam_proses", catatan: "" });
   const [hargaLamaDariDb, setHargaLamaDariDb] = useState(0);
 
+  // --- STATE TRACKING UNTUK AUTOFILL ---
+  const [lastTotalHarga, setLastTotalHarga] = useState(0);
+  const [lastStatus, setLastStatus] = useState("");
+  const [lastHasNewItems, setLastHasNewItems] = useState(false);
+
+  // --- HOOK 11: Ambil master harga ---
   useEffect(() => {
     if (isOpen) {
       fetch("/api/daftar-harga")
@@ -47,6 +56,7 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
     }
   }, [isOpen]);
 
+  // --- HOOK 12: Set data awal saat modal dibuka ---
   useEffect(() => {
     if (!isOpen || !item) return;
 
@@ -87,10 +97,13 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
       status: item.status || "dalam_proses",
       catatan: item.catatan || "",
     });
+
+    setLastTotalHarga(0);
+    setLastStatus("");
+    setLastHasNewItems(false);
   }, [isOpen, item]);
 
-  if (!isOpen) return null;
-
+  // --- KALKULASI DERIVED VALUES ---
   const hitungSubtotalItem = (it) =>
     Number(it.harga_per_meter || 0) * Number(it.panjang || 0) * Number(it.qty || 1);
 
@@ -101,14 +114,72 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
 
   const isLunas = pembayaran.status_pembayaran === "lunas";
   const isOriginallyLunas = item?.status_pembayaran?.toLowerCase() === "lunas";
+  const isOriginallyDp = item?.status_pembayaran?.toLowerCase() === "dp";
   const hasNewItems = items.some((i) => !i.isFromDb);
+  const isDpLocked = isOriginallyDp && !hasNewItems;
   const showSimpleLunasView = isOriginallyLunas && !hasNewItems;
-  const kekurangan = Math.max(0, totalHargaAkhir - hargaLamaDariDb);
+  
+  // Kekurangan dihitung dinamis dari total akhir dikurangi nominal yang sudah masuk/tercatat
+  const kekurangan = Math.max(0, totalHargaAkhir - pembayaran.total_dp);
+  const nominalPelunasanBaru = Math.max(0, totalHargaAkhir - hargaLamaDariDb);
 
   const isDpInvalid =
     pembayaran.status_pembayaran === "dp" &&
     (pembayaran.total_dp < minDpRequired || pembayaran.total_dp > totalHargaAkhir);
 
+  // --- HOOK 13: LOGIKA UTAMA RE-CALCULATE, AUTOFILL & RESET ---
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // KONDISI 1: JIKA ASLINYA LUNAS + USER MENAMBAHKAN ITEM BARU
+    if (isOriginallyLunas && hasNewItems && !lastHasNewItems) {
+      setPembayaran({
+        status_pembayaran: "dp", 
+        total_dp: hargaLamaDariDb, 
+        metode_pembayaran: item?.metode_pembayaran?.toLowerCase() || "cash",
+        diskon: 0, 
+      });
+      setLastHasNewItems(true);
+      setLastStatus("dp");
+      setLastTotalHarga(totalHargaAkhir);
+      return;
+    }
+
+    // KONDISI 2: JIKA USER MENGUBAH STATUS PEMBAYARAN MANUALLY ATAU KONDISI BAYAR BERUBAH
+    if (pembayaran.status_pembayaran !== lastStatus && lastStatus !== "") {
+      const nextStatus = pembayaran.status_pembayaran;
+      setPembayaran((prev) => ({
+        ...prev,
+        diskon: 0, 
+        total_dp: nextStatus === "lunas" 
+          ? totalHargaAkhir 
+          : (isOriginallyLunas ? hargaLamaDariDb : Math.ceil(totalHargaAkhir * 0.3)),
+      }));
+      setLastStatus(nextStatus);
+      setLastTotalHarga(totalHargaAkhir);
+      return;
+    }
+
+    // KONDISI 3: JIKA DATA HARGA TOTAL BERUBAH (QTY, PANJANG, DLL)
+    if (totalHargaAkhir !== lastTotalHarga) {
+      setLastTotalHarga(totalHargaAkhir);
+      if (pembayaran.status_pembayaran === "lunas") {
+        setPembayaran((prev) => ({ ...prev, total_dp: totalHargaAkhir }));
+      } else if (pembayaran.status_pembayaran === "dp") {
+        if (isOriginallyDp && !hasNewItems) {
+          // Tetap gunakan nominal awal
+        } else if (isOriginallyLunas && hasNewItems) {
+          // Tetap kunci di angka pembayaran riil pertama dari DB
+        } else {
+          setPembayaran((prev) => ({ ...prev, total_dp: Math.ceil(totalHargaAkhir * 0.3) }));
+        }
+      }
+    }
+  }, [isOpen, totalHargaAkhir, pembayaran.status_pembayaran, hasNewItems, isOriginallyLunas, isOriginallyDp, hargaLamaDariDb, item, lastTotalHarga, lastStatus, lastHasNewItems]);
+
+  if (!isOpen) return null;
+
+  // --- EVENT HANDLERS ---
   const updateItem = (id, field, value) => {
     setItems((prev) =>
       prev.map((prodItem) => {
@@ -146,7 +217,6 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
     if (!customer.nama_customer) return Swal.fire("Peringatan", "Nama customer wajib diisi!", "warning");
     if (totalHargaAkhir <= 0) return Swal.fire("Peringatan", "Total harga harus lebih dari Rp 0.", "warning");
 
-    // VALIDASI INTEGRITAS DATA SESUAI CONSTRAINT POSTGRESQL
     for (let i = 0; i < items.length; i++) {
       const n = i + 1;
       const lebarNum = Number(items[i].lebar);
@@ -213,12 +283,63 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
 
   return (
     <div className="fixed inset-0 bg-[#1A335A]/48 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 font-inter">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto">
+      
+      {/* STYLE INJECTION UNTUK SCROLLBAR DAN REACT-DATEPICKER THEME */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #1A335A transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #1A335A;
+          border-radius: 10px;
+        }
+        .react-datepicker-wrapper { width: 100% !important; }
+        .react-datepicker {
+          font-family: 'Inter', sans-serif !important;
+          border: 1px solid #1A335A !important;
+          border-radius: 10px !important;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+          overflow: hidden;
+        }
+        .react-datepicker__header {
+          background-color: #1A335A !important;
+          border-bottom: 1px solid #1A335A !important;
+          padding: 8px 0 !important;
+        }
+        .react-datepicker__current-month, 
+        .react-datepicker__day-name {
+          color: white !important;
+          font-weight: 700 !important;
+        }
+        .react-datepicker__day-name { color: rgba(255,255,255,0.7) !important; }
+        .react-datepicker__navigation-icon::before { border-color: white !important; }
+        .react-datepicker__day--selected, 
+        .react-datepicker__day--keyboard-selected {
+          background-color: #f2b600 !important;
+          color: white !important;
+          font-weight: bold !important;
+          border-radius: 6px !important;
+        }
+        .react-datepicker__day:hover {
+          background-color: #5AE3ED30 !important;
+          border-radius: 6px !important;
+        }
+      `}} />
+
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto custom-scrollbar">
 
         {/* HEADER */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
           <h2 className="text-sm font-bold text-black tracking-wide">Pre-Order Custom</h2>
-          <button onClick={onClose} className="text-[#1A335A] hover:opacity-70 transition-opacity">
+          <button onClick={onClose} className="text-[#1A335A] hover:opacity-70 transition-opacity cursor-pointer">
             <X size={20} strokeWidth={2.5} />
           </button>
         </div>
@@ -261,7 +382,7 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
               <button
                 type="button"
                 onClick={() => setItems((prev) => [...prev, itemKosong()])}
-                className="flex items-center gap-1 text-[10px] bg-[#1A335A] text-white px-3 py-1 rounded hover:bg-[#11223C] transition-all"
+                className="flex items-center gap-1 text-[10px] bg-[#1A335A] text-white px-3 py-1 rounded hover:bg-[#11223C] transition-all cursor-pointer"
               >
                 <Plus size={12} /> Tambah Item Baru
               </button>
@@ -293,7 +414,7 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
                 <div className="flex flex-1 flex-row items-end gap-3 text-[11px]">
                   <div className="flex-1 min-w-[120px]">
                     <label className={LABEL}>Lebar Kain</label>
-                    <select value={prodItem.lebar} onChange={(e) => updateItem(prodItem.id, "lebar", e.target.value)} className={INPUT_WHITE}>
+                    <select value={prodItem.lebar} onChange={(e) => updateItem(prodItem.id, "lebar", e.target.value)} className={`${INPUT_WHITE} cursor-pointer`}>
                       <option value="">Pilih Lebar</option>
                       {[...new Set(daftarHarga.map((d) => String(d.lebar)))].map((lbl) => (
                         <option key={lbl} value={lbl}>Lebar : {lbl} cm</option>
@@ -302,14 +423,14 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
                   </div>
 
                   <div className="flex items-center border border-[#1A335A] rounded-md bg-white h-8 overflow-hidden flex-shrink-0">
-                    <button type="button" onClick={() => updateItem(prodItem.id, "qty", Math.max(1, prodItem.qty - 1))} className="px-2 text-[#1A335A] hover:bg-gray-100 h-full"><Minus size={10} strokeWidth={3} /></button>
+                    <button type="button" onClick={() => updateItem(prodItem.id, "qty", Math.max(1, prodItem.qty - 1))} className="px-2 text-[#1A335A] hover:bg-gray-100 h-full cursor-pointer"><Minus size={10} strokeWidth={3} /></button>
                     <span className="px-3 font-bold text-gray-800 text-xs min-w-[20px] text-center">{prodItem.qty}</span>
-                    <button type="button" onClick={() => updateItem(prodItem.id, "qty", prodItem.qty + 1)} className="px-2 text-[#1A335A] hover:bg-gray-100 h-full"><Plus size={10} strokeWidth={3} /></button>
+                    <button type="button" onClick={() => updateItem(prodItem.id, "qty", prodItem.qty + 1)} className="px-2 text-[#1A335A] hover:bg-gray-100 h-full cursor-pointer"><Plus size={10} strokeWidth={3} /></button>
                   </div>
 
                   <div className="flex-1 min-w-[110px]">
                     <label className={LABEL}>Pilih Pewarna</label>
-                    <select value={prodItem.jenis_pewarna} onChange={(e) => updateItem(prodItem.id, "jenis_pewarna", e.target.value)} className={`${INPUT_WHITE} capitalize`}>
+                    <select value={prodItem.jenis_pewarna} onChange={(e) => updateItem(prodItem.id, "jenis_pewarna", e.target.value)} className={`${INPUT_WHITE} capitalize cursor-pointer`}>
                       <option value="">Pilih</option>
                       {[...new Set(daftarHarga.filter((d) => String(d.lebar) === String(prodItem.lebar)).map((o) => o.jenis_pewarna?.trim().toLowerCase()).filter(Boolean))].map((pw) => (
                         <option key={pw} value={pw}>{pw}</option>
@@ -330,9 +451,9 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
                   </div>
                 </div>
 
-                {/* Hapus baris */}
-                {items.length > 1 && (
-                  <button type="button" onClick={() => setItems((prev) => prev.filter((i) => i.id !== prodItem.id))} className="absolute -top-1.5 -right-1.5 bg-red-100 text-red-600 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                {/* Validasi Proteksi Hapus */}
+                {items.length > 1 && (!prodItem.isFromDb || (!isOriginallyLunas && pembayaran.status_pembayaran !== "lunas")) && (
+                  <button type="button" onClick={() => setItems((prev) => prev.filter((i) => i.id !== prodItem.id))} className="absolute -top-1.5 -right-1.5 bg-red-100 text-red-600 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm cursor-pointer">
                     <Trash2 size={11} />
                   </button>
                 )}
@@ -349,10 +470,10 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
 
             {isOriginallyLunas && hasNewItems && (
               <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-[11px]">
-                <span className="font-bold flex items-center gap-1 text-amber-700">⚠️ Perhatian: Penambahan Item Baru pada Transaksi Lunas</span>
-                <p className="text-amber-900 mt-1">Transaksi ini sebelumnya sudah LUNAS. Karena ada item baru, nilai tagihan berubah. Sisa kekurangan:</p>
+                <span className="font-bold flex items-center gap-1 text-amber-700">⚠️ Penambahan Item Baru pada Transaksi Lunas</span>
+                <p className="text-amber-900 mt-1">Transaksi lama sudah <strong>LUNAS</strong>. Sistem mengembalikan status ke DP dengan mengunci pembayaran awal (Rp {hargaLamaDariDb.toLocaleString("id-ID")}). Sisa kekurangan untuk item tambahan:</p>
                 <div className="mt-2 flex items-baseline justify-between bg-white border border-amber-200 rounded-md px-3 py-2">
-                  <span className="text-[10px] text-gray-500 font-medium">Sisa Kekurangan</span>
+                  <span className="text-[10px] text-gray-500 font-medium">Sisa Kekurangan Baru</span>
                   <span className="text-sm font-black text-red-600">Rp {kekurangan.toLocaleString("id-ID")}</span>
                 </div>
               </div>
@@ -388,46 +509,116 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
                   <div>
                     <label className="block text-black font-semibold mb-1">Status Pembayaran</label>
                     <div className="grid grid-cols-2 gap-4">
-                      <button type="button" onClick={() => setPembayaran({ ...pembayaran, status_pembayaran: "dp" })} className={`py-2 rounded-lg font-bold text-center text-xs border transition-all ${pembayaran.status_pembayaran === "dp" ? "bg-[#1A335A] text-white border-[#1A335A] shadow-sm" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}`}>DP (Uang Muka)</button>
-                      <button type="button" onClick={() => setPembayaran({ ...pembayaran, status_pembayaran: "lunas" })} className={`py-2 rounded-lg font-bold text-center text-xs border transition-all ${isLunas ? "bg-[#1A335A] text-white border-[#1A335A] shadow-sm" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}`}>Lunas</button>
+                      {/* BUTTON DP */}
+                      <button 
+                        type="button" 
+                        disabled={isDpLocked}
+                        onClick={() => setPembayaran({ ...pembayaran, status_pembayaran: "dp" })} 
+                        className={`py-2 rounded-lg font-bold text-center text-xs border transition-all cursor-pointer ${
+                          pembayaran.status_pembayaran === "dp" 
+                            ? "bg-[#1A335A] text-white border-[#1A335A] shadow-sm" 
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        } ${isDpLocked ? "bg-gray-100 text-gray-700 border-gray-300 !cursor-not-allowed shadow-none" : ""}`}
+                      >
+                        {isDpLocked ? "DP (Sudah Dibayar)" : "DP (Uang Muka)"}
+                      </button>
+
+                      {/* BUTTON LUNAS */}
+                      <button 
+                        type="button" 
+                        onClick={() => setPembayaran({ ...pembayaran, status_pembayaran: "lunas" })} 
+                        className={`py-2 rounded-lg font-bold text-center text-xs border transition-all cursor-pointer ${
+                          isLunas 
+                            ? "bg-[#1A335A] text-white border-[#1A335A] shadow-sm" 
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        Lunas
+                      </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-black font-semibold mb-1">{isLunas ? "Nominal Pelunasan (Otomatis)" : "Nominal DP"}</label>
+                    <label className="block text-black font-semibold mb-1">
+                      {isLunas ? "Total Akumulasi Dana Setelah Lunas" : "Total Dana yang Telah Diterima"}
+                    </label>
                     <div className={`flex rounded-lg border overflow-hidden px-3 py-2.5 items-center bg-white transition-colors ${isDpInvalid ? "border-red-400" : isLunas ? "border-emerald-300 bg-emerald-50/40" : "border-[#1A335A]"}`}>
                       <span className="text-gray-500 text-xs mr-2 font-medium">Rp</span>
-                      <input type="text" inputMode="numeric" value={isLunas ? formatRibuan(totalHargaAkhir) : formatRibuan(pembayaran.total_dp)} disabled={isLunas} onChange={(e) => setPembayaran({ ...pembayaran, total_dp: parseRibuan(e.target.value) })} className={`w-full bg-transparent focus:outline-none text-sm font-bold tracking-wide ${isLunas ? "text-emerald-700 cursor-not-allowed" : "text-gray-900"}`} />
+                      <input 
+                        type="text" 
+                        inputMode="numeric" 
+                        value={formatRibuan(pembayaran.total_dp)} 
+                        disabled={isLunas || isDpLocked || (isOriginallyLunas && hasNewItems)} 
+                        onChange={(e) => setPembayaran({ ...pembayaran, total_dp: parseRibuan(e.target.value) })} 
+                        className={`w-full bg-transparent focus:outline-none text-sm font-bold tracking-wide ${isLunas || (isOriginallyLunas && hasNewItems) ? "text-emerald-700 cursor-not-allowed" : isDpLocked ? "text-gray-500 cursor-not-allowed" : "text-gray-900"}`} 
+                      />
                     </div>
+                    
+                    {/* JIKA STATUS DP: TAMPILKAN KEKURANGAN RED BANNER */}
                     {pembayaran.status_pembayaran === "dp" && (
-                      <span className={`text-[10px] block mt-1 ${pembayaran.total_dp < minDpRequired ? "text-red-500 font-semibold" : "text-gray-400"}`}>
-                        * Minimal DP 30% yaitu <strong>Rp {Math.ceil(minDpRequired).toLocaleString("id-ID")}</strong> 
-                      </span>
+                      <div className="flex justify-between items-center mt-2 bg-red-50 border border-red-200 rounded-lg p-2 text-[10px]">
+                        <span className="text-red-700 font-medium">Sisa Tagihan / Kekurangan:</span>
+                        <span className="font-black text-red-600 text-xs">Rp {kekurangan.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+
+                    {/* PERBAIKAN INFORMASI KETIKA DIKLIK LUNAS (KONDISI TRANSAKSI LUNAS + ITEM BARU) */}
+                    {pembayaran.status_pembayaran === "lunas" && isOriginallyLunas && hasNewItems && (
+                      <div className="flex justify-between items-center mt-2 bg-emerald-50 border border-emerald-300 rounded-lg p-2 text-[10px] animate-fade-in">
+                        <span className="text-emerald-800 font-bold flex items-center gap-1">💰 Pelunasan Tambahan yang Wajib Dibayar Saat Ini:</span>
+                        <span className="font-black text-emerald-700 text-xs bg-white border border-emerald-300 rounded px-2 py-0.5">
+                          Rp {nominalPelunasanBaru.toLocaleString("id-ID")}
+                        </span>
+                      </div>
                     )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    {/* FIELD METODE PEMBAYARAN */}
                     <div className="md:col-span-5 relative">
                       <label className="block text-black font-semibold mb-1">Metode Pembayaran</label>
                       <div className="relative">
-                        <select value={pembayaran.metode_pembayaran} onChange={(e) => setPembayaran({ ...pembayaran, metode_pembayaran: e.target.value })} className="w-full border border-[#1A335A] bg-white rounded-lg p-2.5 pr-8 focus:outline-none text-gray-700 appearance-none text-xs">
+                        <select 
+                          value={pembayaran.metode_pembayaran} 
+                          onChange={(e) => setPembayaran({ ...pembayaran, metode_pembayaran: e.target.value })} 
+                          className="w-full border border-[#1A335A] bg-white rounded-lg p-2.5 pr-10 focus:outline-none text-gray-700 appearance-none text-xs cursor-pointer"
+                        >
                           <option value="cash">Cash</option>
                           <option value="transfer">Transfer</option>
                         </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#1A335A] text-[8px]">▲<br/>▼</div>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#1A335A]">
+                          <ChevronDown size={14} />
+                        </div>
                       </div>
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-black font-semibold mb-1">Diskon</label>
                       <input type="text" value={pembayaran.diskon ? `${pembayaran.diskon}%` : ""} placeholder="0%" onChange={(e) => setPembayaran({ ...pembayaran, diskon: Number(e.target.value.replace("%", "")) || 0 })} className="w-full border border-[#1A335A] bg-white rounded-lg p-2.5 text-center focus:outline-none font-medium text-xs" />
                     </div>
+                    
+                    {/* FIELD BREAKDOWN TOTAL HARGA BARU */}
                     <div className="md:col-span-5">
                       <label className="block text-black font-semibold mb-1">Total Harga</label>
                       <div className="bg-white border border-[#1A335A] rounded-lg p-3 space-y-1.5 text-[11px] shadow-sm">
                         <div className="flex justify-between text-gray-500"><span>Sub Total</span><span className="font-semibold text-gray-700">Rp {subTotal.toLocaleString("id-ID")}</span></div>
                         <div className="flex justify-between text-gray-500"><span>Diskon</span><span className="font-semibold text-gray-700">{pembayaran.diskon || 0}%</span></div>
                         <hr className="border-gray-200" />
-                        <div className="flex justify-between text-gray-900 font-bold pt-0.5"><span>Total</span><span>Rp {totalHargaAkhir.toLocaleString("id-ID")}</span></div>
+                        <div className="flex justify-between text-gray-900 font-bold pt-0.5"><span>Total Kontrak Baru</span><span>Rp {totalHargaAkhir.toLocaleString("id-ID")}</span></div>
+                        
+                        {/* FITUR TRACKING HISTORI DATA DI KOTAK KANAN */}
+                        {isOriginallyLunas && hasNewItems && (
+                          <>
+                            <hr className="border-dashed border-gray-200" />
+                            <div className="flex justify-between text-emerald-600 font-medium">
+                              <span>Telah Dibayar (Lunas Lama)</span>
+                              <span>- Rp {hargaLamaDariDb.toLocaleString("id-ID")}</span>
+                            </div>
+                            <div className="flex justify-between text-red-600 font-bold bg-red-50/50 p-1 rounded">
+                              <span>Sisa Selisih Wajib Bayar</span>
+                              <span>Rp {nominalPelunasanBaru.toLocaleString("id-ID")}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -445,7 +636,25 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
               </div>
               <div>
                 <label className={LABEL}>Tanggal Estimasi Selesai</label>
-                <input type="date" value={produksi.tanggal_selesai} onChange={(e) => setProduksi({ ...produksi, tanggal_selesai: e.target.value })} className="w-full border border-[#A47352] bg-[#FFE176] rounded-lg p-2 focus:outline-none font-bold text-black text-xs" />
+                <div className="relative flex items-center">
+                  <Calendar size={14} className="absolute left-3 text-[#A47352] pointer-events-none z-10" />
+                  <DatePicker
+                    selected={produksi.tanggal_selesai ? new Date(produksi.tanggal_selesai) : null}
+                    onChange={(date) => {
+                      if (date) {
+                        const yyyy = date.getFullYear();
+                        const mm = String(date.getMonth() + 1).padStart(2, '0');
+                        const dd = String(date.getDate()).padStart(2, '0');
+                        setProduksi({ ...produksi, tanggal_selesai: `${yyyy}-${mm}-${dd}` });
+                      } else {
+                        setProduksi({ ...produksi, tanggal_selesai: "" });
+                      }
+                    }}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="Pilih Tanggal Selesai"
+                    className="w-full border border-[#A47352] bg-[#FFE176] rounded-lg py-2 pl-9 pr-3 focus:outline-none font-bold text-black text-xs cursor-pointer text-left"
+                  />
+                </div>
               </div>
             </div>
 
@@ -456,7 +665,6 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
               </div>
               <div>
                 <label className={LABEL}>Status Produksi Aktif</label>
-                {/* TAMPILAN TEXT-ONLY KARENA CS HANYA MENERIMA INFORMASI UPDATE */}
                 <div className="w-full bg-gray-100 border border-gray-300 text-gray-700 font-bold rounded-lg p-2.5 text-xs capitalize">
                   {produksi.status ? produksi.status.replace(/_/g, " ") : "Belum diproses"}
                 </div>
@@ -471,7 +679,7 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
           </div>
 
           {/* SUBMIT */}
-          <button type="button" disabled={loading} onClick={handleUpdateSubmit} className="w-full py-3 bg-[#f2b600] hover:bg-[#d9a300] text-white rounded-lg font-bold text-xs transition-all tracking-wide shadow disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" disabled={loading} onClick={handleUpdateSubmit} className="w-full py-3 bg-[#f2b600] hover:bg-[#d9a300] text-white rounded-lg font-bold text-xs transition-all tracking-wide shadow disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
             {loading ? "Menyimpan Perubahan..." : "Simpan"}
           </button>
 
