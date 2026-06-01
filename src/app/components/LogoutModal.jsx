@@ -47,7 +47,7 @@ export default function LogoutModal({ isOpen, onClose, onConfirm, isLoggingOut }
               <button
                 onClick={onConfirm}
                 disabled={isLoggingOut}
-                className="flex flex-1 items-center justify-center rounded-lg bg-[#8B5E3C] px-4 py-2 text-sm font-medium text-white hover:bg-[#734d32] transition-colors"
+                className="flex flex-1 items-center justify-center rounded-lg bg-[#1A335A] px-4 py-2 text-sm font-medium text-white hover:bg-[#244479] transition-colors"
               >
                 {isLoggingOut ? 'Memproses...' : 'Ya, Keluar'}
               </button>
