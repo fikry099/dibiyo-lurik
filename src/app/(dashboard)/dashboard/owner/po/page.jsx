@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import ManagePOContent from '../../../../components/kp-produk/po/ManagePOContent';
+import ManagePOContent from '../../../../components/owner/po/ManagePOContent';
 
 export default function ManagePOPage() {
   return (

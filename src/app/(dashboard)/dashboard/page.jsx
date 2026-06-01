@@ -18,7 +18,12 @@ export default function DashboardPage() {
   // Lazy Data (Pre-order & Revenue)
   const [preOrders, setPreOrders] = useState([])
   const [loadingPO, setLoadingPO] = useState(true)
-  const [revenue, setRevenue] = useState(Array(12).fill(0))
+  
+  // Perubahan: Mengubah state awal menjadi objek yang sesuai dengan struktur data API baru
+  const [revenue, setRevenue] = useState({
+    graphData: Array(12).fill(0),
+    totals: { orders: 0, por: 0, poc: 0 }
+  })
   const [loadingRevenue, setLoadingRevenue] = useState(false)
 
   useEffect(() => {
@@ -70,12 +75,12 @@ export default function DashboardPage() {
 
   const stats = [
     { label: 'Produk Tersedia', value: mainData?.summary?.produkTersedia || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: Package },
-    { label: 'Produk Sold', value: mainData?.summary?.produkSold || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: ShoppingBag },
-    { label: 'Produk Belum di-Proses', value: mainData?.summary?.poBelumDiproses || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: RefreshCw },
-    { label: 'Produk Sedang di-Proses', value: mainData?.summary?.poSedangDiproses || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: ClipboardList },
+    { label: 'Produk Terjual', value: mainData?.summary?.produkSold || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: ShoppingBag },
+    { label: 'Produk Dalam Proses', value: mainData?.summary?.poDalamProses || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: RefreshCw },
+    { label: 'Produk Sedang di Proses', value: mainData?.summary?.poSedangDiproses || 0, color: 'text-[#A47352] bg-[#F4EAE1] border-[#DDB892]/50', icon: ClipboardList },
   ]
 
-return (
+  return (
     <div className="w-full mx-auto space-y-6"> 
       
       <header className="mb-2 overflow-x-visible">
@@ -86,7 +91,6 @@ return (
 
       {/* 1. BAGIAN STAT CARDS (SUMMARY) */}
       {loadingMain ? (
-        // Menyeimbangkan tata letak grid skeleton loading: 1 kolom (Mobile), 2 kolom (Tablet), 4 kolom (Desktop)
         <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4 animate-pulse">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="flex flex-col justify-between h-24 sm:h-28 p-4 sm:p-5 bg-[#F4EAE1]/40 border rounded-xl border-[#DDB892]/30">
@@ -118,7 +122,8 @@ return (
               </div>
             ) : (
               <div className="bg-white border border-[#F4EAE1]/40 rounded-2xl p-2 sm:p-4 shadow-sm w-full overflow-hidden">
-                <RevenueChart dataArray={revenue} />
+                {/* Perubahan: Mengirimkan objek state baru lewat prop 'data' */}
+                <RevenueChart data={revenue} />
               </div>
             )}
           </div>
@@ -127,7 +132,6 @@ return (
 
       {/* 3. TABEL DATA UTAMA */}
       <div className="grid grid-cols-1 gap-6 space-y-2 xl:grid-cols-1 xl:gap-8 xl:space-y-0">
-
         {loadingMain ? (
           <div className="p-4 sm:p-6 space-y-4 bg-[#F4EAE1]/20 border animate-pulse rounded-2xl border-[#DDB892]/30">
             <div className="w-1/5 h-5 bg-gray-200 rounded"></div>
@@ -138,7 +142,7 @@ return (
             </div>
           </div>
         ) : (
-          <div className="bg-white border border-[#DDB892]/30 rounded-2xl  shadow-sm transition-all duration-300 w-full overflow-hidden">
+          <div className="bg-white border border-[#DDB892]/30 rounded-2xl shadow-sm transition-all duration-300 w-full overflow-hidden">
             <LatestProductsTable products={mainData?.produkTerlaris || []} />
           </div>
         )}
@@ -153,7 +157,7 @@ return (
             </div>
           </div>
         ) : (
-          <div className="bg-white border border-[#DDB892]/30 rounded-2xl  shadow-sm transition-all duration-300 w-full overflow-hidden">
+          <div className="bg-white border border-[#DDB892]/30 rounded-2xl shadow-sm transition-all duration-300 w-full overflow-hidden">
             <LatestPreOrdersTable preOrders={preOrders} />
           </div>
         )}

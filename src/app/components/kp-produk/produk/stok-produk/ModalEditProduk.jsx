@@ -254,12 +254,13 @@ export default function ModalEditProduk({
     }
   }
 
-  if (showSuccess) {
+if (showSuccess) {
     return createPortal(
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={BACKDROP_STYLE}>
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ ...BACKDROP_STYLE, backgroundColor: 'rgba(26, 51, 90, 0.4)' }}>
         <div className="bg-white rounded-[20px] shadow-xl w-full max-w-[372px] py-12 px-6 flex flex-col items-center animate-in fade-in zoom-in-95 duration-150">
-          <ThumbsUp size={56} className="text-[#A3704C] mb-5" strokeWidth={1.5} />
-          <p className="text-[#A3704C] text-[18px] font-bold text-center">Produk Berhasil Diperbarui</p>
+          {/* Berhasil icon & text diubah ke Navy #1A335A */}
+          <ThumbsUp size={56} className="text-[#1A335A] mb-5" strokeWidth={1.5} />
+          <p className="text-[#1A335A] text-[18px] font-bold text-center">Produk Berhasil Diperbarui</p>
         </div>
       </div>,
       document.body
@@ -267,13 +268,14 @@ export default function ModalEditProduk({
   }
 
   return createPortal(
-    <div className="fixed inset-0 w-screen h-screen z-[9998] flex items-center justify-center bg-[#ae834e]/53 backdrop-blur-[2px] p-4 cursor-default animate-in fade-in duration-100">
+    /* Backdrop diubah ke tone navy transparan */
+    <div className="fixed inset-0 w-screen h-screen z-[9998] flex items-center justify-center bg-[#1A335A]/40 backdrop-blur-[2px] p-4 cursor-default animate-in fade-in duration-100">
       <style>
         {`
           .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-          .custom-scrollbar::-webkit-scrollbar-track { background: rgba(164, 115, 82, 0.05); border-radius: 10px; }
-          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(164, 115, 82, 0.4); border-radius: 10px; }
-          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(164, 115, 82, 0.6); }
+          .custom-scrollbar::-webkit-scrollbar-track { background: rgba(26, 51, 90, 0.05); border-radius: 10px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(26, 51, 90, 0.3); border-radius: 10px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(26, 51, 90, 0.5); }
         `}
       </style>
       <div className="absolute inset-0" onClick={!isSubmitting ? handleClose : undefined} />
@@ -281,37 +283,38 @@ export default function ModalEditProduk({
       <div className="relative bg-white shadow-2xl rounded-[24px] w-full max-w-[760px] max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4">
         
         {/* Header Title */}
-        <div className="flex justify-between items-center flex-shrink-0">
-          <h3 className="text-[22px] font-medium text-[#a47352] tracking-tight">Edit Produk</h3>
+        <div className="flex items-center justify-between flex-shrink-0">
+          <h3 className="text-[22px] font-semibold text-[#1A335A] tracking-tight">Edit Produk</h3>
           <button
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-[#a47352] hover:text-[#8c5f3f] transition-colors rounded-full"
+            className="text-[#1A335A]/70 hover:text-[#1A335A] transition-colors rounded-full"
           >
             <X size={24} strokeWidth={2.5} />
           </button>
         </div>
 
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-3 flex-1">
-            <Loader2 className="animate-spin text-[#A3704C]" size={36} />
-            <p className="text-xs font-semibold text-[#a47352]/60">Memuat detail data kain...</p>
+          <div className="flex flex-col items-center justify-center flex-1 gap-3 py-32">
+            <Loader2 className="animate-spin text-[#1A335A]" size={36} />
+            <p className="text-xs font-semibold text-[#1A335A]/60">Memuat detail data kain...</p>
           </div>
         ) : (
           <>
-            <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-5 text-xs text-[#5C4033]">
+            <div className="flex-1 pr-1 space-y-5 overflow-y-auto text-xs text-gray-700 custom-scrollbar">
               
               {/* Gambar Uploader Banner Melengkung */}
               <div className="space-y-1.5">
-                <label className="block text-[13px] font-medium text-[#a47352]">Gambar Produk</label>
+                <label className="block text-[13px] font-semibold text-[#1A335A]">Gambar Produk</label>
                 <label className="block cursor-pointer">
-                  <div className="w-full aspect-[16/6] rounded-[14px] overflow-hidden border-2 border-dashed border-[#D4C5B9] flex items-center justify-center hover:bg-[#F5EBE1]/40 transition-colors shadow-sm"
-                    style={{ backgroundColor: imagePreview ? 'transparent' : '#F5EBE1' }}>
+                  {/* Border dash & hover background disesuaikan ke tone soft blue/navy */}
+                  <div className="w-full aspect-[16/6] rounded-[14px] overflow-hidden border-2 border-dashed border-[#1A335A]/30 flex items-center justify-center hover:bg-[#EBF5FA]/40 transition-colors shadow-sm"
+                    style={{ backgroundColor: imagePreview ? 'transparent' : '#F4F7FA' }}>
                     {imagePreview ? (
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={imagePreview} alt="Preview" className="object-cover w-full h-full" />
                     ) : (
-                      <div className="flex flex-col items-center gap-2 text-[#a47352]/70">
+                      <div className="flex flex-col items-center gap-2 text-[#1A335A]/70">
                         <Upload size={32} strokeWidth={2} />
                         <span className="text-xs font-semibold">Klik area ini untuk mengganti gambar produk</span>
                       </div>
@@ -321,15 +324,17 @@ export default function ModalEditProduk({
                 </label>
               </div>
 
-              {/* Grid Form Input Utama Produk (3 Kolom Tanpa Rak Utama) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Grid Form Input Utama Produk */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <FormField label="Kategori">
                   <SelectInput
                     value={kategoriId}
-                    onChange={(e) => setKategoriId(e.target.value)}
+                    onChange={(e) => setMotifId(e.target.value)}
                     disabled={isSubmitting}
                     options={categories.map(c => ({ value: c.id, label: c.nama }))}
                     placeholder="— Pilih Kategori —"
+                    customBg="#EBF5FA"
+                    textColor="#1A335A"
                   />
                 </FormField>
 
@@ -340,6 +345,8 @@ export default function ModalEditProduk({
                     disabled={isSubmitting}
                     options={motifs.map(m => ({ value: m.id, label: m.nama }))}
                     placeholder="— Pilih Motif —"
+                    customBg="#EBF5FA"
+                    textColor="#1A335A"
                   />
                 </FormField>
 
@@ -349,16 +356,18 @@ export default function ModalEditProduk({
                     onChange={(e) => setJenisPewarna(e.target.value)}
                     disabled={isSubmitting}
                     options={JENIS_PEWARNA_OPTIONS.map(j => ({ value: j, label: j }))}
+                    customBg="#EBF5FA"
+                    textColor="#1A335A"
                   />
                 </FormField>
               </div>
 
-              <div className="border-t border-[#D4C5B9]/40 pt-1" />
+              <div className="pt-1 border-t border-gray-200" />
 
               {/* ── BAGIAN LIST UPSTREAM EDIT GULUNGAN KAIN ── */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-[#a47352]">Daftar Gulungan Kain ({gulungans.length})</h4>
+                  <h4 className="text-sm font-bold text-[#1A335A]">Daftar Gulungan Kain ({gulungans.length})</h4>
                   {deletedGulunganIds.length > 0 && (
                     <span className="text-[11px] text-red-500 font-semibold animate-pulse">
                       ({deletedGulunganIds.length} gulungan kain akan dihapus permanent dari sistem saat disimpan)
@@ -366,25 +375,25 @@ export default function ModalEditProduk({
                   )}
                 </div>
 
-                <div className="rounded-[14px] border border-[#D4C5B9]/50 overflow-hidden bg-white shadow-sm">
+                <div className="rounded-[14px] border border-gray-200 overflow-hidden bg-white shadow-sm">
                   {gulungans.length === 0 ? (
-                    <p className="text-center text-[#a47352]/50 font-medium py-6">Tidak ada gulungan kain yang tersisa pada produk ini.</p>
+                    <p className="text-center text-[#1A335A]/50 font-medium py-6">Tidak ada gulungan kain yang tersisa pada produk ini.</p>
                   ) : (
-                    <div className="divide-y divide-[#D4C5B9]/30">
+                    <div className="divide-y divide-gray-100">
                       {gulungans.map((g, idx) => (
-                        <div key={g.id || idx} className="grid grid-cols-[30px_1fr_1fr_1fr_1.2fr_auto] gap-3 items-end px-4 py-3.5 bg-white hover:bg-[#F5EBE1]/10 transition-colors">
+                        <div key={g.id || idx} className="grid grid-cols-[30px_1fr_1fr_1fr_1.2fr_auto] gap-3 items-end px-4 py-3.5 bg-white hover:bg-[#1A335A]/5 transition-colors">
                           
-                          {/* Nomor Urut (Tanpa #) */}
-                          <span className="text-[#a47352]/80 font-bold text-xs pb-2.5 text-center">{idx + 1}</span>
+                          {/* Nomor Urut */}
+                          <span className="text-[#1A335A]/80 font-bold text-xs pb-2.5 text-center">{idx + 1}</span>
                           
                           {/* Upstream Input Lebar Dropdown */}
                           <div>
-                            <label className="block text-[11px] text-[#A3704C]/80 font-semibold mb-1.5">Lebar</label>
+                            <label className="block text-[11px] text-[#1A335A]/80 font-semibold mb-1.5">Lebar</label>
                             <select
                               value={g.lebar}
                               disabled={isSubmitting || isBlokLurik}
                               onChange={(e) => handleUpstreamLebarChange(idx, e.target.value)}
-                              className="w-full h-[38px] px-3 bg-[#F5EBE1] border border-[#D4C5B9] rounded-[10px] outline-none text-[#a47352] font-semibold text-xs focus:border-[#a47352] cursor-pointer appearance-none disabled:opacity-80 disabled:cursor-not-allowed"
+                              className="w-full h-[38px] px-3 bg-[#EBF5FA] border border-blue-200 rounded-[10px] outline-none text-[#1A335A] font-semibold text-xs focus:border-[#1A335A] cursor-pointer appearance-none disabled:opacity-80 disabled:cursor-not-allowed"
                             >
                               {isBlokLurik ? (
                                 <option value="110">110 cm</option>
@@ -399,7 +408,7 @@ export default function ModalEditProduk({
 
                           {/* Upstream Input Panjang */}
                           <div>
-                            <label className="block text-[11px] text-[#A3704C]/80 font-semibold mb-1.5">Panjang (m)</label>
+                            <label className="block text-[11px] text-[#1A335A]/80 font-semibold mb-1.5">Panjang (m)</label>
                             <input
                               type="number"
                               step="0.1"
@@ -407,18 +416,18 @@ export default function ModalEditProduk({
                               value={g.panjang_total}
                               disabled={isSubmitting}
                               onChange={(e) => handleUpstreamPanjangChange(idx, e.target.value)}
-                              className="w-full h-[38px] px-3 bg-white border border-[#D4C5B9] rounded-[10px] outline-none text-[#a47352] font-semibold text-xs focus:border-[#a47352] duration-150"
+                              className="w-full h-[38px] px-3 bg-white border border-gray-300 rounded-[10px] outline-none text-[#1A335A] font-semibold text-xs focus:border-[#1A335A] duration-150"
                             />
                           </div>
 
                           {/* Upstream Input Lokasi Rak Penyimpanan */}
                           <div>
-                            <label className="block text-[11px] text-[#A3704C]/80 font-semibold mb-1.5">Lokasi Rak</label>
+                            <label className="block text-[11px] text-[#1A335A]/80 font-semibold mb-1.5">Lokasi Rak</label>
                             <select
                               value={g.rak_id}
                               disabled={isSubmitting}
                               onChange={(e) => handleUpstreamRakChange(idx, e.target.value)}
-                              className="w-full h-[38px] px-3 bg-white border border-[#D4C5B9] rounded-[10px] outline-none text-[#a47352] font-semibold text-xs focus:border-[#a47352] cursor-pointer"
+                              className="w-full h-[38px] px-3 bg-white border border-gray-300 rounded-[10px] outline-none text-[#1A335A] font-semibold text-xs focus:border-[#1A335A] cursor-pointer"
                             >
                               <option value="">Pilih Rak</option>
                               {raks.map(r => (
@@ -429,8 +438,8 @@ export default function ModalEditProduk({
 
                           {/* Preview Harga Otomatis */}
                           <div>
-                            <label className="block text-[11px] text-[#A3704C]/80 font-semibold mb-1.5">Harga/m (Auto)</label>
-                            <div className="h-[38px] px-3 bg-[#F5EBE1]/60 border border-[#D4C5B9] rounded-[10px] flex items-center text-[#a47352] font-bold text-xs select-none cursor-not-allowed">
+                            <label className="block text-[11px] text-[#1A335A]/80 font-semibold mb-1.5">Harga/m (Auto)</label>
+                            <div className="h-[38px] px-3 bg-[#EBF5FA]/60 border border-blue-100 rounded-[10px] flex items-center text-[#1A335A] font-bold text-xs select-none cursor-not-allowed">
                               Rp {g.harga_per_meter > 0 ? g.harga_per_meter.toLocaleString('id-ID') : '-'}
                             </div>
                           </div>
@@ -463,12 +472,12 @@ export default function ModalEditProduk({
             )}
 
             {/* Footer Form Simpan Aksi */}
-            <div className="flex justify-end pt-2 flex-shrink-0">
+            <div className="flex justify-end flex-shrink-0 pt-2">
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting || !isFormValid}
-                className="bg-[#A3704C] hover:bg-[#8c5f3f] text-white px-8 py-2.5 rounded-[12px] text-sm font-medium flex items-center gap-2 transition-all shadow-md active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-[#1A335A] hover:bg-[#132644] text-white px-8 py-2.5 rounded-[12px] text-sm font-semibold flex items-center gap-2 transition-all shadow-md active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>

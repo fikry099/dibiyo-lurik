@@ -31,59 +31,65 @@ export default function PilihGulunganModal({
     );
   };
 
-  const handleAddToCart = async () => {
-    setIsLoading(true);
-    try {
-      for (const id of selectedIds) {
-        const response = await fetch('/api/keranjang', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            gulungan_id: id,
-            jumlah_order: 1, 
-          }),
-        });
-        if (!response.ok) throw new Error('Gagal menyimpan item');
-      }
-
-      const updateEvent = new CustomEvent("updateCartCount", {
-        detail: { count: selectedIds.length }
+ const handleAddToCart = async () => {
+  setIsLoading(true);
+  try {
+    for (const id of selectedIds) {
+      const response = await fetch('/api/keranjang', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gulungan_id: id,
+          jumlah_order: 1, 
+        }),
       });
-      window.dispatchEvent(updateEvent);
-
-      // Trigger efek remas kertas
-      setIsCrumpling(true);
-      
-      setTimeout(() => {
-        if (onConfirm) onConfirm(selectedIds.length);
-        setIsCrumpling(false);
-        setSelectedIds([]);
-        onClose();
-        
-        router.refresh(); 
-        
-        setTimeout(() => {
-          router.push('/dashboard/cs/keranjang');
-        }, 50);
-        
-      }, 900);
-
-    } catch (error) {
-      console.error("Gagal masuk keranjang:", error);
-      setIsCrumpling(false);
-
-      Swal.fire({
-        title: 'Gagal!',
-        text: 'Terjadi kesalahan saat menambah ke keranjang.',
-        icon: 'error',
-        confirmButtonColor: '#1A335A',
-        confirmButtonText: 'Coba Lagi'
-      });
-    } finally {
-      setIsLoading(false);
+      if (!response.ok) throw new Error('Gagal menyimpan item');
     }
-  };
-  
+
+    const updateEvent = new CustomEvent("updateCartCount", {
+      detail: { count: selectedIds.length }
+    });
+    window.dispatchEvent(updateEvent);
+
+    // Trigger efek remas kertas
+    setIsCrumpling(true);
+    
+    setTimeout(() => {
+      if (onConfirm) onConfirm(selectedIds.length);
+      setIsCrumpling(false);
+      setSelectedIds([]);
+      onClose();
+      
+      router.refresh(); 
+      
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Berhasil dimasukkan ke keranjang',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+      
+    }, 900);
+
+  } catch (error) {
+    console.error("Gagal masuk keranjang:", error);
+    setIsCrumpling(false);
+
+    Swal.fire({
+      title: 'Gagal!',
+      text: 'Terjadi kesalahan saat menambah ke keranjang.',
+      icon: 'error',
+      confirmButtonColor: '#1A335A',
+      confirmButtonText: 'Coba Lagi'
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   if (!isOpen || !mounted || !product) return null;
 
 const modalVariants = {

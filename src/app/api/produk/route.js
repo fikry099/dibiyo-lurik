@@ -100,19 +100,26 @@ export async function POST(request) {
       finalGambarUrl = publicUrl
     }
 
-    const { data: produkBaru, error: produkError } = await supabaseAdmin
-      .from('produk')
-      .insert({
-        kode_produk: kodeGenerated,
-        motif_id,
-        kategori_id,
-        jenis_pewarna,
-        gambar_url: finalGambarUrl
-      })
-      .select('id')
-      .single()
+const primaryRakId = gulungans.length > 0 ? gulungans[0].rak_id : null;
 
-    if (produkError) throw produkError
+if (!primaryRakId) {
+  return NextResponse.json({ message: 'Lokasi rak wajib ditentukan' }, { status: 400 })
+}
+
+const { data: produkBaru, error: produkError } = await supabaseAdmin
+  .from('produk')
+  .insert({
+    kode_produk: kodeGenerated,
+    motif_id,
+    kategori_id,
+    jenis_pewarna,
+    gambar_url: finalGambarUrl,
+    rak_id: primaryRakId 
+  })
+  .select('id')
+  .single()
+
+if (produkError) throw produkError
 
     if (gulungans.length > 0) {
       const gulunganToInsert = gulungans.map((gulung, i) => ({

@@ -57,8 +57,8 @@ export default function LaporanOrderPage() {
         format: 'a4',
       });
 
-      // ===== HEADER BISNIS =====
-      doc.setTextColor(164, 115, 82);
+      // ===== HEADER BISNIS (Disesuaikan ke Biru Gelap / Abu-abu Netral) =====
+      doc.setTextColor(30, 53, 94); // #1e355e
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(20);
       doc.text('DIBYO LURIK', 105, 15, { align: 'center' });
@@ -68,11 +68,11 @@ export default function LaporanOrderPage() {
       doc.setFontSize(10);
       doc.text('Sistem Manajemen Toko Kain Lurik', 105, 21, { align: 'center' });
 
-      doc.setDrawColor(164, 115, 82);
+      doc.setDrawColor(30, 53, 94); // Garis pemisah biru gelap #1e355e
       doc.setLineWidth(0.4);
       doc.line(15, 26, 195, 26);
 
-      doc.setTextColor(164, 115, 82);
+      doc.setTextColor(30, 53, 94);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
       doc.text('LAPORAN PENJUALAN / ORDER', 105, 35, { align: 'center' });
@@ -100,7 +100,7 @@ export default function LaporanOrderPage() {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',
-        });
+        }).replace(/\//g, '-');
 
         return [
           `${index + 1}.`,
@@ -110,8 +110,8 @@ export default function LaporanOrderPage() {
           row.kategori,
           row.jumlah_order,
           `${row.lebar} cm`,
-          `${row.panjang} m`,
-          `Rp ${Number(row.total_harga || 0).toLocaleString('id-ID')}`,
+          `${row.panjang} Meter`,
+          `Rp ${Number(row.total_harga || 0).toLocaleString('id-ID')},00`,
         ];
       });
 
@@ -129,7 +129,7 @@ export default function LaporanOrderPage() {
           verticalAlignment: 'middle',
         },
         headStyles: {
-          fillColor: [179, 124, 87],
+          fillColor: [30, 53, 94], // Warna header tabel PDF disamakan dengan UI baru (#1e355e)
           textColor: [255, 255, 255],
           fontStyle: 'bold',
           halign: 'left',
@@ -142,7 +142,7 @@ export default function LaporanOrderPage() {
           8: { halign: 'right' },
         },
         alternateRowStyles: {
-          fillColor: [253, 250, 246],
+          fillColor: [245, 247, 250], // Background zebra stripping tipis kebiruan/abu netral
         },
       });
 
@@ -154,7 +154,7 @@ export default function LaporanOrderPage() {
         finalY = 20;
       }
 
-      doc.setTextColor(164, 115, 82);
+      doc.setTextColor(30, 53, 94); // Teks Total Omset warna biru gelap
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10.5);
       doc.text(`TOTAL OMSET PENJUALAN: Rp ${grandTotalSum.toLocaleString('id-ID')},00`, 195, finalY, {
@@ -177,21 +177,29 @@ export default function LaporanOrderPage() {
   };
 
   return (
-    <div className="w-full max-w-auto">
-      <h1 className="mb-6 text-2xl font-bold text-stone-800">Order</h1>
+    <div className="w-full mx-auto space-y-4 text-black font-inter">
+      {/* Struktur Judul Utama sesuai Request */}
+      <div className="relative overflow-x-visible">
+        <h2 className="text-lg sm:text-[24px] font-medium text-black pb-2 sm:pb-5 border-b border-gray-500 tracking-wide -mx-4 px-4 sm:-mx-6 sm:px-6">
+          Laporan Order
+        </h2>
+      </div>
 
-      <LaporanFilterBar
-        search={search}
-        setSearch={setSearch}
-        startDate={startDate}
-        setStartDate={setStartDate}
-        endDate={endDate}
-        setEndDate={setEndDate}
-        onExport={handleExportPDF}
-        exportLoading={exportLoading}
-      />
+      {/* Kontainer Kotak Putih & Isian Konten */}
+      <div className="p-6 bg-white border rounded-lg shadow-sm border-gray-200/60">
+        <LaporanFilterBar
+          search={search}
+          setSearch={setSearch}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          endDate={endDate}
+          setEndDate={setEndDate}
+          onExport={handleExportPDF}
+          exportLoading={exportLoading}
+        />
 
-      <LaporanTable data={laporanData} loading={loading} />
+        <LaporanTable data={laporanData} loading={loading} />
+      </div>
     </div>
   );
 }

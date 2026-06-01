@@ -37,6 +37,9 @@ export default function ModalTambahProduk({
   const [showSuccess, setShowSuccess] = useState(false)
   const [mounted, setMounted] = useState(false)
 
+  // State baru untuk interaksi drag and drop gambar
+  const [isDragging, setIsDragging] = useState(false)
+
   useEffect(() => { setMounted(true) }, [])
 
   // Logika pembuka Gate Kunci Gulungan
@@ -101,7 +104,7 @@ export default function ModalTambahProduk({
   const resetForm = () => {
     setImageFile(null); setImagePreview(null); setKategoriId(''); setMotifId('');
     setJenisPewarna('Sintetis'); setGulungans([]); setTempPanjang(''); setTempRakId('');
-    setTempHarga(0); setInlineError(''); setErrorMsg('');
+    setTempHarga(0); setInlineError(''); setErrorMsg(''); setIsDragging(false);
   }
 
   const handleClose = () => {
@@ -112,6 +115,32 @@ export default function ModalTambahProduk({
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0]
+    processImageFile(file)
+  }
+
+  // Logika Drag & Drop Gambar
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    if (isSubmitting) return
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (isSubmitting) return
+
+    const file = e.dataTransfer.files?.[0]
+    processImageFile(file)
+  }
+
+  // Fungsi utilitas helper internal pemrosesan file gambar
+  const processImageFile = (file) => {
     if (!file) return
     if (!file.type.startsWith('image/')) return setErrorMsg('File harus berupa gambar')
     
@@ -172,64 +201,75 @@ export default function ModalTambahProduk({
       setShowSuccess(true)
       setTimeout(() => { setShowSuccess(false); resetForm(); onClose(); onSuccess(); }, 1600)
     } catch (err) {
-      Swal.fire({ title: 'Gagal Menyimpan', text: err.message, icon: 'error', confirmButtonColor: '#A3704C' })
+      Swal.fire({ title: 'Gagal Menyimpan', text: err.message, icon: 'error', confirmButtonColor: '#1A335A' })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  return createPortal(
-    <div className="fixed inset-0 w-screen h-screen z-[9998] flex items-center justify-center bg-[#ae834e]/53 backdrop-blur-[2px] p-4 cursor-default animate-in fade-in duration-100">
+ return createPortal(
+    <div className="fixed inset-0 w-screen h-screen z-[9998] flex items-center justify-center bg-[#1A335A]/20 backdrop-blur-[2px] p-4 cursor-default animate-in fade-in duration-100">
       <style>
         {`
           .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-          .custom-scrollbar::-webkit-scrollbar-track { background: rgba(164, 115, 82, 0.05); border-radius: 10px; }
-          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(164, 115, 82, 0.4); border-radius: 10px; }
-          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(164, 115, 82, 0.6); }
+          .custom-scrollbar::-webkit-scrollbar-track { background: rgba(26, 51, 90, 0.02); border-radius: 10px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(26, 51, 90, 0.2); border-radius: 10px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(26, 51, 90, 0.4); }
         `}
       </style>
       <div className="absolute inset-0" onClick={handleClose} />
 
       {/* Tampilan Modal Sukses */}
       {showSuccess ? (
-        <div className="bg-white rounded-[24px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.15)] w-full max-w-[360px] py-10 px-6 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-150 border border-gray-50 z-[9999]">
-          <ThumbsUp size={64} className="text-[#A3704C] mb-6" strokeWidth={1.5} />
-          <p className="text-[#A3704C] text-[16px] font-medium text-center tracking-wide">
-            Produk Berhasil ditambah
+        <div className="bg-white rounded-[16px] shadow-2xl w-full max-w-[360px] py-10 px-6 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-150 border border-gray-100 z-[9999]">
+          <ThumbsUp size={64} className="text-[#1A335A] mb-6" strokeWidth={1.5} />
+          <p className="text-gray-800 text-[16px] font-bold text-center tracking-wide">
+            Produk Berhasil Ditambah
           </p>
         </div>
       ) : (
-        <div className="relative bg-white shadow-2xl rounded-[24px] w-full max-w-[760px] max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4">
+        <div className="relative bg-white shadow-2xl rounded-[16px] w-full max-w-[760px] max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4 border border-gray-100">
           
           {/* Header Modal Title */}
-          <div className="flex items-center justify-between flex-shrink-0">
-            <h3 className="text-[22px] font-medium text-[#a47352] tracking-tight">Tambah Produk</h3>
+          <div className="flex items-center justify-between flex-shrink-0 pb-1">
+            <h3 className="text-[20px] font-bold text-gray-800 tracking-tight">Tambah Produk</h3>
             <button 
               onClick={handleClose} 
               disabled={isSubmitting} 
-              className="text-[#a47352] hover:text-[#8c5f3f] transition-colors rounded-full"
+              className="p-1 text-gray-400 transition-colors rounded-full hover:text-gray-600 hover:bg-gray-100"
             >
-              <X size={24} strokeWidth={2.5} />
+              <X size={22} strokeWidth={2.5} />
             </button>
           </div>
           
           {/* Form Body Container */}
-          <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-5 text-xs text-[#5C4033]">
+          <div className="flex-1 pr-1 space-y-5 overflow-y-auto text-xs text-gray-700 custom-scrollbar">
             
-            {/* Uploader Gambar */}
+            {/* Uploader Gambar (Interactive Drag & Drop) */}
             <div className="space-y-1.5">
-              <label className="block text-[13px] font-medium text-[#a47352]">Gambar Produk <span className="text-red-500">*</span></label>
-              <label className="block cursor-pointer">
+              <label className="block text-[13px] font-semibold text-gray-700">Gambar Produk <span className="text-red-500">*</span></label>
+              <label 
+                className="block cursor-pointer"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <div 
-                  className="w-full aspect-[16/6] rounded-[14px] overflow-hidden border-2 border-dashed border-[#D4C5B9] flex items-center justify-center hover:bg-[#F5EBE1]/40 transition-colors shadow-sm"
-                  style={{ backgroundColor: imagePreview ? 'transparent' : '#F5EBE1' }}
+                  className={`w-full aspect-[16/6] rounded-[8px] overflow-hidden border-2 border-dashed flex items-center justify-center transition-all duration-150 shadow-xs ${
+                    isDragging 
+                      ? 'border-[#1A335A] bg-sky-100/50 scale-[1.01]' 
+                      : 'border-gray-300 hover:bg-sky-50/50'
+                  }`}
+                  style={{ backgroundColor: imagePreview ? 'transparent' : (isDragging ? '' : '#EBF5FA') }}
                 >
                   {imagePreview ? (
                     <img src={imagePreview} alt="Preview" className="object-cover w-full h-full" />
                   ) : (
-                    <div className="flex flex-col items-center gap-2 text-[#a47352]/70">
-                      <Upload size={32} strokeWidth={2} />
-                      <span className="text-xs font-semibold">Klik area ini untuk unggah gambar motif produk</span>
+                    <div className={`flex flex-col items-center gap-2 transition-transform ${isDragging ? 'scale-105 text-[#1A335A]' : 'text-[#1A335A]/70'}`}>
+                      <Upload size={30} className={isDragging ? 'animate-bounce' : ''} strokeWidth={2.5} />
+                      <span className="text-xs font-semibold">
+                        {isDragging ? 'Lepaskan gambar di sini' : 'Klik area ini atau seret gambar motif produk untuk mengunggah'}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -237,29 +277,29 @@ export default function ModalTambahProduk({
               </label>
             </div>
 
-            {/* Form Fields Utama Produk */}
+            {/* Form Fields Utama Produk (Custom Background #EBF5FA terintegrasi lewat helper props) */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <FormField label={<>Kategori <span className="text-red-500">*</span></>}>
-                <SelectInput value={kategoriId} onChange={(e) => setKategoriId(e.target.value)} disabled={isSubmitting} options={categories.map(c => ({ value: c.id, label: c.nama }))} placeholder="— Pilih Kategori —" />
+                <SelectInput value={kategoriId} onChange={(e) => setKategoriId(e.target.value)} disabled={isSubmitting} options={categories.map(c => ({ value: c.id, label: c.nama }))} placeholder="— Pilih Kategori —" customBg="#EBF5FA" />
               </FormField>
               <FormField label={<>Motif <span className="text-red-500">*</span></>}>
-                <SelectInput value={motifId} onChange={(e) => setMotifId(e.target.value)} disabled={isSubmitting} options={motifs.map(m => ({ value: m.id, label: m.nama }))} placeholder="— Pilih Motif —" />
+                <SelectInput value={motifId} onChange={(e) => setMotifId(e.target.value)} disabled={isSubmitting} options={motifs.map(m => ({ value: m.id, label: m.nama }))} placeholder="— Pilih Motif —" customBg="#EBF5FA" />
               </FormField>
               <FormField label={<>Jenis Pewarna <span className="text-red-500">*</span></>}>
-                <SelectInput value={jenisPewarna} onChange={(e) => setJenisPewarna(e.target.value)} disabled={isSubmitting} options={JENIS_PEWARNA_OPTIONS.map(j => ({ value: j, label: j }))} />
+                <SelectInput value={jenisPewarna} onChange={(e) => setJenisPewarna(e.target.value)} disabled={isSubmitting} options={JENIS_PEWARNA_OPTIONS.map(j => ({ value: j, label: j }))} customBg="#EBF5FA" />
               </FormField>
             </div>
 
-            <div className="border-t border-[#D4C5B9]/40 pt-1" />
+            <div className="pt-1 border-t border-gray-200/60" />
 
             {/* Bagian Input Gulungan Kain Container */}
             <div className="space-y-4">
-              <div className="p-4 rounded-[16px] border border-[#D4C5B9]/40 space-y-4 bg-[#F5EBE1]/40">
+              <div className="p-4 rounded-[12px] border border-gray-200/80 space-y-4 bg-[#EBF5FA]/30">
                 
                 {!isProductInfoComplete && (
-                  <div className="flex items-start gap-2 text-[#a47352]">
-                    <Lock size={16} className="flex-shrink-0 mt-0.5 opacity-80" strokeWidth={2.5} />
-                    <span className="text-[13px] font-medium leading-tight">
+                  <div className="flex items-start gap-2 text-[#1A335A]">
+                    <Lock size={15} className="flex-shrink-0 mt-0.5 opacity-90" strokeWidth={2.5} />
+                    <span className="text-[13px] font-semibold leading-tight">
                       Lengkapi <b>Gambar, Kategori, Motif,</b> dan <b>Jenis Pewarna</b> terlebih dahulu untuk membuka form Data Gulungan.
                     </span>
                   </div>
@@ -268,7 +308,7 @@ export default function ModalTambahProduk({
                 <div className={`space-y-4 transition-opacity duration-200 ${!isProductInfoComplete ? 'opacity-40 pointer-events-none select-none' : ''}`}>
                   
                   {/* Grid Input Gulungan Horizontal */}
-                  <div className="grid items-end grid-cols-1 gap-3 sm:grid-cols-4">
+                  <div className="grid items-end grid-cols-1 gap-3 sm:grid-cols-4 text-[#1A335A]">
                     <FormField label="Lebar (cm)">
                       <SelectInput 
                         value={tempLebar} 
@@ -292,7 +332,7 @@ export default function ModalTambahProduk({
                         onChange={(e) => setTempPanjang(e.target.value)}
                         disabled={isSubmitting || !isProductInfoComplete}
                         placeholder="Masukkan Panjang"
-                        className="w-full h-[40px] px-4 bg-white border border-[#D4C5B9] rounded-[12px] outline-none text-[#a47352] font-semibold placeholder-[#a47352]/40 focus:border-[#a47352] duration-150 text-xs shadow-sm"
+                        className="w-full h-[40px] px-4 bg-white border border-gray-300 rounded-[8px] outline-none text-gray-700 font-medium placeholder-gray-400 focus:border-[#1A335A] focus:ring-1 focus:ring-[#1A335A] duration-150 text-xs shadow-xs"
                       />
                     </FormField>
 
@@ -308,13 +348,13 @@ export default function ModalTambahProduk({
                     </FormField>
 
                     <FormField label="Harga/Meter (Auto)">
-                      <div className="relative flex items-center shadow-sm rounded-[12px] overflow-hidden">
-                        <span className="absolute text-xs font-bold text-[#a47352]/60 left-4">Rp</span>
+                      <div className="relative flex items-center shadow-xs rounded-[8px] overflow-hidden">
+                        <span className="absolute text-xs font-bold text-gray-400 left-4">Rp</span>
                         <input 
                           type="text" 
                           value={tempHarga > 0 ? tempHarga.toLocaleString('id-ID') : '-'} 
                           disabled 
-                          className="w-full h-[40px] pl-10 pr-4 bg-white/70 border border-[#D4C5B9] text-[#a47352] font-bold cursor-not-allowed select-none outline-none text-xs" 
+                          className="w-full h-[40px] pl-10 pr-4 bg-gray-50 border border-gray-200 text-gray-800 font-bold cursor-not-allowed select-none outline-none text-xs" 
                         />
                       </div>
                     </FormField>
@@ -326,7 +366,7 @@ export default function ModalTambahProduk({
                     type="button"
                     onClick={handleAddGulunganInline}
                     disabled={isSubmitting || !isProductInfoComplete || !tempPanjang || tempHarga <= 0 || !tempRakId}
-                    className="w-full h-[40px] rounded-[12px] bg-[#A3704C] hover:bg-[#8c5f3f] text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full h-[40px] rounded-[8px] bg-sky-100 hover:bg-sky-200 text-[#1A335A] text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Plus size={15} strokeWidth={2.5} />
                     <span>Tambah Gulungan ke Daftar</span>
@@ -334,12 +374,12 @@ export default function ModalTambahProduk({
                 </div>
               </div>
 
-              {/* List Tampilan Gulungan Row (Menggunakan == untuk pencarian nama rak) */}
-              <div className="rounded-[14px] border border-[#D4C5B9]/50 overflow-hidden bg-white shadow-sm">
+              {/* List Tampilan Gulungan Row */}
+              <div className="rounded-[8px] border border-gray-200 overflow-hidden bg-[white] shadow-xs">
                 {gulungans.length === 0 ? (
-                  <p className="text-center text-[#a47352]/50 font-medium py-6 px-4">Belum ada gulungan kain yang dimasukkan ke daftar.</p>
+                  <p className="px-4 py-6 font-medium text-center text-gray-400">Belum ada gulungan kain yang dimasukkan ke daftar.</p>
                 ) : (
-                  <div className="divide-y divide-[#D4C5B9]/30">
+                  <div className="divide-y divide-gray-100">
                     {gulungans.map((g, idx) => (
                       <GulunganRow
                         key={idx}
@@ -363,7 +403,7 @@ export default function ModalTambahProduk({
             <button 
               onClick={handleSubmit} 
               disabled={isSubmitting || !isFormValid} 
-              className="bg-[#A3704C] hover:bg-[#8c5f3f] text-white px-8 py-2.5 rounded-[12px] text-sm font-medium flex items-center gap-2 transition-all shadow-md active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="bg-[#1A335A] hover:bg-[#11223d] text-white px-8 py-2.5 rounded-[8px] text-sm font-semibold flex items-center gap-2 transition-all shadow-md active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSubmitting ? <><Loader2 className="animate-spin" size={16}/><span>Menyimpan...</span></> : 'Simpan Produk'}
             </button>

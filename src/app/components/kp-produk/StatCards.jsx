@@ -10,19 +10,20 @@ export default function StatCards({ stats }) {
     'bg-[#4F8A3F]'    // Card 4
   ]
 
-  // Fungsi pembantu untuk merender ikon yang sesuai dengan warna putih seragam di dalam pembungkusnya
+  // Fungsi pembantu untuk merender ikon yang sesuai
   const getIcon = (stat) => {
     if (stat.icon) {
       const IconComponent = stat.icon
       return <IconComponent size={24} className="text-white stroke-[2]" />
     }
 
+    // DISESUAIKAN DI SINI: Menyesuaikan string pencarian label dengan teks UI terbaru
     switch (stat.label) {
       case 'Produk Tersedia':
         return <Package size={24} className="text-white stroke-[2]" />
       case 'Produk Sold':
         return <ShoppingBag size={24} className="text-white stroke-[2]" />
-      case 'Produk Belum di-Proses':
+      case 'Produk Dalam Proses': // <-- DIUBAH (Sebelumnya: 'Produk Belum di-Proses')
         return <RefreshCw size={22} className="text-white stroke-[2]" />
       case 'Produk Sedang di-Proses':
         return <ClipboardList size={24} className="text-white stroke-[2]" />
@@ -34,10 +35,10 @@ export default function StatCards({ stats }) {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat, index) => {
-        // Cek apakah ini card pertama (indeks 0 atau label Produk Tersedia)
+        // Cek apakah ini card pertama
         const isGradientCard = index === 0 || stat.label === 'Produk Tersedia'
         
-        // Ambil warna bg icon berdasarkan indeks (jika overload, kembali ke indeks 0)
+        // Ambil warna bg icon berdasarkan indeks
         const currentIconBg = iconBgColors[index] || iconBgColors[0]
 
         return (
@@ -56,7 +57,6 @@ export default function StatCards({ stats }) {
               }`}>
                 {stat.label}
               </p>
-              {/* mt-auto mendorong nilai angka agar selalu konsisten berada di bagian bawah */}
               <p className={`text-3xl font-bold tracking-tight mt-auto ${
                 isGradientCard ? 'text-white' : 'text-[#F2B600]'
               }`}>

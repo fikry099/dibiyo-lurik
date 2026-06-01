@@ -33,10 +33,10 @@ export default function ProductCard({ product, onAddReguler, onBuy }) {
             className="object-cover w-full h-full transition-transform duration-500 ease-out hover:scale-110"
           />
 
-          {/* BADGE STATUS: Sekarang dipindah ke sini agar tumpang tindih di kanan atas depan gambar */}
+          {/* BADGE STATUS: Sekarang dipindah ke sini agar tumpang tindih di kanan atas depan gambar  backgroundColor: 'rgba(26, 51, 90, 0.4)', */}
           <span
-            style={{ backgroundColor: isReady ? '#2379FF' : '#FC4B4B' }}
-            className="absolute top-3 left-3 z-10 px-2.5 py-1.5 rounded text-white text-[9px] font-bold min-w-[80px] text-center shadow-md select-none backdrop-blur-[1px]"
+            style={{ backgroundColor: isReady ? 'rgba(26, 51, 90, 0.4)' : '#FC4B4B' }}
+            className="absolute top-3 left-3 z-10 px-2.5 py-2 rounded-full text-white text-[9px] font-bold min-w-[80px] text-center shadow-md select-none backdrop-blur-[1px]"
           >
             {isReady ? 'Produk Tersedia' : 'Produk Habis'}
           </span>
@@ -58,7 +58,7 @@ export default function ProductCard({ product, onAddReguler, onBuy }) {
       </div>
 
       {/* Footer Aksi (Sekarang hanya berisi tombol, membuat space tombol jadi lebih lega) */}
-      <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-4">
+      <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-4 mt-6">
         <div className="flex items-center gap-2">
           {/* Tombol Pre-Order Reguler */}
           <button 
@@ -86,10 +86,10 @@ export default function ProductCard({ product, onAddReguler, onBuy }) {
 function InfoBlock({ label, value, className = '' }) {
   return (
     <div className={`min-w-0 ${className}`}>
-      <p className="text-[#E3C2AC] text-[10px] font-medium tracking-wide leading-tight mb-1">
+      <p className="text-[#00000040] text-[10px] font-medium tracking-wide leading-tight mb-1">
         {label}
       </p>
-      <p className="text-[#A47352] text-[11px] font-bold leading-tight truncate">
+      <p className="text-[#1A335A] text-[11px] font-bold leading-tight truncate">
         {value}
       </p>
     </div>

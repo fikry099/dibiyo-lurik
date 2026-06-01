@@ -1,184 +1,189 @@
-// /src/app/components/kp-produk/stok-produk/StokCard.jsx
+// D:\dibiyo-lurik\src\app\components\kp-produk\produk\stok-produk\ProdukCard.jsx
 'use client'
 
 import React, { useState } from 'react'
-import { Eye, Edit3, Trash2, Loader2, Trash, X, ThumbsUp, ImageOff } from 'lucide-react'
+import { Eye, ImageOff } from 'lucide-react'
 import Swal from 'sweetalert2'
 
 const BACKDROP_STYLE = {
-  backgroundColor: 'rgba(174, 131, 78, 0.53)',
-  backdropFilter: 'blur(2px)',
-  WebkitBackdropFilter: 'blur(2px)',
+  backgroundColor: 'rgba(26, 51, 90, 0.4)',
+  backdropFilter: 'blur(3px)',
+  WebkitBackdropFilter: 'blur(3px)',
 }
 
-export default function StokCard({ produk, onRefresh, onEditClick, onDetailClick }) {
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+export default function ProdukCard({ produk, onRefresh, onEditClick, onDetailClick }) {
+  // const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  // // const [isDeleting, setIsDeleting] = useState(false)
+  // const [showSuccess, setShowSuccess] = useState(false)
   const [imageError, setImageError] = useState(false)
 
   const kodeProduk   = produk?.kode_produk   || '-'
   const kategoriNama = produk?.kategori?.nama || '-'
   const motifNama    = produk?.motif?.nama    || '-'
-  const rakNama      = produk?.rak?.nama      || '-'
-  const jenisPewarna = produk?.jenis_pewarna  || '-'
   const stok         = produk?.stok ?? 0
   const terjual      = produk?.terjual ?? 0
   const gambarUrl    = produk?.gambar_url
   const status       = (produk?.status || 'ready').toLowerCase()
 
+  // Mapping status sesuai mockup figma terbaru
+  const normalizedStatus = (status === 'ready' || status === 'tersedia') ? 'tersedia' : 'habis'
+
   const statusStyle = {
-    ready: { bg: '#76cbf9', label: 'Ready' },
-    sold:  { bg: '#ff695e', label: 'Sold' },
-    habis: { bg: '#ff695e', label: 'Sold' },
-  }[status] || { bg: '#a47352', label: status.charAt(0).toUpperCase() + status.slice(1) }
+    tersedia: { bg: 'rgba(26, 51, 90, 0.6)', label: 'Produk Tersedia' },
+    habis:    { bg: '#FF4D4D', label: 'Produk Habis' },   
+  }[normalizedStatus]
 
-  const handleConfirmDelete = async () => {
-    setIsDeleting(true)
-    try {
-      const response = await fetch(`/api/produk/${produk.id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.message || 'Gagal menghapus produk')
+  // const handleConfirmDelete = async () => {
+  //   setIsDeleting(true)
+  //   try {
+  //     const response = await fetch(`/api/produk/${produk.id}`, {
+  //       method: 'DELETE',
+  //       credentials: 'include'
+  //     })
+  //     const result = await response.json()
+  //     if (!response.ok) throw new Error(result.message || 'Gagal menghapus produk')
 
-      setIsDeleteModalOpen(false)
-      setShowSuccess(true)
-      setTimeout(() => {
-        setShowSuccess(false)
-        if (onRefresh) onRefresh()
-      }, 1500)
-    } catch (err) {
-      setIsDeleteModalOpen(false)
-      Swal.fire({
-        title: 'Gagal Hapus',
-        text: err.message,
-        icon: 'error',
-        confirmButtonColor: '#a47352'
-      })
-    } finally {
-      setIsDeleting(false)
-    }
-  }
+  //     setIsDeleteModalOpen(false)
+  //     setShowSuccess(true)
+  //     setTimeout(() => {
+  //       setShowSuccess(false)
+  //       if (onRefresh) onRefresh()
+  //     }, 1500)
+  //   } catch (err) {
+  //     setIsDeleteModalOpen(false)
+  //     Swal.fire({
+  //       title: 'Gagal Hapus',
+  //       text: err.message,
+  //       icon: 'error',
+  //       confirmButtonColor: '#1A335A'
+  //     })
+  //   } finally {
+  //     setIsDeleting(false)
+  //   }
+  // }
 
   return (
     <>
-      <div className="bg-white rounded-[10px] shadow-[1px_4px_8px_0px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col">
-
-        <div className="p-3 pb-0 sm:p-4">
-          <div className="w-full aspect-[16/7] rounded-[10px] overflow-hidden bg-[#e3c2ac]/30 flex items-center justify-center">
+      <div className="bg-white rounded-[12px] shadow-[2px_8px_28px_0px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col border border-gray-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+        {/* Bagian Gambar Atas dengan Absolute Badge Status */}
+        <div className="relative p-3 pb-0">
+          <div className="w-full aspect-[2.2/1] rounded-[8px] overflow-hidden bg-gray-100 flex items-center justify-center relative shadow-inner">
             {gambarUrl && !imageError ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={gambarUrl}
                 alt={motifNama}
-                className="object-cover w-full h-full"
+                className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
                 onError={() => setImageError(true)}
               />
             ) : (
-              <ImageOff size={36} className="text-[#a47352]/40" />
+              <ImageOff size={32} className="text-gray-300" />
             )}
+            
+            {/* Status Badge Overlaid on Image Top-Left (Sesuai Desain Figma) */}
+            <span
+              className="absolute top-3 left-3 px-3 py-2 rounded-full text-white text-[10px] font-bold shadow-sm select-none tracking-wide"
+              style={{ backgroundColor: statusStyle.bg }}
+            >
+              {statusStyle.label}
+            </span>
           </div>
         </div>
 
-        <div className="flex-1 px-3 pt-4 pb-3 sm:px-4">
-          <div className="grid grid-cols-[1fr_1fr_auto] gap-x-3 gap-y-3">
-            <InfoBlock label="Kode Produksi" value={kodeProduk} />
-            <InfoBlock label="Jenis Pewarna" value={jenisPewarna} />
-            <InfoBlock label="Rak" value={rakNama} className="min-w-[55px]" />
+        {/* Bagian Informasi Konten Utama Sesuai Susunan Vertikal 3 Kolom */}
+        <div className="flex-1 px-4 pt-4 pb-2 text-xs">
+          <div className="grid grid-cols-3 gap-x-2 gap-y-3">
+            {/* Kolom 1 */}
+            <div className="space-y-3">
+              <InfoBlock label="Kode Produksi" value={kodeProduk} />
+              <InfoBlock label="Stok" value={stok === 0 ? '0' : `${stok} gulungan`} />
+            </div>
 
-            <InfoBlock label="Kategori" value={kategoriNama} />
-            <InfoBlock label="Stok" value={`${stok} gulungan`} />
-            <div />
+            {/* Kolom 2 */}
+            <div className="space-y-3">
+              <InfoBlock label="Kategori" value={kategoriNama} />
+              <InfoBlock label="Jumlah Terjual" value={`${terjual} gulungan`} />
+            </div>
 
-            <InfoBlock label="Motif" value={motifNama} />
-            <InfoBlock label="Jumlah Terjual" value={`${terjual} gulungan`} />
-            <div />
+            {/* Kolom 3 */}
+            <div className="space-y-3">
+              <InfoBlock label="Motif" value={motifNama} />
+            </div>
           </div>
         </div>
 
-        {/* Footer: Status + Bigger Action Buttons */}
-        <div className="flex flex-wrap items-end justify-between gap-2 px-3 pt-2 pb-4 sm:px-4">
-          <span
-            className="px-5 py-1.5 rounded-full text-white text-sm font-medium min-w-[100px] text-center shadow-sm"
-            style={{ backgroundColor: statusStyle.bg }}
-          >
-            {statusStyle.label}
-          </span>
-
-          <div className="flex items-center gap-2">
-            <ActionButton
-              color="#4cd0b1"
-              icon={<Eye size={18} strokeWidth={2.2} />}
-              label="Detail"
-              onClick={() => onDetailClick && onDetailClick(produk.id)}
-            />
-            {/* <ActionButton
-              color="#f0a864"
-              icon={<Edit3 size={18} strokeWidth={2.2} />}
-              label="Edit"
-              onClick={() => onEditClick && onEditClick(produk.id)}
-            />
-            <ActionButton
-              color="#ff695e"
-              icon={<Trash2 size={18} strokeWidth={2.2} />}
-              label="Hapus"
-              onClick={() => setIsDeleteModalOpen(true)}
-            /> */}
-          </div>
+        {/* Footer: Action Buttons Menu di Sebelah Kanan */}
+        <div className="flex items-center justify-end gap-2 px-4 pt-2 pb-4 mt-6">
+          <ActionButton
+            color="#FFA630" // Orange Detail
+            icon={<Eye size={16} strokeWidth={2.5} />}
+            label="Detail"
+            onClick={() => onDetailClick && onDetailClick(produk.id)}
+          />
+          {/* <ActionButton
+            color="#4A7BB0" // Blue Navy Soft Edit
+            icon={<Edit3 size={16} strokeWidth={2.5} />}
+            label="Edit"
+            onClick={() => onEditClick && onEditClick(produk.id)}
+          />
+          <ActionButton
+            color="#FF5C5C" // Red Coral Hapus
+            icon={<Trash2 size={16} strokeWidth={2.5} />}
+            label="Hapus"
+            onClick={() => setIsDeleteModalOpen(true)}
+          /> */}
         </div>
       </div>
 
       {/* Modal Konfirmasi Hapus */}
-      {isDeleteModalOpen && (
+      {/* {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={BACKDROP_STYLE}>
-          <div className="bg-white rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] w-full max-w-[372px] relative">
+          <div className="bg-white rounded-[16px] shadow-2xl w-full max-w-[350px] relative animate-in fade-in zoom-in-95 duration-150">
             <button
               onClick={() => setIsDeleteModalOpen(false)}
               disabled={isDeleting}
-              className="absolute top-3.5 right-3.5 text-[#a47352] hover:text-[#8c5f3f] disabled:opacity-50"
+              className="absolute text-gray-400 top-4 right-4 hover:text-gray-600 disabled:opacity-50"
             >
-              <X size={18} strokeWidth={2.5} />
+              <X size={20} strokeWidth={2.5} />
             </button>
 
-            <div className="flex flex-col items-center px-6 pt-10 pb-7">
-              <Trash size={40} strokeWidth={1.8} className="text-[#a47352] mb-4" />
-              <p className="text-[#a47352] text-[15px] font-semibold text-center leading-snug mb-7">
-                Apakah Anda Yakin Ingin<br />Menghapus Produk ini
+            <div className="flex flex-col items-center px-6 pt-10 pb-6">
+              <Trash size={40} strokeWidth={1.8} className="text-[#FF5C5C] mb-4" />
+              <p className="text-gray-800 text-[14px] font-bold text-center leading-snug mb-6">
+                Apakah Anda Yakin Ingin<br />Menghapus Produk ini?
               </p>
 
               <div className="flex items-center w-full gap-3">
                 <button
                   disabled={isDeleting}
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className="flex-1 h-[47px] rounded-[10px] bg-[#a47352] hover:bg-[#8c5f3f] text-white font-semibold text-base transition-colors disabled:opacity-50"
+                  className="flex-1 h-[40px] rounded-[6px] bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   disabled={isDeleting}
                   onClick={handleConfirmDelete}
-                  className="flex-1 h-[47px] rounded-[10px] bg-[#a47352] hover:bg-[#8c5f3f] text-white font-semibold text-base transition-colors disabled:opacity-50 flex items-center justify-center"
+                  className="flex-1 h-[40px] rounded-[6px] bg-[#1A335A] hover:bg-[#11223d] text-white font-bold text-xs transition-colors flex items-center justify-center"
                 >
-                  {isDeleting ? <Loader2 size={18} className="animate-spin" /> : 'Ya, Hapus'}
+                  {isDeleting ? <Loader2 size={16} className="animate-spin" /> : 'Ya, Hapus'}
                 </button>
               </div>
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
+      {/* Toast Sukses
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={BACKDROP_STYLE}>
-          <div className="bg-white rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] w-full max-w-[372px] py-12 px-6 flex flex-col items-center">
-            <ThumbsUp size={56} className="text-[#a47352] mb-5" strokeWidth={1.5} />
-            <p className="text-[#a47352] text-[18px] font-medium text-center">
+          <div className="bg-white rounded-[16px] shadow-2xl w-full max-w-[350px] py-10 px-6 flex flex-col items-center animate-in fade-in zoom-in-95 duration-150">
+            <ThumbsUp size={48} className="text-[#1A335A] mb-4" strokeWidth={2} />
+            <p className="text-[#1A335A] text-[15px] font-bold text-center">
               Produk Berhasil Dihapus
             </p>
           </div>
         </div>
-      )}
+      )} */}
     </>
   )
 }
@@ -186,10 +191,10 @@ export default function StokCard({ produk, onRefresh, onEditClick, onDetailClick
 function InfoBlock({ label, value, className = '' }) {
   return (
     <div className={`min-w-0 ${className}`}>
-      <p className="text-[#e3c2ac] text-[11px] sm:text-[12px] font-medium tracking-wide leading-tight mb-1">
+      <p className="text-gray-400 text-[10px] font-medium tracking-wide mb-0.5">
         {label}
       </p>
-      <p className="text-[#a47352] text-[13px] sm:text-[14px] font-semibold leading-tight truncate">
+      <p className="text-gray-800 text-[12px] font-bold leading-tight truncate">
         {value}
       </p>
     </div>
@@ -201,10 +206,10 @@ function ActionButton({ color, icon, label, onClick }) {
     <button
       onClick={onClick}
       style={{ backgroundColor: color }}
-      className="flex flex-col items-center justify-center gap-1 w-[60px] h-[58px] rounded-[10px] text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+      className="flex flex-col items-center justify-center gap-0.5 w-[50px] h-[46px] rounded-[6px] text-white transition-all hover:opacity-90 active:scale-95 shadow-xs"
     >
       {icon}
-      <span className="text-[11px] font-semibold leading-none">{label}</span>
+      <span className="text-[9px] font-bold leading-none mt-0.5">{label}</span>
     </button>
   )
 }

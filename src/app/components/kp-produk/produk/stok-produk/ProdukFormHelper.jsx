@@ -15,20 +15,23 @@ export const JENIS_PEWARNA_OPTIONS = ['Sintetis', 'Alami']
 export function FormField({ label, children }) {
   return (
     <div className="space-y-1.5 w-full">
-      <label className="block text-[14px] font-medium text-[#a47352]">{label}</label>
+      <label className="block text-[14px] font-medium text-[#1A335A]">{label}</label>
       {children}
     </div>
   )
 }
 
-export function SelectInput({ value, onChange, options, placeholder, disabled, customBg }) {
+// 1. Tambahkan parameter textColor di sini
+export function SelectInput({ value, onChange, options, placeholder, disabled, customBg, textColor }) {
   return (
     <select
       value={value}
       onChange={onChange}
       disabled={disabled}
-      className="w-full h-[40px] px-3 pr-10 rounded-[10px] border border-[#a47352] text-[#a47352] text-sm font-medium focus:outline-none focus:ring-1 focus:ring-[#a47352] transition-all disabled:opacity-50 appearance-none bg-no-repeat duration-200 cursor-pointer"
+      className="w-full h-[40px] px-3 pr-10 rounded-[10px] border border-[#1A335A] text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-[#1A335A] transition-all disabled:opacity-50 appearance-none bg-no-repeat duration-200 cursor-pointer"
       style={{
+        // 2. Suntikkan textColor ke dalam style select utama
+        color: textColor || '#1A335A',
         backgroundColor: customBg || 'rgba(227, 194, 172, 0.35)',
         backgroundImage: ARROW_UP_SVG,
         backgroundPosition: 'right 12px center',
@@ -42,9 +45,15 @@ export function SelectInput({ value, onChange, options, placeholder, disabled, c
         e.target.style.backgroundImage = ARROW_UP_SVG
       }}
     >
-      {placeholder && <option value="" className="text-[#a47352]/50">{placeholder}</option>}
+      {placeholder && <option value="" className="text-[#1A335A]/50">{placeholder}</option>}
       {options.map(opt => (
-        <option key={opt.value} value={opt.value} className="text-[#8C5F3F] bg-white">
+        <option 
+          key={opt.value} 
+          value={opt.value} 
+          // 3. Ubah warna teks list option di sini agar mengikuti warna Navy tua / textColor
+          style={{ color: textColor || '#1A335A' }}
+          className="bg-white"
+        >
           {opt.label}
         </option>
       ))}
@@ -55,16 +64,16 @@ export function SelectInput({ value, onChange, options, placeholder, disabled, c
 export function Info({ label, value }) {
   return (
     <div className="min-w-0">
-      <p className="text-[#cda483] text-[11px] font-medium tracking-wide leading-tight mb-0.5">{label}</p>
-      <p className="text-[#8C5F3F] text-[13px] font-bold leading-tight truncate">{value}</p>
+      <p className="text-[#1A335A] text-[11px] font-medium tracking-wide leading-tight mb-0.5">{label}</p>
+      <p className="text-[#162a49] text-[13px] font-bold leading-tight truncate">{value}</p>
     </div>
   )
 }
 
 export function GulunganRow({ gulungan, rakName, onRemove, disabled }) {
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-3 items-center px-4 py-3 bg-white border-b border-stone-100 hover:bg-[#a47352]/5 transition-colors duration-150">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 text-xs">
+    <div className="grid grid-cols-[1fr_auto] gap-3 items-center px-4 py-3 bg-white border-b border-stone-100 hover:bg-[#1A335A]/5 transition-colors duration-150">
+      <div className="grid grid-cols-2 text-xs sm:grid-cols-4 gap-x-3 gap-y-2">
         <Info label="Lebar" value={`${gulungan.lebar} cm`} />
         <Info label="Panjang" value={`${gulungan.panjang_total} m`} />
         <Info label="Harga/m" value={`Rp ${Number(gulungan.harga_per_meter).toLocaleString('id-ID')}`} />

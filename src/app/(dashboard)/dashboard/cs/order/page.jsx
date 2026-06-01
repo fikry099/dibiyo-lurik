@@ -208,7 +208,7 @@ return (
 
       {/* 2. MODAL KUSTOM STOK HABIS MENGGUNAKAN REACT PORTAL */}
       {isAlertModalOpen && alertProduct && typeof window !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#AE834E87] backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#1A335A7A] backdrop-blur-sm animate-in fade-in duration-200">
           
           <div className="absolute inset-0" onClick={() => setIsAlertModalOpen(false)} />
 

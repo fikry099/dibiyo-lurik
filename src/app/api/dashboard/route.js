@@ -25,25 +25,33 @@ async function getSummary() {
   try {
     const { data, error } = await supabaseAdmin.from('v_dashboard_summary').select('*').single()
     if (error) throw error
+    
     return {
-      produkTersedia: data?.produk_tersedia || 0,
-      produkSold: data?.produk_sold || 0,
-      poBelumDiproses: data?.belum_diproses || 0,
-      poSedangDiproses: data?.sedang_diproses || 0,
+      produkTersedia: Number(data?.produk_tersedia || 0),
+      produkSold: Number(data?.produk_sold || 0),
+      poDalamProses: Number(data?.belum_diproses || 0), 
+      poSedangDiproses: Number(data?.sedang_diproses || 0),
     }
-  } catch { return { produkTersedia: 0, produkSold: 0, poBelumDiproses: 0, poSedangDiproses: 0 } }
+  } catch (err) { 
+    console.error('Error fetching summary:', err)
+    return { produkTersedia: 0, produkSold: 0, poDalamProses: 0, poSedangDiproses: 0 } 
+  }
 }
 
 async function getProdukTerlaris() {
   try {
-    const { data, error } = await supabaseAdmin.from('v_produk_terlaris').select('id, kode_produk, nama_kategori, nama_motif, terjual, daftar_lebar').limit(5)
+    const { data, error } = await supabaseAdmin
+      .from('v_produk_terlaris')
+      .select('id, kode_produk, nama_kategori, nama_motif, terjual, daftar_lebar')
+      .limit(5)
+      
     if (error) throw error
     return (data || []).map((p) => ({
       kode_produk: p.kode_produk || '-',
       motif: p.nama_motif || '-',
       kategori: p.nama_kategori || '-',
       lebar: p.daftar_lebar,
-      jumlah_pesanan: Number(p.terjual || 0),
+      jumlah_terjual: Number(p.terjual || 0),
     }))
   } catch { return [] }
 }

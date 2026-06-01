@@ -10,19 +10,21 @@ export default function LaporanPoRegulerFilterBar({
   const endDateRef = useRef(null);
 
   return (
-    <div className="p-6 bg-[#F5EBE3]/40 border border-[#E3C2AC]/50 rounded-xl shadow-sm mb-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="text-sm font-bold text-stone-700">Filter PO Reguler</div>
+    <div className="w-full pb-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Judul Sub-Section */}
+        <div className="text-base font-medium tracking-wide text-gray-800">
+          List PO Reguler
+        </div>
 
-        <div className="flex flex-wrap items-center justify-end flex-1 gap-4">
+        <div className="flex flex-wrap items-center justify-end flex-1 max-w-5xl gap-3">
           {/* Filter Status Produksi */}
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="px-3 py-2.5 rounded-lg border border-[#E3C2AC] bg-[#F5EBE3]/20 focus:outline-none focus:border-[#8B5E3C] text-xs font-semibold text-stone-700 cursor-pointer"
+            className="px-3 py-2 rounded-lg border border-[#b2c7d9] bg-[#edf7fa]/40 focus:outline-none focus:border-[#1e355e] text-xs font-normal text-gray-700 cursor-pointer"
           >
             <option value="">Semua Status Produksi</option>
-            <option value="belum_diproses">Belum Diproses</option>
             <option value="dalam_proses">Dalam Proses</option>
             <option value="sedang_diproses">Sedang Diproses</option>
             <option value="selesai_diproses">Selesai Diproses</option>
@@ -32,7 +34,7 @@ export default function LaporanPoRegulerFilterBar({
           <select
             value={pembayaran}
             onChange={(e) => setPembayaran(e.target.value)}
-            className="px-3 py-2.5 rounded-lg border border-[#E3C2AC] bg-[#F5EBE3]/20 focus:outline-none focus:border-[#8B5E3C] text-xs font-semibold text-stone-700 cursor-pointer"
+            className="px-3 py-2 rounded-lg border border-[#b2c7d9] bg-[#edf7fa]/40 focus:outline-none focus:border-[#1e355e] text-xs font-normal text-gray-700 cursor-pointer"
           >
             <option value="">Semua Pembayaran</option>
             <option value="dp">DP (Uang Muka)</option>
@@ -40,34 +42,34 @@ export default function LaporanPoRegulerFilterBar({
           </select>
 
           {/* Input Range Tanggal */}
-          <div className="flex items-center gap-2 bg-[#F5EBE3]/20 border border-[#E3C2AC] rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2 bg-[#edf7fa]/40 border border-[#b2c7d9] rounded-lg px-3 py-1.5">
             <div 
-              className="flex items-center gap-1.5 cursor-pointer hover:bg-[#E3C2AC]/20 p-1 rounded transition-colors"
+              className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-200/50 p-1 rounded transition-colors"
               onClick={() => startDateRef.current?.showPicker()}
             >
-              <Calendar className="text-stone-500 shrink-0" size={16} />
+              <Calendar className="text-gray-400 shrink-0" size={16} />
               <input
                 ref={startDateRef}
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="text-xs font-semibold bg-transparent cursor-pointer text-stone-700 focus:outline-none w-[105px] [color-scheme:light]"
+                className="text-xs font-normal bg-transparent cursor-pointer text-gray-700 focus:outline-none w-[105px] [color-scheme:light]"
               />
             </div>
 
-            <span className="text-xs font-medium select-none text-stone-400">s/d</span>
+            <span className="text-xs font-light text-gray-400 select-none">s/d</span>
 
             <div 
-              className="flex items-center gap-1.5 cursor-pointer hover:bg-[#E3C2AC]/20 p-1 rounded transition-colors"
+              className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-200/50 p-1 rounded transition-colors"
               onClick={() => endDateRef.current?.showPicker()}
             >
-              <Calendar className="text-stone-500 shrink-0" size={16} />
+              <Calendar className="text-gray-400 shrink-0" size={16} />
               <input
                 ref={endDateRef}
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="text-xs font-semibold bg-transparent cursor-pointer text-stone-700 focus:outline-none w-[105px] [color-scheme:light]"
+                className="text-xs font-normal bg-transparent cursor-pointer text-gray-700 focus:outline-none w-[105px] [color-scheme:light]"
               />
             </div>
           </div>
@@ -76,17 +78,20 @@ export default function LaporanPoRegulerFilterBar({
           <button
             onClick={onExport}
             disabled={exportLoading}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#B37C57] hover:bg-[#966341] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:bg-stone-400 shrink-0"
+            className="flex items-center gap-2 px-5 py-2 bg-[#1e355e] hover:bg-[#152644] text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:bg-gray-400 shrink-0"
           >
             {exportLoading ? (
               <Loader2 className="animate-spin" size={16} />
             ) : (
-              <FileText size={16} />
+              <FileText size={16} className="stroke-[2.5]" />
             )}
-            Export PDF
+            <span>Export</span>
           </button>
         </div>
       </div>
+
+      {/* Trik Utama: Garis pemisah full width menembus p-6 menggunakan margin negatif */}
+      <div className="mt-4 -mx-6 border-b border-gray-200"></div>
     </div>
   );
 }

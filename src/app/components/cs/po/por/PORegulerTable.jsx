@@ -25,9 +25,8 @@ export default function PORegulerTable({ data, onConfirmReceipt, onEdit, onDelet
 
   const getStatusProduksiClass = (status) => {
     const map = {
-      'belum_diproses': 'bg-[#A63636]',
+      'dalam_proses': 'bg-[#A63636]',
       'sedang_diproses': 'bg-[#E0A21B]',
-      'dalam_proses': 'bg-[#E0A21B]',
       'selesai_diproses': 'bg-[#409643]'
     };
     return `${map[status] || 'bg-gray-400'} text-white text-[10px] px-3 py-1 rounded-full font-bold inline-block`;
@@ -113,7 +112,7 @@ export default function PORegulerTable({ data, onConfirmReceipt, onEdit, onDelet
 
               <td className="px-3 py-4">
                 <span className={getStatusProduksiClass(item.status)}>
-                  {item.status === 'belum_diproses' ? 'Belum diproses' : 
+                  {item.status === 'dalam_proses' ? 'Dalam Proses' : 
                    item.status === 'selesai_diproses' ? 'Selesai diproses' : 'Sedang diproses'}
                 </span>
               </td>

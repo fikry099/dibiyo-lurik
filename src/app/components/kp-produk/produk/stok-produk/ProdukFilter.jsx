@@ -14,51 +14,51 @@ export default function ProdukFilter({ categories, currentFilters, setFilters, o
     }))
   }
 
-  // Komponen Tombol Pilihan Opsi Filter
+  // Komponen Tombol Pilihan Opsi Filter - Disesuaikan ke Tema Navy Blue Terbaru
   const FilterButton = ({ active, onClick, children }) => (
     <button
       type="button"
       onClick={onClick}
-      className={`w-full px-3 py-2.5 rounded-[12px] text-xs font-bold tracking-wide transition-all duration-150 active:scale-[0.97] ${
+      className={`w-full px-3 py-2.5 rounded-[8px] text-xs font-semibold tracking-wide transition-all duration-150 active:scale-[0.97] ${
         active
-          ? 'bg-[#A3704C] text-white shadow-md shadow-[#A3704C]/20'
-          : 'bg-[#A3704C]/10 text-[#A3704C] hover:bg-[#A3704C]/15'
+          ? 'bg-[#1A335A] text-white shadow-md shadow-[#1A335A]/10'
+          : 'bg-[#EBF5FA] text-[#1A335A] hover:bg-sky-100 border border-transparent'
       }`}
     >
       {children}
     </button>
   )
 
-  return (
+return (
     <>
-      {/* 1. Backdrop Overlay: Menutup filter saat klik di luar area */}
+      {/* 1. Backdrop Overlay */}
       <div 
-        className="fixed inset-0 z-40 bg-stone-900/10 backdrop-blur-xs md:bg-transparent" 
+        className="fixed inset-0 z-40 bg-black/5 backdrop-blur-xs md:bg-transparent" 
         onClick={onClose} 
       />
 
-      {/* 2. Responsive Container Panel (Fix Lebar Eksplisit agar Tidak Gepeng) */}
-      <div className="fixed inset-x-4 bottom-6 top-auto md:absolute md:inset-auto md:right-0 md:top-full md:mt-3 z-50 p-6 space-y-5 bg-white border border-[#A3704C]/15 shadow-2xl w-auto md:w-[350px] rounded-[24px] animate-in fade-in slide-in-from-bottom-5 md:slide-in-from-top-2 duration-200">
+      {/* 2. Responsive Container Panel - DIPERBARUI UNTUK POSISI TENGAH DI DESKTOP */}
+      <div className="fixed inset-x-4 bottom-6 top-auto md:absolute md:inset-auto md:left-1/2 md:-translate-x-1/2 md:top-full md:mt-2 z-50 p-5 space-y-4 bg-white border border-gray-200 shadow-xl w-auto md:w-[300px] rounded-[10px] animate-in fade-in slide-in-from-bottom-5 md:slide-in-from-top-2 duration-200">
         
         {/* Header Dropdown */}
         <div className="flex items-center justify-between pb-1">
-          <h4 className="text-[16px] font-bold text-[#A3704C]">Pilih Filter</h4>
+          <h4 className="text-[15px] font-bold text-gray-800">Pilih Filter</h4>
           <button 
             onClick={onClose} 
-            className="text-[#A3704C]/50 hover:text-[#A3704C] p-1.5 rounded-full hover:bg-stone-50 transition-colors"
+            className="p-1 text-gray-400 transition-colors rounded-full hover:text-gray-600 hover:bg-gray-100"
           >
-            <X size={18} />
+            <X size={16} strokeWidth={2.5} />
           </button>
         </div>
         
         {/* Kategori Filter */}
-        <div className="space-y-2.5">
-          <label className="text-[11px] font-bold text-[#A3704C]/60 block uppercase tracking-wider">
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">
             Kategori
           </label>
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
-              <div key={cat.id} className="w-[calc(50%-4px)] sm:w-auto min-w-[100px] sm:min-w-0">
+              <div key={cat.id} className="w-[calc(50%-4px)] sm:w-auto min-w-[95px] sm:min-w-0">
                 <FilterButton
                   active={currentFilters.kategori_id === cat.id}
                   onClick={() => handleFilterChange('kategori_id', cat.id)}
@@ -71,8 +71,8 @@ export default function ProdukFilter({ categories, currentFilters, setFilters, o
         </div>
 
         {/* Pewarna Filter */}
-        <div className="space-y-2.5">
-          <label className="text-[11px] font-bold text-[#A3704C]/60 block uppercase tracking-wider">
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">
             Pewarna
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -89,28 +89,28 @@ export default function ProdukFilter({ categories, currentFilters, setFilters, o
         </div>
 
         {/* Status Filter */}
-        <div className="space-y-2.5">
-          <label className="text-[11px] font-bold text-[#A3704C]/60 block uppercase tracking-wider">
-            Status Produk
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {['ready', 'sold'].map((st) => (
-              <FilterButton
-                key={st}
-                active={currentFilters.status === st}
-                onClick={() => handleFilterChange('status', st)}
-              >
-                {st === 'ready' ? 'Ready' : 'Sold'}
-              </FilterButton>
-            ))}
-          </div>
-        </div>
+<div className="space-y-2">
+  <label className="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">
+    Status Produk
+  </label>
+  <div className="grid grid-cols-2 gap-2">
+    {['ready', 'sold'].map((st) => (
+      <FilterButton
+        key={st}
+        active={currentFilters.status === st} 
+        onClick={() => handleFilterChange('status', st)}
+      >
+        {st === 'ready' ? 'Ready' : 'Sold'}
+      </FilterButton>
+    ))}
+  </div>
+</div>
 
         {/* Tombol Reset Utama */}
-        <div className="pt-2 border-t border-stone-100">
+        <div className="pt-2 border-t border-gray-100">
           <button
             onClick={() => setFilters({ kategori_id: '', jenis_pewarna: '', status: '' })}
-            className="w-full py-3 text-center text-sm font-bold bg-[#A3704C]/10 text-[#A3704C] rounded-[12px] hover:bg-[#A3704C]/15 transition-colors active:scale-[0.98] duration-150"
+            className="w-full py-2.5 text-center text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-[8px] transition-colors active:scale-[0.98] duration-150"
           >
             Reset Filter
           </button>

@@ -190,8 +190,8 @@ export default function Sidebar() {
       icon: <ShoppingCart size={20} />, 
       roles: ['owner'],
       subMenu: [
-        { name: 'Pre Order Reguler', path: '/dashboard/owner/po/reguler' }, 
-        { name: 'Pre Order Custom', path: '/dashboard/owner/po/custom' }      
+        { name: 'Pre Order Reguler', path: '/dashboard/owner/po?tipe=reguler' }, 
+        { name: 'Pre Order Custom', path: '/dashboard/owner/po?tipe=custom' }
       ]
     },
     { 

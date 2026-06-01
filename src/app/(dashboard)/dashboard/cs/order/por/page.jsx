@@ -8,8 +8,8 @@ import ProductSelectionModal from "../../../../../components/cs/produk/ProductSe
 export default function AddPreOrderReguler() {
   const router = useRouter();
   const { orderData, setOrderData } = useOrderStore();
-  const product = orderData.items[0];
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [daftarHarga, setDaftarHarga] = useState([]);
 
   const [customer, setCustomer] = useState(
     orderData?.customer || {
@@ -17,107 +17,88 @@ export default function AddPreOrderReguler() {
       telpon: "",
       tgl: "",
       alamat: "",
-    },
+    }
   );
 
+  // Sinkronisasi data customer ke Zustand
   useEffect(() => {
     setOrderData({ ...orderData, customer });
   }, [customer]);
 
-  // Tambahkan di dalam fungsi komponen
-  const [daftarHarga, setDaftarHarga] = useState([]);
-
+  // Ambil data master daftar harga dari backend
   useEffect(() => {
     fetch("/api/daftar-harga")
       .then((res) => res.json())
-      .then((res) => setDaftarHarga(res.data))
+      .then((res) => setDaftarHarga(res.data || []))
       .catch((err) => console.error("Gagal ambil daftar harga:", err));
   }, []);
 
-  // Fungsi bantu untuk mencari harga dari daftarHarga
-  const getHargaPerMeter = () => {
-    // Sesuaikan logika pencarian sesuai struktur data daftarHarga Anda
-    const found = daftarHarga.find((item) => item.lebar == "70"); // Contoh jika lebar fix 70
-    return found ? found.harga_per_meter : 0;
-  };
+  const updateProductField = (index, field, value) => {
+  const newItems = [...(orderData.items || [])];
+  if (!newItems[index]) return;
 
-  const updateQty = (val) => {
-    const harga = getHargaPerMeter();
-    const newQty = Math.max(1, (product.qty || 1) + val);
+  // 1. Update field yang berubah
+  newItems[index] = { ...newItems[index], [field]: value };
 
-    const updatedItems = [
-      {
-        ...product,
-        harga: harga, // Pastikan harga disimpan di item
-        qty: newQty,
-        totalHargaItem: harga * (product.panjang || 0) * newQty,
-      },
-    ];
-    setOrderData({ ...orderData, items: updatedItems });
-  };
+  const currentItem = newItems[index];
+  
+  // Ambil data filter dari state UI
+  const currentMotifId = currentItem.motif_id || currentItem.motif?.id || currentItem.id_motif;
+  const targetLebar = currentItem.lebar;
+  const targetPewarna = currentItem.jenis_pewarna;
 
-  const updatePanjang = (val) => {
-    const harga = getHargaPerMeter();
-    const newPanjang = Math.max(0, val);
+  // 2. Logika cari harga dinamis dengan toleransi struktur nama kolom API
+  if (targetLebar && targetPewarna) {
+    const found = daftarHarga.find((d) => {
+      const matchLebar = String(d.lebar) === String(targetLebar);
+      const matchPewarna = String(d.jenis_pewarna).trim().toLowerCase() === String(targetPewarna).trim().toLowerCase();
+      
+      // Deteksi dinamis: akomodir kemungkinan nama kolom 'id_motif' atau 'motif_id' dari database API
+      const apiMotifId = d.id_motif || d.motif_id;
 
-    const updatedItems = [
-      {
-        ...product,
-        harga: harga,
-        panjang: newPanjang,
-        totalHargaItem: harga * newPanjang * (product.qty || 1),
-      },
-    ];
-    setOrderData({ ...orderData, items: updatedItems });
-  };
+      // JIKA di API ada data motif-nya, maka wajib dicocokkan dengan UI.
+      // JIKA di API properti motif-nya kosong/tidak ada, kita anggap harga berlaku umum untuk semua motif.
+      const matchMotif = apiMotifId ? String(apiMotifId) === String(currentMotifId) : true;
+
+      return matchLebar && matchPewarna && matchMotif;
+    });
+
+    if (found) {
+      // Pastikan nama properti harga sesuai (harga_per_meter atau harga)
+      newItems[index].harga = parseFloat(found.harga_per_meter || found.harga) || 0;
+    } else {
+      newItems[index].harga = 0;
+    }
+  }
+
+  // 3. Kalkulasi total harga item (Harga * Panjang * Qty)
+  const finalHarga = parseFloat(newItems[index].harga) || 0;
+  const finalPanjang = parseFloat(newItems[index].panjang) || 0;
+  const finalQty = parseInt(newItems[index].qty) || 1;
+
+  newItems[index].totalHargaItem = finalHarga * finalPanjang * finalQty;
+
+  // 4. Update state global Zustand
+  setOrderData({ ...orderData, items: newItems });
+};
 
   const handleAddItems = (newSelectedProducts) => {
+    const currentItems = orderData.items || [];
     const newItems = [
-      ...orderData.items,
+      ...currentItems,
       ...newSelectedProducts.map((p) => ({
         ...p,
         qty: 1,
         panjang: 0,
+        harga: 0,
         totalHargaItem: 0,
       })),
     ];
     setOrderData({ ...orderData, items: newItems });
   };
 
-const updateProductField = (index, field, value) => {
-  const newItems = [...orderData.items];
-  newItems[index] = { ...newItems[index], [field]: value };
-
-  // Ambil motif_id dari item produk yang bersangkutan
-  const currentMotifId = newItems[index].motif_id || newItems[index].motif?.id;
-
-  // Logika cari harga otomatis wajib menyertakan motif_id agar sinkron dengan API Backend
-  if (field === "lebar" || field === "jenis_pewarna") {
-    const targetLebar = field === "lebar" ? Number(value) : Number(newItems[index].lebar);
-    const targetPewarna = field === "jenis_pewarna" ? value : newItems[index].jenis_pewarna;
-
-    const found = daftarHarga.find(
-      (d) =>
-        Number(d.lebar) === targetLebar &&
-        d.jenis_pewarna === targetPewarna &&
-        d.motif_id === currentMotifId // <-- KUNCI DI SINI
-    );
-    
-    newItems[index].harga = found ? parseFloat(found.harga_per_meter) : 0;
-  }
-
-  // Kalkulasi total per item
-  newItems[index].totalHargaItem =
-    (newItems[index].harga || 0) *
-    (newItems[index].panjang || 0) *
-    (newItems[index].qty || 1);
-
-  setOrderData({ ...orderData, items: newItems });
-};
-
   const removeItem = (index) => {
-    // Pastikan setidaknya tersisa 1 item agar tidak kosong total
-    if (orderData.items.length > 1) {
+    if ((orderData.items || []).length > 1) {
       const newItems = orderData.items.filter((_, i) => i !== index);
       setOrderData({ ...orderData, items: newItems });
     } else {
@@ -125,8 +106,20 @@ const updateProductField = (index, field, value) => {
     }
   };
 
-  if (!product)
-    return <div className="p-10 text-center">Data produk tidak ditemukan.</div>;
+  // Tampilkan loading/state aman jika items masih kosong saat inisialisasi
+  if (!orderData?.items || orderData.items.length === 0) {
+    return (
+      <div className="p-10 text-center text-black">
+        <p className="mb-4">Data produk belanjaan masih kosong.</p>
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2 bg-[#1A335A] text-white rounded-lg text-sm"
+        >
+          + Pilih Produk Utama
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full mx-auto space-y-6">
@@ -145,184 +138,168 @@ const updateProductField = (index, field, value) => {
         <h2 className="mb-4 font-semibold text-stone-700">Data Customer</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-black">
-              Nama Customer
-            </label>
+            <label className="text-xs font-semibold text-black">Nama Customer</label>
             <input
               placeholder="Nama Customer"
               value={customer.nama}
-              className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A] "
-              onChange={(e) =>
-                setCustomer({ ...customer, nama: e.target.value })
-              }
+              className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
+              onChange={(e) => setCustomer({ ...customer, nama: e.target.value })}
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-black">
-              No Telpon
-            </label>
+            <label className="text-xs font-semibold text-black">No Telpon</label>
             <input
               placeholder="No Telpon"
               value={customer.telpon}
               className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
-              onChange={(e) =>
-                setCustomer({ ...customer, telpon: e.target.value })
-              }
+              onChange={(e) => setCustomer({ ...customer, telpon: e.target.value })}
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-black">
-              Tanggal Pre-Order Reguler
-            </label>
+            <label className="text-xs font-semibold text-black">Tanggal Pre-Order Reguler</label>
             <input
               type="date"
               value={customer.tgl}
               className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
-              onChange={(e) =>
-                setCustomer({ ...customer, tgl: e.target.value })
-              }
+              onChange={(e) => setCustomer({ ...customer, tgl: e.target.value })}
             />
           </div>
           <div className="col-span-1 space-y-1 md:col-span-3">
-            <label className="text-xs font-semibold text-black">
-              Alamat
-            </label>
+            <label className="text-xs font-semibold text-black">Alamat</label>
             <textarea
               placeholder="Alamat lengkap..."
               value={customer.alamat}
               className="w-full h-20 p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
-              onChange={(e) =>
-                setCustomer({ ...customer, alamat: e.target.value })
-              }
+              onChange={(e) => setCustomer({ ...customer, alamat: e.target.value })}
             />
           </div>
         </div>
-        {/* Data Produk */}
+      </div>
 
-       <div className="p-6 bg-[#5AE3ED1C] border shadow-sm rounded-lg mt-3">
-  <h2 className="mb-4 font-semibold text-stone-700">Data Produk</h2>
-  {orderData.items.map((item, index) => ( // Pastikan menggunakan 'item'
-    <div
-      key={index}
-      className="relative flex flex-col md:flex-row items-center gap-4 p-4 mb-4 bg-[#F1E9E987] border border-[#1A335A] rounded-xl"
-    >
-      <button
-        onClick={() => removeItem(index)}
-        className="absolute text-black transition-colors top-2 right-2 hover:text-red-600"
-      >
-        <X size={16} />
-      </button>
-
-      {/* Gambar Produk: GUNAKAN item.gambar_url BUKAN product.gambar_url */}
-      <img
-        src={item.gambar_url} 
-        className="object-cover w-32 h-32 border rounded-lg border-stone-300"
-      />
-
-      <div className="flex flex-col items-center flex-1 gap-6 md:flex-row">
-        {/* Kolom 1: Gunakan item.kode_produk, dsb */}
-        <div className="flex flex-col gap-2 min-w-[150px]">
-          <div>
-            <p className="text-xs text-gray-500">Kode Produksi</p>
-            <p className="text-sm font-bold text-black">{item.kode_produk}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Kategori</p>
-            <p className="text-sm font-semibold text-black">{item.kategori?.nama || "-"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Motif</p>
-            <p className="text-sm font-semibold text-black">{item.motif?.nama || "-"}</p>
-          </div>
-        </div>
-
-        {/* Kolom 2: Pastikan binding input ke item, bukan product */}
-        <div className="flex flex-wrap items-center flex-1 gap-4 border-t md:border-t-0 md:border-l border-[#1A335A]/20 pt-4 md:pt-0 md:pl-4">
-          
-          <div className="w-32">
-            <p className="text-xs text-black">Lebar Kain</p>
-            <select
-              className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm"
-              value={item.lebar || ""}
-              onChange={(e) => updateProductField(index, "lebar", Number(e.target.value))}
+      {/* Data List Produk */}
+      <div className="p-6 bg-[#5AE3ED1C] border shadow-sm rounded-lg mt-3">
+        <h2 className="mb-4 font-semibold text-stone-700">Data Produk</h2>
+        {orderData.items.map((item, index) => (
+          <div
+            key={index}
+            className="relative flex flex-col md:flex-row items-center gap-4 p-4 mb-4 bg-[#F1E9E987] border border-[#1A335A] rounded-xl"
+          >
+            <button
+              onClick={() => removeItem(index)}
+              className="absolute text-black transition-colors top-2 right-2 hover:text-red-600"
             >
-              <option value="">Pilih Lebar</option>
-              {[...new Set(daftarHarga.map((d) => d.lebar))].map((lebar) => (
-                <option key={lebar} value={lebar}>{lebar} cm</option>
-              ))}
-            </select>
-          </div>
+              <X size={16} />
+            </button>
 
-          <div className="w-32">
-            <p className="text-xs text-black">Jenis Pewarna</p>
-            <select
-              className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm"
-              value={item.jenis_pewarna || ""}
-              onChange={(e) => updateProductField(index, "jenis_pewarna", e.target.value)}
-              disabled={!item.lebar}
-            >
-              <option value="">Pilih Jenis</option>
-              {daftarHarga
-                .filter((d) => d.lebar == item.lebar)
-                .map((d) => (
-                  <option key={d.id} value={d.jenis_pewarna}>{d.jenis_pewarna}</option>
-                ))}
-            </select>
-          </div>
+            <img
+              src={item.gambar_url || "/placeholder-cloth.png"}
+              className="object-cover w-32 h-32 border rounded-lg border-stone-300"
+              alt="produk"
+            />
 
-                  {/* Jumlah Order */}
-      <div>
-        <p className="text-xs text-black">Jumlah Order</p>
-        <div className="flex items-center bg-[#5AE3ED1C] text-black rounded-md border border-[#1A335A] w-24">
-          <button onClick={() => updateProductField(index, "qty", Math.max(1, (item.qty || 1) - 1))} className="px-2 py-2.5">
-            <Minus size={12} />
-          </button>
-          <span className="flex-1 text-xs text-center">{item.qty || 1}</span>
-          <button onClick={() => updateProductField(index, "qty", (item.qty || 1) + 1)} className="px-2 py-2">
-            <Plus size={12} />
-          </button>
-        </div>
-      </div>
+            <div className="flex flex-col items-center flex-1 gap-6 md:flex-row">
+              <div className="flex flex-col gap-2 min-w-[150px]">
+                <div>
+                  <p className="text-xs text-gray-500">Kode Produksi</p>
+                  <p className="text-sm font-bold text-black">{item.kode_produk}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Kategori</p>
+                  <p className="text-sm font-semibold text-black">{item.kategori?.nama || item.nama_kategori || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Motif</p>
+                  <p className="text-sm font-semibold text-black">{item.motif?.nama || item.nama_motif || "-"}</p>
+                </div>
+              </div>
 
-      {/* Panjang (m) */}
-      <div className="w-24">
-        <p className="text-xs text-black">Panjang (m)</p>
-        <input
-          type="number"
-          value={item.panjang || ""}
-          className="w-full p-1.5 border bg-[#5AE3ED1C] text-black rounded-md border-[#1A335A] text-sm"
-          onChange={(e) => updateProductField(index, "panjang", parseFloat(e.target.value) || 0)}
-        />
-      </div>
+              <div className="flex flex-wrap items-center flex-1 gap-4 border-t md:border-t-0 md:border-l border-[#1A335A]/20 pt-4 md:pt-0 md:pl-4">
+                {/* Select Lebar Kain */}
+                <div className="w-32">
+                  <p className="text-xs text-black">Lebar Kain</p>
+                  <select
+                    className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm"
+                    value={item.lebar || ""}
+                    onChange={(e) => updateProductField(index, "lebar", e.target.value)}
+                  >
+                    <option value="">Pilih Lebar</option>
+                    {[...new Set(daftarHarga.map((d) => String(d.lebar)))].map((lebar) => (
+                      <option key={lebar} value={lebar}>{lebar} cm</option>
+                    ))}
+                  </select>
+                </div>
 
-      {/* Total Harga */}
-      <div className="flex-1 min-w-[120px]">
-        <p className="text-xs text-black">Total Harga</p>
-        <input
-          disabled
-          value={`Rp ${(item.totalHargaItem || 0).toLocaleString()}`}
-          className="w-full p-2 border bg-[#5AE3ED1C] text-black rounded-md border-[#1A335A] text-xs font-bold"
-        />
-      </div>
+                {/* Select Jenis Pewarna */}
+                <div className="w-32">
+                  <p className="text-xs text-black">Jenis Pewarna</p>
+                  <select
+                    className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm"
+                    value={item.jenis_pewarna || ""}
+                    onChange={(e) => updateProductField(index, "jenis_pewarna", e.target.value)}
+                    disabled={!item.lebar}
+                  >
+                    <option value="">Pilih Jenis</option>
+                    {daftarHarga
+                      .filter((d) => String(d.lebar) === String(item.lebar))
+                      .map((d) => (
+                        <option key={d.id} value={d.jenis_pewarna}>{d.jenis_pewarna}</option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* Jumlah Qty Order */}
+                <div>
+                  <p className="text-xs text-black">Jumlah Order</p>
+                  <div className="flex items-center bg-[#5AE3ED1C] text-black rounded-md border border-[#1A335A] w-24">
+                    <button 
+                      onClick={() => updateProductField(index, "qty", Math.max(1, (parseInt(item.qty) || 1) - 1))} 
+                      className="px-2 py-2.5"
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <span className="flex-1 text-xs text-center">{item.qty || 1}</span>
+                    <button 
+                      onClick={() => updateProductField(index, "qty", (parseInt(item.qty) || 1) + 1)} 
+                      className="px-2 py-2"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Input Panjang (m) */}
+                <div className="w-24">
+                  <p className="text-xs text-black">Panjang (m)</p>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={item.panjang ?? ""}
+                    className="w-full p-1.5 border bg-[#5AE3ED1C] text-black rounded-md border-[#1A335A] text-sm"
+                    onChange={(e) => updateProductField(index, "panjang", parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+
+                {/* Output Display Total Harga */}
+                <div className="flex-1 min-w-[120px]">
+                  <p className="text-xs text-black">Total Harga</p>
+                  <div className="w-full p-2 border bg-[#5AE3ED1C] text-black rounded-md border-[#1A335A] text-xs font-bold h-[38px] flex items-center">
+                    Rp {(item.totalHargaItem || 0).toLocaleString("id-ID")}
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-        {/* Tombol Tambah Item */}
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="w-full mt-4 py-4 border-2 border-dashed border-[#1A335A]/50 rounded-xl text-[#1A335A] font-semibold hover:bg-[#1A335A]/10 transition-all"
-        >
-          + Tambah Item
-        </button>
-
-        <ProductSelectionModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onAddItems={handleAddItems}
-        />
+          </div>
+        ))}
       </div>
+
+      {/* Tombol Aksi Bawah */}
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="w-full py-4 border-2 border-dashed border-[#1A335A]/50 rounded-xl text-[#1A335A] font-semibold hover:bg-[#1A335A]/10 transition-all"
+      >
+        + Tambah Item
+      </button>
 
       <button
         onClick={() => router.push("/dashboard/cs/order/por/pembayaran")}
@@ -330,6 +307,12 @@ const updateProductField = (index, field, value) => {
       >
         Lanjut Pembayaran
       </button>
+
+      <ProductSelectionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddItems={handleAddItems}
+      />
     </div>
   );
 }

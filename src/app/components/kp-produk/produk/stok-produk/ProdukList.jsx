@@ -59,7 +59,7 @@ export default function ProdukList() {
       setPrices(dHarga.data || [])
     } catch (err) {
       console.error(err)
-      Swal.fire({ title: 'Error', text: 'Gagal memuat data.', icon: 'error', confirmButtonColor: '#a47352' })
+      Swal.fire({ title: 'Error', text: 'Gagal memuat data.', icon: 'error', confirmButtonColor: '#1A335A' })
     } finally {
       setIsLoading(false)
     }
@@ -76,14 +76,16 @@ export default function ProdukList() {
     return s
   }
 
-  const filteredProduks = produks.filter((produk) => {
+const filteredProduks = produks.filter((produk) => {
     const query = searchQuery.toLowerCase()
     const matchSearch = query === '' || 
                         produk.kode_produk?.toLowerCase().includes(query) || 
                         produk.motif?.nama?.toLowerCase().includes(query)
 
     const matchKategori = filters.kategori_id === '' || produk.kategori?.id === filters.kategori_id
+
     const matchPewarna = filters.jenis_pewarna === '' || produk.jenis_pewarna === filters.jenis_pewarna
+    
     const matchStatus = filters.status === '' || normalizeStatus(produk.status) === normalizeStatus(filters.status)
 
     return matchSearch && matchKategori && matchPewarna && matchStatus
@@ -94,29 +96,28 @@ export default function ProdukList() {
   return (
     <div className="space-y-6">
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
         {/* Search Input Box */}
-        <div className="relative flex-1 lg:max-w-[calc(60%-12px)]">
-          <Search className="absolute text-[#a47352] left-4 top-1/2 -translate-y-1/2" size={20} />
+        <div className="relative flex-1 w-full">
+          <Search className="absolute font-bold text-black -translate-y-1/2 left-4 top-1/2" size={20} />
           <input
             type="text"
             placeholder="nama motif/kode produk"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 h-[56px] rounded-[10px] border border-[#a47352] text-[#a47352] focus:outline-none focus:ring-1 focus:ring-[#a47352]"
-            style={{ backgroundColor: 'rgba(227, 194, 172, 0.35)' }}
+            className="w-full pl-12 pr-4 h-[48px] rounded-[8px] border border-gray-300 bg-[#EBF5FA] text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1A335A] focus:border-[#1A335A] text-sm"
           />
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons: Filter */}
         <div className="relative w-fit">
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={`flex items-center justify-center gap-2 w-[120px] h-[56px] rounded-[10px] border transition-colors ${
-              hasActiveFilter ? 'bg-[#a47352] text-white' : 'border-[#a47352] text-[#a47352]'
+            className={`flex items-center justify-center gap-2 w-[225px] h-[48px] rounded-[8px] border text-sm font-bold transition-colors ${
+              hasActiveFilter ? 'bg-[#1A335A] text-white border-[#1A335A]' : 'border-gray-300 bg-[#EBF5FA] text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <SlidersHorizontal size={20} /> Filter
+            <SlidersHorizontal size={18} /> Filter
           </button>
 
           {/* Render Dropdown Tepat Di Bawah Tombol */}
@@ -133,41 +134,36 @@ export default function ProdukList() {
         {/* Tombol Tambah Produk */}
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center justify-center gap-2 h-[56px] bg-[#a47352] text-white px-6 rounded-[10px] font-medium transition-transform active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 h-[48px] bg-[#1A335A] hover:bg-[#11223d] text-white px-10 rounded-[8px] text-sm font-semibold transition-transform active:scale-[0.98] lg:ml-auto shadow-sm"
         >
-          <Plus size={20} /> Tambah Produk
+          <Plus size={18} /> Tambah Produk
         </button>
-      </div> {/* Tag ini menutup Toolbar dengan benar */}
+      </div>
 
       {/* Grid Produk */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, index) => (
             <div key={index} className="p-5 space-y-4 overflow-hidden bg-white border shadow-xs border-stone-200/60 rounded-xl animate-pulse">
               <div className="w-full h-48 rounded-lg bg-stone-200"></div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="w-24 h-4 rounded bg-stone-200"></div>
-                  <div className="w-16 h-5 rounded-full bg-stone-200"></div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="h-4 rounded bg-stone-200"></div>
+                  <div className="h-4 rounded bg-stone-200"></div>
+                  <div className="h-4 rounded bg-stone-200"></div>
                 </div>
-                <div className="w-3/4 h-6 rounded bg-stone-200"></div>
-                <div className="pt-1 space-y-2">
-                  <div className="w-1/2 h-3 rounded bg-stone-200"></div>
-                  <div className="w-2/3 h-3 rounded bg-stone-200"></div>
-                </div>
+                <div className="w-3/4 h-5 rounded bg-stone-200"></div>
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-stone-100">
-                <div className="w-20 h-4 rounded bg-stone-200"></div>
-                <div className="flex gap-2">
-                  <div className="w-16 h-8 rounded-lg bg-stone-200"></div>
-                  <div className="w-8 h-8 rounded-lg bg-stone-200"></div>
-                </div>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
+                <div className="h-12 rounded-lg w-14 bg-stone-200"></div>
+                <div className="h-12 rounded-lg w-14 bg-stone-200"></div>
+                <div className="h-12 rounded-lg w-14 bg-stone-200"></div>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredProduks.map((produk) => (
             <ProdukCard
               key={produk.id}

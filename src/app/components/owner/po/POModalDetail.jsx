@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, Loader2 } from 'lucide-react';
-import Swal from 'sweetalert2';
+
 
 export default function POModalDetail({ item, tipe, onClose, onRefresh }) {
   const [status, setStatus] = useState(item?.status || 'dalam_proses');
@@ -39,51 +39,51 @@ export default function POModalDetail({ item, tipe, onClose, onRefresh }) {
   const tanggalSelesaiRaw = item.tanggal_selesai || item.estimasi_selesai || item.estimasi_jadi;
   const tanggalPoRaw = item.tanggal_po || item.created_at;
 
-  // Handler simpan perubahan status (PATCH ke API)
-  const handleSaveStatus = async () => {
-    if (status === item.status) {
-      onClose();
-      return;
-    }
+  // // Handler simpan perubahan status (PATCH ke API)
+  // const handleSaveStatus = async () => {
+  //   if (status === item.status) {
+  //     onClose();
+  //     return;
+  //   }
 
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/po', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: item.id,
-          tipe: tipe,
-          status: status,
-        }),
-      });
+  //   setSubmitting(true);
+  //   try {
+  //     const res = await fetch('/api/po', {
+  //       method: 'PATCH',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         id: item.id,
+  //         tipe: tipe,
+  //         status: status,
+  //       }),
+  //     });
 
-      const result = await res.json();
+  //     const result = await res.json();
 
-      if (!res.ok) {
-        throw new Error(result.error || 'Gagal memperbarui status');
-      }
+  //     if (!res.ok) {
+  //       throw new Error(result.error || 'Gagal memperbarui status');
+  //     }
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Berhasil',
-        text: 'Status produksi berhasil diperbarui!',
-        confirmButtonColor: '#1A335A',
-      });
+  //     Swal.fire({
+  //       icon: 'success',
+  //       title: 'Berhasil',
+  //       text: 'Status produksi berhasil diperbarui!',
+  //       confirmButtonColor: '#1A335A',
+  //     });
 
-      onRefresh();
-      onClose();
-    } catch (err) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal',
-        text: err.message,
-        confirmButtonColor: '#EF4444',
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  //     onRefresh();
+  //     onClose();
+  //   } catch (err) {
+  //     Swal.fire({
+  //       icon: 'error',
+  //       title: 'Gagal',
+  //       text: err.message,
+  //       confirmButtonColor: '#EF4444',
+  //     });
+  //   } finally {
+  //     setSubmitting(false);
+  //   }
+  // };
 
   // Struktur JSX modal utama
   const modalContent = (
@@ -249,8 +249,8 @@ export default function POModalDetail({ item, tipe, onClose, onRefresh }) {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                disabled={isAlreadyFinished || submitting}
-                className="w-full p-2 bg-white border border-gray-300 rounded-lg font-bold text-xs text-gray-700 focus:ring-2 focus:ring-[#1A335A] focus:outline-none disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                disabled
+                className="w-full p-2 bg-blue-200 border border-gray-300 rounded-lg font-bold text-xs text-gray-700 focus:ring-2 focus:ring-[#1A335A] focus:outline-none  disabled:cursor-not-allowed"
               >
                 {(item.status === 'belum_diproses' || item.status === 'dalam_proses') && (
                   <>
@@ -288,13 +288,13 @@ export default function POModalDetail({ item, tipe, onClose, onRefresh }) {
         <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-gray-100 bg-gray-50">
           <button
             onClick={onClose}
-            disabled={submitting}
-            className="px-4 py-2 text-xs font-bold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            // disabled={submitting}
+            className="px-4 py-2 text-xs font-bold text-gray-100 bg-[#1A335A] border border-gray-300 rounded-lg hover:bg-[#1A335A]"
           >
-            Kembali
+            Tutup
           </button>
           
-          {!isAlreadyFinished && (
+          {/* {!isAlreadyFinished && (
             <button
               onClick={handleSaveStatus}
               disabled={submitting}
@@ -312,7 +312,7 @@ export default function POModalDetail({ item, tipe, onClose, onRefresh }) {
                 </>
               )}
             </button>
-          )}
+          )} */}
         </div>
 
       </div>
