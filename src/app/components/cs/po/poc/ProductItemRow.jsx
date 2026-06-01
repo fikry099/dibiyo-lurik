@@ -57,7 +57,7 @@ export default function ProductItemRow({
           </select>
         </div>
 
-        {/* Pewarna */}
+        {/* Pewarna (Sudah Diperbaiki agar Unik/Tidak Duplikat) */}
         <div className="flex flex-col space-y-1">
           <label className="text-[10px] font-bold">Pilih Pewarna</label>
           <select 
@@ -66,8 +66,12 @@ export default function ProductItemRow({
             onChange={(e) => updateItem(item.id, "jenis_pewarna", e.target.value)}
           >
             <option value="">Pilih</option>
-            {daftarHarga.filter((d) => d.lebar == item.lebar).map((d) => (
-              <option key={d.id} value={d.jenis_pewarna}>{d.jenis_pewarna}</option>
+            {[...new Set(
+              daftarHarga
+                .filter((d) => String(d.lebar) === String(item.lebar))
+                .map((d) => d.jenis_pewarna)
+            )].map((pewarna) => (
+              <option key={pewarna} value={pewarna}>{pewarna}</option>
             ))}
           </select>
         </div>
