@@ -56,22 +56,38 @@ export default function AddPreOrderCustom() {
     setOrderData({ ...orderData, customer, items });
   }, [customer, items]);
 
-  const updateItem = (id, field, value) => {
+const updateItem = (id, field, value) => {
     setItems(items.map((item) => {
       if (item.id !== id) return item;
       let updated = { ...item, [field]: value };
-      const options = daftarHarga.filter((d) => d.lebar == (field === 'lebar' ? value : updated.lebar));
+      
+      // Filter opsi berdasarkan lebar kain saat ini
+      const options = daftarHarga.filter((d) => String(d.lebar) === String(updated.lebar));
       
       if (field === 'lebar' && options.length > 0) {
-        updated.jenis_pewarna = options[0].jenis_pewarna;
-        updated.harga_per_meter = options[0].harga_per_meter;
-        updated.produk_id = options[0].id || options[0].produk_id;
+        // Ambil jenis pewarna unik pertama yang tersedia
+        const uniquePewarna = [...new Set(options.map(o => o.jenis_pewarna))];
+        updated.jenis_pewarna = uniquePewarna[0] || "";
+        
+        // Cari aturan harga (prioritaskan yang umum/tanpa motif karena ini custom order)
+        const foundHarga = options.find((d) => 
+          d.jenis_pewarna === updated.jenis_pewarna && (d.motif === null || !d.motif_id)
+        ) || options.find((d) => d.jenis_pewarna === updated.jenis_pewarna);
+
+        updated.harga_per_meter = foundHarga ? foundHarga.harga_per_meter : 0;
+        updated.produk_id = foundHarga ? (foundHarga.id || foundHarga.produk_id) : null;
       }
+      
       if (field === "jenis_pewarna") {
-        const found = daftarHarga.find((d) => d.lebar == updated.lebar && d.jenis_pewarna == value);
+        // Cari aturan harga berdasarkan kombinasi lebar & pewarna (prioritaskan tanpa motif)
+        const found = options.find((d) => 
+          d.jenis_pewarna === value && (d.motif === null || !d.motif_id)
+        ) || options.find((d) => d.jenis_pewarna === value);
+        
         updated.harga_per_meter = found ? found.harga_per_meter : 0;
         updated.produk_id = found ? (found.id || found.produk_id) : null;
       }
+      
       updated.totalHargaItem = Number(updated.harga_per_meter) * Number(updated.panjang || 0) * Number(updated.qty || 0);
       return updated;
     }));

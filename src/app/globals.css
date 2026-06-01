@@ -84,3 +84,17 @@ a {
   border-top-color: #3b82f6 !important;
   border-left-color: #3b82f6 !important;
 }
+
+/* Netralkan latar gelap autofill Chrome/Edge pada input */
+input.nominal-input:-webkit-autofill,
+input.nominal-input:-webkit-autofill:hover,
+input.nominal-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #111827;
+  /* teks gelap terbaca */
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  /* paksa latar putih */
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  caret-color: #111827;
+  transition: background-color 9999s ease-in-out 0s;
+  /* tahan override autofill */
+}

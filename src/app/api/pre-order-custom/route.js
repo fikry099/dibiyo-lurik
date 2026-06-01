@@ -51,6 +51,7 @@ export async function GET(request) {
         item_pre_order_custom (
           id,
           lebar,
+          jenis_pewarna,
           panjang,
           jumlah,
           harga_per_meter,
@@ -142,6 +143,7 @@ export async function POST(request) {
       return {
         pre_order_custom_id: poCustom.id,
         lebar: Number(item.lebar),
+        jenis_pewarna: item.jenis_pewarna || null,
         panjang: Number(item.panjang || 0),
         jumlah: Number(item.jumlah || item.qty || 1),
         harga_per_meter: Number(item.harga_per_meter || item.hargaPerMeter || 0),
