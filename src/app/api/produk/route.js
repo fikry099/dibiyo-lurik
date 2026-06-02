@@ -1,9 +1,15 @@
 ﻿import { NextResponse } from 'next/server'
 import supabaseAdmin from '../../../lib/supabase-admin'
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const { data, error } = await supabaseAdmin
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '15');
+ 
+    const offset = (page - 1) * limit;
+
+    let query = supabaseAdmin
       .from('produk')
       .select(`
         id,
@@ -27,11 +33,23 @@ export async function GET() {
           harga:harga_per_meter,
           rak:rak_id(id, nama)
         )
-      `)
-      .order('created_at', { ascending: false });
+      `, { count: 'exact' });
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    return NextResponse.json({ data: data || [] }, { status: 200 });
+
+    return NextResponse.json({ 
+      data: data || [], 
+      meta: { 
+        total: count, 
+        page, 
+        limit 
+      } 
+    }, { status: 200 });
+
   } catch (err) {
     console.error("Supabase Error:", err); 
     return NextResponse.json({ message: 'Gagal memuat produk: ' + err.message }, { status: 500 });

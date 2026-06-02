@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-
-// Import sub-komponen tetap sama
 import LaporanFilterBar from '@/app/components/owner/laporan/LaporanFilterBar';
 import LaporanTable from '@/app/components/owner/laporan/LaporanTable';
+import Swal from 'sweetalert2';
 
 export default function LaporanOrderPage() {
   const [laporanData, setLaporanData] = useState([]);
@@ -45,9 +44,6 @@ export default function LaporanOrderPage() {
   const handleExportPDF = () => {
     setExportLoading(true);
     try {
-      // ===============================================================
-      // SOLUSI UTAMA: Load package secara dinamis hanya di dalam client runtime
-      // ===============================================================
       const { jsPDF } = require('jspdf');
       const autoTable = require('jspdf-autotable').default || require('jspdf-autotable');
 
@@ -57,8 +53,8 @@ export default function LaporanOrderPage() {
         format: 'a4',
       });
 
-      // ===== HEADER BISNIS (Disesuaikan ke Biru Gelap / Abu-abu Netral) =====
-      doc.setTextColor(30, 53, 94); // #1e355e
+      // ===== HEADER BISNIS =====
+      doc.setTextColor(30, 53, 94); 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(20);
       doc.text('DIBYO LURIK', 105, 15, { align: 'center' });
@@ -68,7 +64,7 @@ export default function LaporanOrderPage() {
       doc.setFontSize(10);
       doc.text('Sistem Manajemen Toko Kain Lurik', 105, 21, { align: 'center' });
 
-      doc.setDrawColor(30, 53, 94); // Garis pemisah biru gelap #1e355e
+      doc.setDrawColor(30, 53, 94); 
       doc.setLineWidth(0.4);
       doc.line(15, 26, 195, 26);
 
@@ -115,12 +111,26 @@ export default function LaporanOrderPage() {
         ];
       });
 
-      // Panggil fungsi autoTable terpisah yang di-require tadi
+      const tableFooters = [
+        [
+          { 
+            content: 'TOTAL OMSET PENJUALAN:', 
+            colSpan: 8, 
+            styles: { halign: 'right', fontStyle: 'bold', textColor: [30, 53, 94] } 
+          },
+          { 
+            content: `Rp ${grandTotalSum.toLocaleString('id-ID')},00`, 
+            styles: { halign: 'right', fontStyle: 'bold', textColor: [30, 53, 94] } 
+          }
+        ]
+      ];
+
       autoTable(doc, {
         startY: 48,
         head: tableHeaders,
         body: tableRows,
-        margin: { left: 15, right: 15 },
+        foot: tableFooters,
+        margin: { left: 15, right: 15, bottom: 25 },
         theme: 'striped',
         styles: {
           font: 'helvetica',
@@ -129,10 +139,15 @@ export default function LaporanOrderPage() {
           verticalAlignment: 'middle',
         },
         headStyles: {
-          fillColor: [30, 53, 94], // Warna header tabel PDF disamakan dengan UI baru (#1e355e)
+          fillColor: [30, 53, 94], 
           textColor: [255, 255, 255],
           fontStyle: 'bold',
           halign: 'left',
+        },
+        footStyles: {
+          fillColor: [240, 244, 248], 
+          fillLineWidth: 0.2,
+          fillDrawColor: [30, 53, 94],
         },
         columnStyles: {
           0: { halign: 'center', width: 10 },
@@ -142,35 +157,32 @@ export default function LaporanOrderPage() {
           8: { halign: 'right' },
         },
         alternateRowStyles: {
-          fillColor: [245, 247, 250], // Background zebra stripping tipis kebiruan/abu netral
+          fillColor: [245, 247, 250], 
         },
       });
 
-      // Ambil koordinat setelah autoTable berjalan
-      let finalY = doc.previousAutoTable?.finalY ? doc.previousAutoTable.finalY + 8 : 150;
-      
-      if (finalY > 270) {
-        doc.addPage();
-        finalY = 20;
-      }
 
-      doc.setTextColor(30, 53, 94); // Teks Total Omset warna biru gelap
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.5);
-      doc.text(`TOTAL OMSET PENJUALAN: Rp ${grandTotalSum.toLocaleString('id-ID')},00`, 195, finalY, {
-        align: 'right',
-      });
+      let finalY = doc.previousAutoTable?.finalY ? doc.previousAutoTable.finalY + 15 : 150;
+
+      if (finalY > 265) {
+        doc.addPage();
+        finalY = 30; 
+      }
 
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(8);
       doc.setTextColor(153, 153, 153);
-      doc.text('— Akhir Laporan Transaksi Dibyo Lurik —', 105, finalY + 12, { align: 'center' });
 
       const blobUrl = doc.output('bloburl');
       window.open(blobUrl, '_blank');
     } catch (err) {
       console.error('Gagal generate PDF:', err);
-      alert('Terjadi kesalahan saat memproses preview PDF');
+      Swal.fire({
+        title: 'Gagal Export',
+        text: 'Terjadi kesalahan saat memproses preview PDF.',
+        icon: 'error',
+        confirmButtonColor: '#1E355E'
+      });
     } finally {
       setExportLoading(false);
     }

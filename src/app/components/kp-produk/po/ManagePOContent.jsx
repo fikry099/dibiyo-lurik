@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import POTable from './POTable';
 import POModalDetail from './POModalDetail';
 import NotificationBell from '../../NotificationBell';
@@ -21,6 +21,11 @@ export default function ManagePOContent() {
   const [status, setStatus] = useState('');
   const [statusPembayaran, setStatusPembayaran] = useState('');
   
+  // State Baru untuk Manajemen Pagination Server-side
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10; // Disesuaikan menjadi limit 10 sesuai rute yang diminta
+
   // State Lokal Kontrol Dropdown Menu Filter
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const hasActiveFilters = status !== '' || statusPembayaran !== '';
@@ -30,7 +35,8 @@ export default function ManagePOContent() {
     
     const apiPath = tipe === 'reguler' ? '/api/pre-order-reguler' : '/api/pre-order-custom';
     
-    let queryParams = [`page=1`, `limit=50`];
+    // Mengubah query statis menjadi dinamis mengikuti state currentPage dan limit=10
+    let queryParams = [`page=${currentPage}`, `limit=${itemsPerPage}`];
     if (status) queryParams.push(`status=${status}`);
     if (statusPembayaran) queryParams.push(`status_pembayaran=${statusPembayaran}`);
 
@@ -39,18 +45,29 @@ export default function ManagePOContent() {
     try {
       const res = await fetch(url);
       const resJson = await res.json();
-      setData(resJson.data || []);
+      if (res.ok) {
+        setData(resJson.data || []);
+        // Menyimpan jumlah record asli dari meta backend untuk pembagian halaman
+        setTotalItems(resJson.meta?.total || resJson.data?.length || 0);
+      }
     } catch (err) {
       console.error(err);
       setData([]);
+      setTotalItems(0);
     } finally {
       if (isInitial) setLoading(false);
     }
   };
 
+  // Reset halaman kembali ke page 1 jika user mengubah tipe tab PO atau kriteria filter
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tipe, status, statusPembayaran]);
+
+  // Picu penarikan data baru setiap kali tipe, filter, atau halaman aktif berubah
   useEffect(() => {
     fetchPOData(true);
-  }, [tipe, status, statusPembayaran]);
+  }, [tipe, status, statusPembayaran, currentPage]);
 
   const handleDeleteSuccess = (deletedId) => {
     setData((prevData) => prevData.filter(item => item.id !== deletedId));
@@ -61,11 +78,21 @@ export default function ManagePOContent() {
     setStatus('');
     setStatusPembayaran('');
     setIsFilterOpen(false);
+    setCurrentPage(1);
   };
 
   const filteredData = Array.isArray(data) 
     ? data.filter(item => item?.nama_customer?.toLowerCase().includes(search.toLowerCase()))
     : [];
+
+  // Hitung total halaman berdasarkan jumlah data asli backend dibagi limit 10
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+  const handlePageChange = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
 
   return (
     <>
@@ -80,9 +107,6 @@ export default function ManagePOContent() {
             
             <div className="flex flex-col items-center justify-end flex-1 w-full gap-3 sm:flex-row md:w-auto">
               
-              {/* NOTIFIKASI LONCENG DILETAKKAN SEBELUM SEARCH INPUT */}
-
-
               {/* Input Pencarian */}
               <div className="relative w-full sm:max-w-md">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 pointer-events-none">
@@ -113,11 +137,10 @@ export default function ManagePOContent() {
                 )}
               </button>
 
-            <NotificationBell role="kp" currentType={tipe} /> 
+              <NotificationBell role="kp" currentType={tipe} /> 
 
             </div>
           </div>
-
 
           {isFilterOpen && (
             <>
@@ -202,6 +225,56 @@ export default function ManagePOContent() {
           onDeleteSuccess={handleDeleteSuccess}
           tipe={tipe}
         />
+
+        {/* ================= BAR KONTROL PAGINATION MANAGE PO (LIMIT 10) ================= */}
+        {!loading && totalPages > 1 && (
+          <div className="flex flex-col items-center justify-between gap-4 p-6 border-t border-stone-100 sm:flex-row">
+            <div className="text-xs font-medium text-stone-500">
+              Menampilkan <span className="text-[#1A335A] font-bold">{Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}</span>–{Math.min(currentPage * itemsPerPage, totalItems)} dari <span className="text-[#1A335A] font-bold">{totalItems}</span> Total Data PO
+            </div>
+            
+            <div className="flex items-center gap-1">
+              {/* Tombol Sebelumnya */}
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="flex items-center justify-center w-8 h-8 transition-all bg-white border rounded shadow-sm cursor-pointer border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:hover:bg-white"
+              >
+                <ChevronLeft size={14} strokeWidth={2.5} />
+              </button>
+
+              {/* Angka Halaman */}
+              {[...Array(totalPages)].map((_, idx) => {
+                const pageNum = idx + 1;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`w-8 h-8 flex items-center justify-center text-xs font-bold rounded transition-all cursor-pointer ${
+                      currentPage === pageNum
+                        ? 'bg-[#1A335A] text-white shadow-md'
+                        : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 shadow-sm'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Tombol Selanjutnya */}
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="flex items-center justify-center w-8 h-8 transition-all bg-white border rounded shadow-sm cursor-pointer border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:hover:bg-white"
+              >
+                <ChevronRight size={14} strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Detail Modal */}

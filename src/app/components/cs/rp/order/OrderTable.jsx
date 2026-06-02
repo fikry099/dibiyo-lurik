@@ -1,10 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { Eye } from 'lucide-react';
-import OrderDetailModal from './OrderDetailModal'; // Pastikan path impor sesuai struktur folder Anda
+import OrderDetailModal from './OrderDetailModal'; 
 
 export default function OrderTable({ orders }) {
-  // State untuk kontrol buka tutup modal & menyimpan data order yang diklik
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 

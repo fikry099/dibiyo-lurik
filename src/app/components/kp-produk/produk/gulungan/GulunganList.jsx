@@ -16,11 +16,11 @@ function GulunganSkeleton() {
           className="bg-gray-50/80 border border-gray-200 rounded-[10px] p-3.5 flex items-center justify-between shadow-[0px_2px_4px_rgba(0,0,0,0.05)]"
         >
           {/* Sisi Kiri: Gambar & Info Utama */}
-          <div className="flex items-center gap-4 flex-1">
+          <div className="flex items-center flex-1 gap-4">
             <div className="w-14 h-14 bg-gray-200 rounded-[8px]" />
             <div className="space-y-2">
               <div className="h-3 bg-[#1A335A]/15 rounded w-16" />
-              <div className="h-4 bg-gray-300/60 rounded w-32" />
+              <div className="w-32 h-4 rounded bg-gray-300/60" />
             </div>
           </div>
           {/* Sisi Kanan: Placeholder Tombol Tambah */}
@@ -147,7 +147,7 @@ export default function GulunganList() {
     <div className="space-y-3.5">
       
       {/* BAR TOOLBAR UTAMA */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-1 relative">
+      <div className="relative flex flex-col gap-3 pt-1 md:flex-row md:items-center md:justify-between">
         <form onSubmit={handleSearchSubmit} className="flex items-center flex-1 w-full gap-3">
           <div className="relative flex-1">
             <Search className="absolute text-[#1A335A]/60 -translate-y-1/2 left-4 top-1/2" size={18} />
@@ -166,7 +166,7 @@ export default function GulunganList() {
           <button
             type="button"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="flex items-center bg-[#EEF7F9] border border-[#1A335A]/15 rounded-[10px] px-5 py-3 shadow-[1px_2px_4px_rgba(0,0,0,0.03)] text-sm font-bold text-[#1A335A] hover:bg-[#E2F0F3] transition-all whitespace-nowrap"
+            className="flex items-center bg-[#EEF7F9] border border-[#1A335A]/15 rounded-[10px] px-16 py-3 shadow-[1px_2px_4px_rgba(0,0,0,0.03)] text-sm font-bold text-[#1A335A] hover:bg-[#E2F0F3] transition-all whitespace-nowrap"
           >
             <SlidersHorizontal size={16} className="text-[#1A335A] mr-2" />
             Filter

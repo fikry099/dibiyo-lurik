@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import LaporanPoCustomFilterBar from '@/app/components/owner/laporan/poc/LaporanPoCustomFilterBar';
 import LaporanPoTable from '@/app/components/owner/laporan/poc/LaporanPoTable'; 
+import Swal from 'sweetalert2';
 
 export default function LaporanPoCustomPage() {
   const [poData, setPoData] = useState([]);
@@ -37,7 +38,6 @@ export default function LaporanPoCustomPage() {
     fetchLaporanPo();
   }, [startDate, endDate, status, pembayaran]);
 
-  // Handler Export PDF dengan penyesuaian tema warna biru gelap navy
   const handleExportPDF = () => {
     setExportLoading(true);
     try {
@@ -50,8 +50,7 @@ export default function LaporanPoCustomPage() {
         format: 'a4',
       });
 
-      // ===== HEADER BISNIS (Navy Theme) =====
-      doc.setTextColor(30, 53, 94); // #1e355e
+      doc.setTextColor(30, 53, 94); 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(20);
       doc.text('DIBYO LURIK', 105, 15, { align: 'center' });
@@ -106,12 +105,26 @@ export default function LaporanPoCustomPage() {
         ];
       });
 
-      // Render tabel via jsPDF AutoTable
+      const tableFooters = [
+        [
+          { 
+            content: 'TOTAL OMSET PO CUSTOM:', 
+            colSpan: 6, 
+            styles: { halign: 'right', fontStyle: 'bold', textColor: [30, 53, 94] } 
+          },
+          { 
+            content: `Rp ${grandTotalSum.toLocaleString('id-ID')},00`, 
+            styles: { halign: 'right', fontStyle: 'bold', textColor: [30, 53, 94] } 
+          }
+        ]
+      ];
+
       autoTable(doc, {
         startY: 48,
         head: tableHeaders,
         body: tableRows,
-        margin: { left: 15, right: 15 },
+        foot: tableFooters, 
+        margin: { left: 15, right: 15, bottom: 25 }, 
         theme: 'striped',
         styles: {
           font: 'helvetica',
@@ -120,10 +133,15 @@ export default function LaporanPoCustomPage() {
           verticalAlignment: 'middle',
         },
         headStyles: {
-          fillColor: [30, 53, 94], // Header tabel PDF Navy
+          fillColor: [30, 53, 94], 
           textColor: [255, 255, 255],
           fontStyle: 'bold',
           halign: 'left',
+        },
+        footStyles: {
+          fillColor: [240, 244, 248], 
+          fillLineWidth: 0.2,
+          fillDrawColor: [30, 53, 94],
         },
         columnStyles: {
           0: { halign: 'center', width: 10 },
@@ -137,30 +155,27 @@ export default function LaporanPoCustomPage() {
         },
       });
 
-      let finalY = doc.previousAutoTable?.finalY ? doc.previousAutoTable.finalY + 8 : 150;
-      if (finalY > 270) {
+      let finalY = doc.previousAutoTable?.finalY ? doc.previousAutoTable.finalY + 15 : 150;
+      
+      if (finalY > 265) {
         doc.addPage();
-        finalY = 20;
+        finalY = 30; 
       }
-
-      // ===== FOOTER TOTAL OMSET =====
-      doc.setTextColor(30, 53, 94);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.5);
-      doc.text(`TOTAL OMSET PO CUSTOM: Rp ${grandTotalSum.toLocaleString('id-ID')},00`, 195, finalY, {
-        align: 'right',
-      });
 
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(8);
       doc.setTextColor(153, 153, 153);
-      doc.text('— Akhir Laporan Pre-Order Custom Dibyo Lurik —', 105, finalY + 12, { align: 'center' });
 
       const blobUrl = doc.output('bloburl');
       window.open(blobUrl, '_blank');
     } catch (err) {
       console.error('Gagal generate PDF PO Custom:', err);
-      alert('Terjadi kesalahan saat memproses preview PDF');
+      Swal.fire({
+        title: 'Gagal Export',
+        text: 'Terjadi kesalahan saat memproses preview PDF.',
+        icon: 'error',
+        confirmButtonColor: '#1E355E'
+      });
     } finally {
       setExportLoading(false);
     }

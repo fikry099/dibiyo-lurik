@@ -51,8 +51,8 @@ export default function ProductCard({ product, onAddReguler, onBuy }) {
           <InfoBlock label="Kategori" value={kategoriNama} />
 
           {/* Stok dinamis berdasarkan sisa meter kain di gulungan */}
-          <InfoBlock label="Stok" value={jumlahGulungan > 0 ? `${jumlahGulungan}` : '0'} />
-          <InfoBlock label="Jumlah Terjual" value={`${terjual} gulungan`} />
+          <InfoBlock label="Stok" value={jumlahGulungan > 0 ? `${jumlahGulungan} Gulungan` : '0 Gulungan'} />
+          <InfoBlock label="Jumlah Terjual" value={`${terjual} Meter`} />
           <div className="min-w-0" />
         </div>
       </div>

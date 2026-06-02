@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import POTable from './POTable';
 import POModalDetail from './POModalDetail';
 
@@ -20,6 +20,15 @@ export default function ManagePOContent() {
   const [status, setStatus] = useState('');
   const [statusPembayaran, setStatusPembayaran] = useState('');
   
+  // State Pagination
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total_items: 0,
+    total_pages: 1
+  });
+  
   // State Lokal Kontrol Dropdown Menu Filter
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const hasActiveFilters = status !== '' || statusPembayaran !== '';
@@ -29,7 +38,8 @@ export default function ManagePOContent() {
     
     const apiPath = tipe === 'reguler' ? '/api/pre-order-reguler' : '/api/pre-order-custom';
     
-    let queryParams = [`page=1`, `limit=50`];
+    let queryParams = [`page=${page}`, `limit=10`];
+    if (search) queryParams.push(`search=${encodeURIComponent(search)}`);
     if (status) queryParams.push(`status=${status}`);
     if (statusPembayaran) queryParams.push(`status_pembayaran=${statusPembayaran}`);
 
@@ -38,7 +48,22 @@ export default function ManagePOContent() {
     try {
       const res = await fetch(url);
       const resJson = await res.json();
+      
       setData(resJson.data || []);
+      
+      // FIX SINKRONISASI DISINI: Membaca properti 'meta' dari backend
+      if (resJson.meta) {
+        const totalItems = resJson.meta.total || 0;
+        const limitItems = resJson.meta.limit || 10;
+        
+        setPagination({
+          page: resJson.meta.page || 1,
+          limit: limitItems,
+          total_items: totalItems,
+          // Hitung total halaman berdasarkan jumlah data asli dibagi limit
+          total_pages: Math.ceil(totalItems / limitItems) || 1
+        });
+      }
     } catch (err) {
       console.error(err);
       setData([]);
@@ -47,9 +72,19 @@ export default function ManagePOContent() {
     }
   };
 
+  // Reset ke halaman 1 jika tipe, pencarian, atau filter kategori berubah
   useEffect(() => {
-    fetchPOData(true);
-  }, [tipe, status, statusPembayaran]);
+    setPage(1);
+  }, [tipe, search, status, statusPembayaran]);
+
+  // Handle Fetch Data dengan Debounce khusus input pencarian teks
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchPOData(page === 1);
+    }, 400);
+
+    return () => clearTimeout(delayDebounce);
+  }, [tipe, search, status, statusPembayaran, page]);
 
   const handleDeleteSuccess = (deletedId) => {
     setData((prevData) => prevData.filter(item => item.id !== deletedId));
@@ -62,9 +97,14 @@ export default function ManagePOContent() {
     setIsFilterOpen(false);
   };
 
-  const filteredData = Array.isArray(data) 
-    ? data.filter(item => item?.nama_customer?.toLowerCase().includes(search.toLowerCase()))
-    : [];
+  // Helper navigasi halaman pagination
+  const handlePrevPage = () => {
+    if (page > 1) setPage((prev) => prev - 1);
+  };
+
+  const handleNextPage = () => {
+    if (page < pagination.total_pages) setPage((prev) => prev + 1);
+  };
 
   return (
     <>
@@ -188,12 +228,69 @@ export default function ManagePOContent() {
 
         {/* Tabel Data */}
         <POTable 
-          data={filteredData} 
+          data={data} 
           loading={loading} 
           setSelectedItem={setSelectedItem} 
           onDeleteSuccess={handleDeleteSuccess}
           tipe={tipe}
         />
+
+        {/* ================= CONTROLLER UI PAGINATION BAR CUSTOM STYLE ================= */}
+        {!loading && pagination.total_pages > 1 && (
+          <div className="flex flex-col items-center justify-between gap-4 p-6 border-t border-stone-100 sm:flex-row bg-stone-50/30">
+            <div className="text-xs font-medium text-stone-500">
+              Menampilkan{' '}
+              <span className="text-[#1A335A] font-bold">
+                {Math.min((page - 1) * pagination.limit + 1, pagination.total_items)}
+              </span>
+              –
+              {Math.min(page * pagination.limit, pagination.total_items)}{' '}
+              dari{' '}
+              <span className="text-[#1A335A] font-bold">{pagination.total_items}</span> Total Antrean
+            </div>
+            
+            <div className="flex items-center gap-1">
+              {/* Tombol Halaman Sebelumnya */}
+              <button
+                type="button"
+                onClick={handlePrevPage}
+                disabled={page === 1}
+                className="flex items-center justify-center w-8 h-8 transition-all bg-white border rounded shadow-sm cursor-pointer border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:hover:bg-white"
+              >
+                <ChevronLeft size={14} strokeWidth={2.5} />
+              </button>
+
+              {/* Looping Nomor Halaman */}
+              {[...Array(pagination.total_pages)].map((_, idx) => {
+                const pageNum = idx + 1;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setPage(pageNum)}
+                    className={`w-8 h-8 flex items-center justify-center text-xs font-bold rounded transition-all cursor-pointer ${
+                      page === pageNum
+                        ? 'bg-[#1A335A] text-white shadow-md shadow-[#1A335A]/10'
+                        : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 shadow-sm'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Tombol Halaman Selanjutnya */}
+              <button
+                type="button"
+                onClick={handleNextPage}
+                disabled={page === pagination.total_pages}
+                className="flex items-center justify-center w-8 h-8 transition-all bg-white border rounded shadow-sm cursor-pointer border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:hover:bg-white"
+              >
+                <ChevronRight size={14} strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Detail Modal */}

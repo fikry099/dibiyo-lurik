@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { Search, SlidersHorizontal } from 'lucide-react'
+import { Search, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
 import NotificationBell from '../../../../../components/NotificationBell'
 
 const PORegulerTable = dynamic(() => import('../../../../../components/cs/po/por/PORegulerTable'), {
@@ -9,7 +9,7 @@ const PORegulerTable = dynamic(() => import('../../../../../components/cs/po/por
 })
 
 // Komponen Skeleton Loader untuk Baris Tabel PO Reguler
-function TableSkeleton() {
+function TableSkeleton({ limit = 10 }) {
   return (
     <div className="w-full overflow-x-auto border rounded-sm border-stone-100 animate-pulse">
       {/* Header Skeleton */}
@@ -23,9 +23,9 @@ function TableSkeleton() {
         <div className="w-16 h-4 rounded bg-stone-300/30"></div>
       </div>
       
-      {/* Rows Skeleton (5 Baris Konten) */}
+      {/* Rows Skeleton */}
       <div className="bg-white divide-y divide-stone-100">
-        {[...Array(5)].map((_, index) => (
+        {[...Array(limit)].map((_, index) => (
           <div key={index} className="flex items-center justify-between h-16 gap-4 px-4 py-4">
             <div className="w-8 h-4 rounded bg-stone-200"></div>
             <div className="flex-1 w-32 h-4 rounded bg-stone-200"></div>
@@ -48,45 +48,60 @@ export default function PreOrderRegulerPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
-  useEffect(() => {
-    fetchData(true) // Set true agar skeleton muncul saat pertama kali load halaman
-  }, [])
+  // State Baru untuk Pagination & Metadata dari Backend
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const itemsPerPage = 10
 
-  // Tambahkan parameter isInitial untuk mengontrol kemunculan skeleton loader
+  // Setiap kali halaman berganti, picu pemanggilan ulang data ke backend
+  useEffect(() => {
+    fetchData(true)
+  }, [currentPage])
+
   const fetchData = async (isInitial = false) => {
     if (isInitial) setLoading(true)
     try {
-      const res = await fetch('/api/pre-order-reguler')
+      // Menembak endpoint dengan menyertakan halaman dan batasan data yang dinamis
+      const res = await fetch(`/api/pre-order-reguler?page=${currentPage}&limit=${itemsPerPage}`)
       if (!res.ok) throw new Error('Gagal mengambil data')
       const json = await res.json()
       
       if (json && Array.isArray(json.data)) {
         setData(json.data)
+        // Menyimpan total records aktual ke state dari metadata backend
+        setTotalItems(json.meta?.total || json.data.length || 0)
       } else {
         setData([])
+        setTotalItems(0)
       }
     } catch (err) {
       setData([])
+      setTotalItems(0)
     } finally {
       if (isInitial) setLoading(false)
     }
   }
 
-  // Fungsi Optimistic Update: Hapus data dari UI seketika, baru sync di background
   const handleConfirmReceiptSuccess = (confirmedId) => {
-    // 1. Langsung hapus item dari state lokal agar hilang dari layar tanpa delay
     setData((prevData) => prevData.filter((item) => item.id !== confirmedId))
-    
-    // 2. Ambil data valid terbaru dari server di background (tanpa memicu skeleton)
     fetchData(false)
   }
 
-  // Logika Filter & Search
   const filteredData = data.filter(item => {
     const matchSearch = (item.nama_customer || '').toLowerCase().includes(searchQuery.toLowerCase())
     const matchStatus = statusFilter === 'all' || item.status === statusFilter
     return matchSearch && matchStatus
   })
+
+  // Kalkulasi total halaman berdasarkan respon total item keseluruhan database
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1
+
+  const handlePageChange = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
 
   return (
     <div className="w-full mx-auto space-y-4 text-black font-inter">
@@ -100,7 +115,7 @@ export default function PreOrderRegulerPage() {
       {/* Container Card Putih */}
       <div className="border border-gray-100 rounded-lg p-6 bg-white shadow-[0px_4px_20px_0px_rgba(0,0,0,0.05)] space-y-5">
         
-        {/* Top Bar Kontrol: List Header + Search + Filter (Sejajar Horizontal) */}
+        {/* Top Bar Kontrol */}
         <div className="flex flex-col justify-between gap-4 pb-4 border-b border-gray-400 sm:flex-row sm:items-center">
           <h2 className="text-sm font-bold text-black min-w-max">List Pre Order Reguler</h2>
           
@@ -131,19 +146,78 @@ export default function PreOrderRegulerPage() {
               </select>
               <SlidersHorizontal size={14} className="absolute text-black -translate-y-1/2 pointer-events-none left-3 top-1/2" />
             </div>
-              <NotificationBell role="cs" currentType="reguler" />
+            <NotificationBell role="cs" currentType="reguler" />
           </div>
         </div>
 
+        {/* Render Tabel Konten / Skeleton */}
         {loading ? (
-          <TableSkeleton />
+          <TableSkeleton limit={itemsPerPage} />
         ) : (
-          <div className="overflow-x-auto">
-            <PORegulerTable 
-              data={filteredData} 
-              onConfirmReceipt={handleConfirmReceiptSuccess}
-            />
-          </div>
+          <>
+            {filteredData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 border border-dashed rounded-sm border-stone-200 bg-stone-50/50">
+                <p className="text-xs font-medium text-stone-400">Tidak ada antrean pre-order ditemukan.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <PORegulerTable 
+                  data={filteredData} 
+                  onConfirmReceipt={handleConfirmReceiptSuccess}
+                />
+              </div>
+            )}
+
+            {/* ================= CONTROLLER PAGINATION MODERN ================= */}
+            {totalPages > 1 && (
+              <div className="flex flex-col items-center justify-between gap-4 pt-4 mt-4 border-t border-stone-100 sm:flex-row">
+                <div className="text-xs font-medium text-stone-500">
+                  Menampilkan <span className="text-[#1A335A] font-bold">{Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}</span>–{Math.min(currentPage * itemsPerPage, totalItems)} dari <span className="text-[#1A335A] font-bold">{totalItems}</span> Total Antrean
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  {/* Tombol Halaman Sebelumnya */}
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center justify-center w-8 h-8 transition-all bg-white border rounded shadow-sm cursor-pointer border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:hover:bg-white"
+                  >
+                    <ChevronLeft size={14} strokeWidth={2.5} />
+                  </button>
+
+                  {/* Looping Nomor Halaman */}
+                  {[...Array(totalPages)].map((_, idx) => {
+                    const pageNum = idx + 1;
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-8 h-8 flex items-center justify-center text-xs font-bold rounded transition-all cursor-pointer ${
+                          currentPage === pageNum
+                            ? 'bg-[#1A335A] text-white shadow-md shadow-[#1A335A]/10'
+                            : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 shadow-sm'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  {/* Tombol Halaman Selanjutnya */}
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center justify-center w-8 h-8 transition-all bg-white border rounded shadow-sm cursor-pointer border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:hover:bg-white"
+                  >
+                    <ChevronRight size={14} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
