@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import POTable from './POTable';
 import POModalDetail from './POModalDetail';
+import NotificationBell from '../../NotificationBell';
 
 export default function ManagePOContent() {
   const searchParams = useSearchParams();
@@ -78,6 +79,10 @@ export default function ManagePOContent() {
             </h2>
             
             <div className="flex flex-col items-center justify-end flex-1 w-full gap-3 sm:flex-row md:w-auto">
+              
+              {/* NOTIFIKASI LONCENG DILETAKKAN SEBELUM SEARCH INPUT */}
+
+
               {/* Input Pencarian */}
               <div className="relative w-full sm:max-w-md">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 pointer-events-none">
@@ -107,10 +112,13 @@ export default function ManagePOContent() {
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block ml-1"></span>
                 )}
               </button>
+
+            <NotificationBell role="kp" currentType={tipe} /> 
+
             </div>
           </div>
 
-          {/* DROP-DOWN PANEL GRID MELAYANG */}
+
           {isFilterOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />

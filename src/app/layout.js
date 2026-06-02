@@ -2,7 +2,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ProgressBar from "@/app/components/ProgressBar";
-import { Suspense } from "react"; // 1. Import Suspense dari React
+import { Suspense } from "react"; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

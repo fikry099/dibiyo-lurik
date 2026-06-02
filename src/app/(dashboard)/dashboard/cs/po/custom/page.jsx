@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { Search, Filter } from 'lucide-react'
+import NotificationBell from '../../../../../components/NotificationBell'
 
 const POCustomTable = dynamic(() => import('../../../../../components/cs/po/poc/POCustomTable'), { ssr: false })
 
@@ -164,6 +165,7 @@ export default function PreOrderCustomPage() {
               </select>
               <span className="absolute right-3 pointer-events-none text-black text-[10px]">▼</span>
             </div>
+            <NotificationBell role="cs" currentType="custom" />
           </div>
         </div>
 

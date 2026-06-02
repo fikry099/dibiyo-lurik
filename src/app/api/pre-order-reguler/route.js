@@ -1,6 +1,20 @@
 ﻿import { NextResponse } from 'next/server';
 import supabaseAdmin from '@/lib/supabase-admin';
+import nodemailer from 'nodemailer'; 
 import { realtime } from '@/lib/realtime';
+
+// =====================================================
+// KONFIGURASI TRANSPORTER NODEMAILER (SMTP)
+// =====================================================
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '465'),
+  secure: true, 
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
 
 // =====================================================
 // HELPER LOKAL (Pengganti @/lib/preorder-helper)
@@ -111,8 +125,9 @@ export async function GET(request) {
   return NextResponse.json({ data, meta: { total: count, page, limit } });
 }
 
+
 // =====================================================
-// POST - create PO reguler (Dengan Notifikasi Realtime)
+// POST - create PO reguler (Dari CS ke KP) - OPTIMIZED
 // =====================================================
 export async function POST(request) {
   try {
@@ -122,7 +137,9 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Items wajib diisi' }, { status: 400 });
     }
 
-    // 1. Insert header PO
+    console.log("🚀 [POR-POST] Menjalankan TAHAP 1: Insert induk pre_order_reguler...");
+
+    // 1. Insert header PO Utama (WAJIB AWAIT)
     const { data: poHeader, error: headerErr } = await supabaseAdmin
       .from('pre_order_reguler')
       .insert({
@@ -135,7 +152,7 @@ export async function POST(request) {
         total_dp: Number(body.total_dp || 0),
         diskon: Number(body.diskon || 0),
         catatan: body.catatan || null,
-        total_harga: 0,
+        total_harga: 0, // Akan dihitung ulang nanti
         status: 'dalam_proses',
         status_penerimaan: 'belum_diambil',
       })
@@ -144,12 +161,17 @@ export async function POST(request) {
 
     if (headerErr) throw new Error(headerErr.message);
 
-    // 2. Process items
+    console.log("✅ [POR-POST] TAHAP 1 Berhasil. ID Induk:", poHeader.id);
+    console.log("🚀 [POR-POST] Menjalankan TAHAP 2: Pengolahan & kalkulasi item...");
+
+    // 2. Proses data item (WAJIB AWAIT karena melibatkan pengecekan stok/harga produk)
     const itemsToInsert = [];
+    const emailItemsDetails = []; 
+
     for (const item of body.items) {
       const { data: produk } = await supabaseAdmin
         .from('produk')
-        .select('id, jenis_pewarna, motif_id')
+        .select('id, jenis_pewarna, motif_id, kode_produk, gambar_url')
         .eq('id', item.produk_id)
         .maybeSingle();
 
@@ -159,6 +181,8 @@ export async function POST(request) {
       
       if (hargaPerMeter === 0) throw new Error(`Harga untuk ${produk.jenis_pewarna} ${item.lebar}cm belum diset`);
 
+      const subtotalItem = localCalculateItemSubtotal(item.panjang, item.jumlah, hargaPerMeter);
+
       itemsToInsert.push({
         pre_order_reguler_id: poHeader.id,
         produk_id: item.produk_id,
@@ -166,49 +190,162 @@ export async function POST(request) {
         panjang: Number(item.panjang),
         jumlah: Number(item.jumlah),
         harga_per_meter: hargaPerMeter,
-        subtotal: localCalculateItemSubtotal(item.panjang, item.jumlah, hargaPerMeter),
+        subtotal: subtotalItem,
+      });
+
+      emailItemsDetails.push({
+        kode_produk: produk.kode_produk || 'N/A',
+        gambar_url: produk.gambar_url || null,
+        lebar: item.lebar,
+        panjang: item.panjang,
+        jumlah: item.jumlah
       });
     }
 
+    // Bulk Insert seluruh item ke tabel anak (WAJIB AWAIT)
     const { error: itemsErr } = await supabaseAdmin
       .from('item_pre_order_reguler')
       .insert(itemsToInsert);
 
-    if (itemsErr) throw new Error(itemsErr.message);
+    if (itemsErr) {
+      console.error("❌ [POR-POST] Gagal simpan item, melakukan rollback...");
+      await supabaseAdmin.from('pre_order_reguler').delete().eq('id', poHeader.id);
+      throw new Error(itemsErr.message);
+    }
 
-    // 3. Recalculate & Finalize menggunakan helper lokal
+    console.log("🚀 [POR-POST] Menjalankan TAHAP 3: Sinkronisasi kalkulasi total_harga di DB...");
+
+    // 3. Recalculate & Ambil Kondisi Data Final Utama (WAJIB AWAIT)
     await localRecalculateTotalPOR(poHeader.id);
 
     const { data: poComplete } = await supabaseAdmin
       .from('pre_order_reguler')
-      .select(`*, items:item_pre_order_reguler(*)`)
+      .select(`*`)
       .eq('id', poHeader.id)
       .single();
 
-    // =====================================================
-    // TRIGGER UPSTASH REALTIME NOTIFICATION FOR KP
-    // =====================================================
+    console.log("🎉 [POR-POST] DATA UTAMA BERHASIL DISIMPAN PERMANEN. ID:", poComplete.id);
+
+    // 4. OPERASI DATABASE UNTUK RIWAYAT NOTIFIKASI (WAJIB AWAIT agar log sistem konsisten)
     try {
-      console.log("🚀 [REALTIME] Mengirim sinyal notifikasi ke Kepala Produksi...");
+      const { error: notifDbErr } = await supabaseAdmin
+        .from('notifikasi_sistem')
+        .insert({
+          penerima_role: 'kp',
+          tipe_order: 'POR',
+          id_order: poComplete.id.toString(),
+          judul: 'Pesanan Reguler Baru',
+          pesan: `Ada pesanan Reguler baru dari ${poComplete.nama_customer} (Estimasi: ${poComplete.tanggal_selesai || '-'}).`,
+          status_dibaca: false
+        });
 
-      await realtime.emit("notification.created", {
-        id_order: String(poComplete?.id),
-        tipe: "POR", // Tetap POR agar di sidebar dibaca sebagai reguler
-        nama_customer: poComplete?.nama_customer || 'Pelanggan',
-        pesan: `Pesanan Pre Order Reguler baru atas nama ${poComplete?.nama_customer || 'Pelanggan'} telah dibuat.`,
-        waktu: new Date().toISOString()
-      });
-
-      console.log("✅ [REALTIME] Sinyal notifikasi berhasil dipancarkan!");
-    } catch (realtimeErr) {
-      console.error("⚠️ [REALTIME-ERROR] Gagal memancarkan notifikasi:", realtimeErr);
+      if (notifDbErr) console.error("⚠️ [DATABASE-NOTIFIKASI-ERROR]:", notifDbErr.message);
+    } catch (dbNotifErr) {
+      console.error("⚠️ [DATABASE-NOTIFIKASI-ERROR]:", dbNotifErr);
     }
-    // =====================================================
 
-    return NextResponse.json({ data: poComplete }, { status: 201 });
+    // =========================================================================
+    // BACKGROUND PROCESS: PROSES BACKSTAGE ASINKRONUS (TANPA AWAIT)
+    // =========================================================================
+    
+    // 1. Trigger Broadcast Realtime Upstash
+    realtime.emit("notification.created", {
+      id_order: poComplete.id.toString(),
+      tipe: "POR", 
+      nama_customer: poComplete.nama_customer,
+      pesan: `Ada pesanan Reguler baru dari ${poComplete.nama_customer} (Estimasi: ${poComplete.tanggal_selesai || '-'})`,
+      waktu: new Date().toISOString()
+    }).catch(realtimeErr => {
+      console.error("⚠️ [BACKGROUND-REALTIME-ERROR] Gagal kirim websocket:", realtimeErr);
+    });
 
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    // 2. Pembuatan Template & Pengiriman Email Mandiri (IIFE)
+    (async () => {
+      try {
+        console.log("📧 [BACKGROUND-EMAIL-POR] Memulai penyusunan kerangka HTML...");
+
+        const daftarItemHtml = emailItemsDetails.map((item, index) => `
+          <tr>
+            <td style="padding: 10px; border: 1px solid #DDB892; text-align: center; color: #555;">${index + 1}</td>
+            <td style="padding: 10px; border: 1px solid #DDB892; text-align: center; font-weight: bold; color: #1A335A;">${item.kode_produk}</td>
+            <td style="padding: 10px; border: 1px solid #DDB892; text-align: center; color: #8B5E3C; font-weight: bold;">${item.lebar} cm</td>
+            <td style="padding: 10px; border: 1px solid #DDB892; text-align: center; color: #555;">${item.panjang} m</td>
+            <td style="padding: 10px; border: 1px solid #DDB892; text-align: center; font-weight: bold; color: #333;">${item.jumlah} Pcs</td>
+          </tr>
+        `).join('');
+
+        const emailHtmlContent = `
+          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 650px; margin: 0 auto; border: 1px solid #1A335A; padding: 24px; border-radius: 12px; background-color: #f7f9fc;">
+            <h2 style="color: #1A335A; border-bottom: 2px solid #1A335A; padding-bottom: 12px; margin-top: 0; font-size: 20px;">
+              📢 Notifikasi Pre-Order Reguler Baru (#POR-${poComplete.id.substring(0, 8)}...)
+            </h2>
+            <p style="font-size: 14px; line-height: 1.5; color: #555;">
+              Halo Kepala Produksi, terdapat pesanan kain bertipe <b>Reguler (Katalog Standar)</b> baru yang telah divalidasi oleh Customer Service. Mohon siapkan kebutuhan logistik bahan baku kain terkait.
+            </p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+              <tr>
+                <td style="width: 160px; padding: 8px 0; font-weight: bold; color: #1A335A;">Nama Pelanggan</td>
+                <td style="color: #333;">: ${poComplete.nama_customer}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #1A335A;">Status Pembayaran</td>
+                <td>: <span style="background-color: ${poComplete.status_pembayaran === 'lunas' ? '#10B981' : '#FFAA00'}; color: white; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px; text-transform: uppercase;">${poComplete.status_pembayaran}</span></td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #1A335A;">Target Penyelesaian</td>
+                <td>: <span style="color: #EF4444; font-weight: bold;">${poComplete.tanggal_selesai || '-'}</span></td>
+              </tr>
+            </table>
+
+            <h3 style="color: #1A335A; margin-top: 24px; margin-bottom: 12px; font-size: 16px; border-left: 4px solid #1A335A; padding-left: 8px;">
+              Rincian Item Katalog yang Harus Diproses:
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
+              <thead>
+                <tr style="background-color: #1A335A; color: white;">
+                  <th style="padding: 10px; border: 1px solid #DDB892;">No</th>
+                  <th style="padding: 10px; border: 1px solid #DDB892;">Kode Produk</th>
+                  <th style="padding: 10px; border: 1px solid #DDB892;">Lebar</th>
+                  <th style="padding: 10px; border: 1px solid #DDB892;">Panjang</th>
+                  <th style="padding: 10px; border: 1px solid #DDB892;">Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${daftarItemHtml}
+              </tbody>
+            </table>
+
+            <div style="margin-top: 20px; background-color: #EBF3FF; padding: 12px; border-left: 4px solid #1A335A; border-radius: 4px; font-size: 13px;">
+              <b style="color: #1A335A;">Memo Tambahan CS:</b><br/>
+              <span style="color: #555; font-style: italic;">${poComplete.catatan || 'Tidak ada instruksi khusus.'}</span>
+            </div>
+          </div>
+        `;
+
+        await transporter.sendMail({
+          from: `"Dibiyo Lurik Notifikasi" <${process.env.SMTP_USER}>`,
+          to: process.env.EMAIL_KEPALA_PRODUKSI,
+          subject: `🚨 [PRODUKSI REGULER] PO Baru - POR-${poComplete.id.substring(0,8)} (${poComplete.nama_customer})`,
+          html: emailHtmlContent,
+        });
+        console.log("✅ [BACKGROUND-EMAIL-POR] Surat penugasan berhasil masuk mailbox KP!");
+      } catch (emailErr) {
+        console.error("⚠️ [BACKGROUND-EMAIL-ERROR] Gagal kirim email background:", emailErr);
+      }
+    })();
+
+    // =========================================================================
+    // HIGH-SPEED RESPONSE: DATA UTAMA DIKEMBALIKAN KE KLIEN SECARA INSTAN
+    // =========================================================================
+    return NextResponse.json({ 
+      message: 'Pre-Order Reguler berhasil dibuat', 
+      data: poComplete 
+    }, { status: 201 });
+
+  } catch (err) {
+    console.error("💥 [POR-POST] GLOBAL CRASH DETECTED:", err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 

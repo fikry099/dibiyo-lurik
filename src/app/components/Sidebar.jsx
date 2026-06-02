@@ -81,18 +81,21 @@ useRealtime({
           audio.play().catch(() => {});
         } catch (e) {}
 
-        Swal.fire({
+       Swal.fire({
           title: isCustomOrder ? 'Pesanan Custom Baru!' : 'Pesanan Reguler Baru!',
           text: data.pesan,
           icon: 'info',
           position: 'top-end',
+          toast: true,                 
           showConfirmButton: true,
-          confirmButtonText: 'Lihat Antrean',
+          confirmButtonText: 'Lihat',   
           confirmButtonColor: '#1A335A',
-          showCancelButton: true,
-          cancelButtonText: 'Tutup',
+          showCancelButton: false,     
           timer: 12000,
           timerProgressBar: true,
+          customClass: {
+            popup: 'colored-toast'     
+          }
         }).then((result) => {
           if (result.isConfirmed) {
             router.push(`/dashboard/kp/po?tipe=${isCustomOrder ? 'custom' : 'reguler'}`);

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { Search, SlidersHorizontal } from 'lucide-react'
+import NotificationBell from '../../../../../components/NotificationBell'
 
 const PORegulerTable = dynamic(() => import('../../../../../components/cs/po/por/PORegulerTable'), {
   ssr: false,
@@ -130,6 +131,7 @@ export default function PreOrderRegulerPage() {
               </select>
               <SlidersHorizontal size={14} className="absolute text-black -translate-y-1/2 pointer-events-none left-3 top-1/2" />
             </div>
+              <NotificationBell role="cs" currentType="reguler" />
           </div>
         </div>
 

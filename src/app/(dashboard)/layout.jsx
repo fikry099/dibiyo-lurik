@@ -25,7 +25,7 @@ export default function DashboardLayout({ children }) {
   // --- DETEKSI IDLE ---
   useEffect(() => {
     let idleTimer;
-    const IDLE_TIMEOUT = 30 * 60 * 1000; // 10 Menit
+    const IDLE_TIMEOUT = 60 * 60 * 1000; 
     let lastActivity = Date.now();
 
     const triggerLogout = async () => {
@@ -68,10 +68,7 @@ export default function DashboardLayout({ children }) {
   }, [router])
 
   return (
-    // =====================================================
-    // BUNGKUS SELURUH DASHBOARD DENGAN REALTIME PROVIDER
-    // point ke arah endpoint API realtime yang sudah dibuat
-    // =====================================================
+
     <RealtimeProvider url="/api/realtime">
       <div className="flex min-h-screen bg-slate-100">
         <Suspense fallback={<div className="w-64 bg-[#1A335A] min-h-screen animate-pulse" />}>
