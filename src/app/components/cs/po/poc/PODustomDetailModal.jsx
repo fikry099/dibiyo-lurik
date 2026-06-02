@@ -1,19 +1,21 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { X, Printer, Loader2 } from 'lucide-react'
-import Swal from 'sweetalert2'
-import qz from 'qz-tray'
+import React, { useState } from 'react';
+import { X, Printer, CreditCard, Box, Calendar, FileText } from 'lucide-react';
+import Swal from 'sweetalert2';
+import qz from 'qz-tray';
 
 export default function PODustomDetailModal({ isOpen, onClose, item }) {
-  const [isPrinting, setIsPrinting] = useState(false)
+  const [isPrinting, setIsPrinting] = useState(false);
 
-  if (!isOpen || !item) return null
+  if (!isOpen || !item) return null;
 
-  const daftarProduk = Array.isArray(item.item_pre_order_custom) && item.item_pre_order_custom.length > 0
-    ? item.item_pre_order_custom
-    : (item.detail_produk || item.items || []);
+  // SINKRONISASI DATA PRODUK: Diambil sekali agar konsisten di struk & UI modal
+  const daftarProduk = Array.isArray(item.item_pre_order_custom) 
+    ? item.item_pre_order_custom 
+    : [];
 
+  // Helper 1: Format Standar Estimasi Jadi
   const formatEstimasiJadi = (dateString) => {
     if (!dateString) return '00/00/0000';
     try {
@@ -28,20 +30,47 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
     }
   };
 
+  // Helper 2: Format Tanggal Indonesia
+  const formatTanggalIndo = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  // Kalkulasi nilai akumulasi untuk transparansi data billing
+  const hitungSubtotalItem = (it) => 
+    // Menggunakan fallback rumus: harga_per_meter * panjang * jumlah jika subtotal kosong
+    Number(it.subtotal) || (Number(it.harga_per_meter || 0) * Number(it.panjang || 0) * Number(it.jumlah || 1));
+  
+  const hitungSubtotalKotor = daftarProduk.reduce((acc, curr) => acc + hitungSubtotalItem(curr), 0);
+  const totalHargaAkhir = Number(item.total_harga || 0);
+  const totalDanaMasuk = Number(item.total_dp || 0);
+  const sisaKekurangan = Math.max(0, totalHargaAkhir - totalDanaMasuk);
+
+  const tanggalSelesaiRaw = item.tanggal_selesai || item.estimasi_selesai || item.estimasi_jadi;
+
   // ==============================================================================
-  // FUNGSI CETAK RAW ESC/POS VIA QZ TRAY (MULTI-ITEM SUPPORTED)
+  // FUNGSI CETAK RAW ESC/POS VIA QZ TRAY
   // ==============================================================================
   const handleCetakStrukDirect = async () => {
-    setIsPrinting(true)
+    setIsPrinting(true);
     try {
       if (!qz.websocket.isActive()) {
-        await qz.websocket.connect({ host: 'localhost', keepAlive: true })
+        await qz.websocket.connect({ host: 'localhost', keepAlive: true });
       }
 
       const config = qz.configs.create("POS-80", {
         retries: 0,
         encoding: 'UTF-8'
-      })
+      });
 
       const initPrinter = '\x1B\x40';
       const centerAlign = '\x1B\x61\x01';
@@ -51,14 +80,13 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
       const lineBreak = '\n';
       const cutPaper = '\x1D\x56\x41\x03';
 
-      // 1. Bagian Atas Struk (Header & Customer)
       let printData = [
         initPrinter,
         centerAlign,
         boldOn,
         'TOKO DIBIYO LURIK\n',
         boldOff,
-        'Jl. Krapyak Wetan No.rt 06 no 201, Krapyak Wetan, Panggungharjo, Kec. Sewon, Kabupaten Bantul, Daerah Istimewa Yogyakarta 55188\n',
+        'Jl. Krapyak Wetan No.rt 06 no 201, Krapyak Wetan, Panggungharjo, Kec. Sewon, Bantul, DIY 55188\n',
         '\n',
         '------------------------------------------------\n', 
         leftAlign,
@@ -76,27 +104,27 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
         boldOff
       ];
 
-      // 2. Loop Dinamis Data Produk ke dalam Struk (Disesuaikan Propertinya)
       daftarProduk.forEach((prod, index) => {
-        const lebar = prod.lebar_kain || (prod.lebar ? `${prod.lebar} cm` : '-');
-        const panjang = prod.panjang_kain || (prod.panjang ? `${prod.panjang} m` : '-');
-        const jumlah = prod.jumlah_po || prod.jumlah || 1;
-        const hargaItem = prod.subtotal || prod.harga || 0;
+        const lebar = prod.lebar ? `${prod.lebar} cm` : '-';
+        const panjang = prod.panjang ? `${prod.panjang} m` : '-';
+        const jumlah = prod.jumlah || 1;
+        const hargaItem = hitungSubtotalItem(prod);
 
         printData.push(
-          ` ${index + 1}. ${prod.kode_produksi || 'AKLBL-CUSTOM'} (${jumlah}x)\n`,
+          ` ${index + 1}. Lurik Custom - ${prod.jenis_pewarna || 'Klasik'} (${jumlah}x)\n`,
           `    L: ${lebar} . P: ${panjang}\n`,
           `    Subtotal : Rp ${hargaItem.toLocaleString('id-ID')}\n`
         );
       });
 
-      // 3. Bagian Bawah Struk (Total & Pembayaran)
       printData.push(
         '------------------------------------------------\n',
         boldOn,
         'Detail Pembayaran\n',
         boldOff,
-        `Total             : Rp ${item.total_harga?.toLocaleString('id-ID') || '0'}\n`,
+        `Total             : Rp ${totalHargaAkhir.toLocaleString('id-ID')}\n`,
+        `DP / Uang Masuk   : Rp ${totalDanaMasuk.toLocaleString('id-ID')}\n`,
+        `Sisa Kekurangan   : Rp ${sisaKekurangan.toLocaleString('id-ID')}\n`,
         `Status            : ${item.status_pembayaran?.toUpperCase() || 'LUNAS'}\n`,
         '------------------------------------------------\n',
         boldOn,
@@ -104,7 +132,7 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
         boldOff,
         `${item.metode_pembayaran || 'Cash'}\n`,
         '------------------------------------------------\n',
-        `Estimasi Produk Jadi : ${formatEstimasiJadi(item.tanggal_selesai || item.tanggal_po)}\n`,
+        `Estimasi Produk Jadi : ${formatEstimasiJadi(tanggalSelesaiRaw)}\n`,
         '------------------------------------------------\n',
         '\n',
         centerAlign,
@@ -117,7 +145,7 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
         cutPaper
       );
 
-      await qz.print(config, printData)
+      await qz.print(config, printData);
 
       Swal.fire({
         title: 'Berhasil Dicetak',
@@ -132,7 +160,7 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
       });
 
     } catch (err) {
-      console.error("[PRINTER-ERROR]", err)
+      console.error("[PRINTER-ERROR]", err);
       Swal.fire({
         title: 'Gagal Mencetak',
         text: 'Pastikan aplikasi QZ Tray aktif di kasir dan printer bernama "POS-80" telah menyala.',
@@ -143,24 +171,63 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
             document.querySelector('.swal2-container').style.zIndex = '99999';
           }
         }
-      })
+      });
     } finally {
-      setIsPrinting(false)
+      setIsPrinting(false);
     }
-  }
-  // ==============================================================================
+  };
 
-  const tanggalSelesaiRaw = item.tanggal_selesai || item.tanggal_po;
+
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A335A7A] font-inter backdrop-blur-sm">
-      <div className="w-full max-w-5xl overflow-hidden bg-white rounded-lg shadow-lg animate-in fade-in zoom-in-95">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A335A7A] font-inter backdrop-blur-[3px] print:p-0 print:bg-white print:relative">
+      
+      {/* INJEKSI STYLE CUSTOM UNTUK SCROLLBAR TIPIS & STYLING PRINT OUT */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        /* --- UTALITAS SCROLLBAR MODERN --- */
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #1A335A transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #1A335A;
+          border-radius: 10px;
+        }
+
+        /* --- ATURAN CETAK STRUK STRIP ELEMEN UI --- */
+        @media print {
+          body * { visibility: hidden; }
+          .print-modal-container, .print-modal-container * { visibility: visible; }
+          .print-modal-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            box-shadow: none !important;
+            border: none !important;
+          }
+          .no-print { display: none !important; }
+        }
+      `}} />
+
+      {/* CONTAINER MODAL UTAMA */}
+      <div className="print-modal-container bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto custom-scrollbar flex flex-col">
         
         {/* HEADER MODAL */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-base font-bold text-[#1A335A]">Pre-Order Custom</h3>
-          <button onClick={onClose} className="text-gray-400 transition-colors hover:text-gray-600">
-            <X size={18} strokeWidth={2.5} />
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white border-b border-gray-100 print:pb-2">
+          <h3 className="text-sm font-bold text-[#1A335A] tracking-wide uppercase">Detail Nota Pre-Order Custom</h3>
+          <button 
+            onClick={onClose}
+            className="text-[#1A335A] hover:opacity-70 transition-opacity cursor-pointer no-print"
+          >
+            <X size={20} strokeWidth={2.5} />
           </button>
         </div>
 
@@ -183,158 +250,209 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                 <div className="px-3 border-r border-gray-200">
                   <p className="font-medium text-gray-400">No Telpon</p>
                   <p className="font-bold mt-0.5 text-[#1A335A]">{item.kontak_customer || '-'}</p>
+
                 </div>
                 <div className="pl-3">
                   <p className="font-medium text-gray-400">Tanggal Pre-Order</p>
-                  <p className="font-bold mt-0.5 text-[#1A335A]">
-                    {item.created_at ? formatEstimasiJadi(item.created_at) : '01/05/2026'}
+                  <p className="font-bold text-gray-800 mt-0.5 text-xs">
+                    {item.created_at ? formatTanggalIndo(item.created_at) : formatTanggalIndo(item.tanggal_po)}
                   </p>
                 </div>
               </div>
-
-              <div>
-                <p className="font-medium text-gray-400">Alamat</p>
-                <p className="font-semibold mt-0.5 text-gray-700 leading-relaxed">
-                  {item.alamat_customer || '-'}
+              <div className="pt-2 border-t border-gray-200">
+                <p className="font-medium text-gray-400">Alamat Kirim</p>
+                <p className="font-semibold text-gray-700 mt-0.5 leading-relaxed">
+                  {item.alamat_customer || 'Alamat tidak dicantumkan.'}
                 </p>
               </div>
             </div>
 
             {/* Box Detail Pembayaran */}
-            <div className="md:col-span-5 bg-[#EBF5FA]/40 border border-[#1A335A]/20 rounded-lg p-4 text-[11px] flex flex-col justify-between">
+
+            <div className="md:col-span-5 bg-[#5AE3ED1C] border border-[#1A335A]/20 rounded-xl p-4 text-[11px] flex flex-col justify-between shadow-sm">
               <div>
-                <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs mb-3">
-                  <span>💳</span> Detail Pembayaran
+                <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs border-b border-[#1A335A]/10 pb-1.5 mb-2">
+                  <CreditCard size={14} /> Keuangan & Metode Pembayaran
                 </div>
                 
-                <div className="grid grid-cols-2 pt-2 pb-2 border-t border-b border-gray-200">
-                  <div className="pr-3 border-r border-gray-200">
+                <div className="grid grid-cols-2 pt-1 pb-1">
+                  <div className="pr-3 border-r border-gray-300">
                     <p className="font-medium text-gray-400">Status Pembayaran</p>
-                    <span className={`inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-md text-white ${
-                      item.status_pembayaran?.toLowerCase() === 'lunas' ? 'bg-[#1DB793]' : 'bg-[#F0A864]'
+                    <span className={`inline-block mt-1 text-[9px] font-black px-2.5 py-0.5 rounded-md text-white uppercase tracking-wider ${
+                      item.status_pembayaran?.toLowerCase() === 'lunas' ? 'bg-[#1DB793]' : 'bg-[#F2B600]'
                     }`}>
                       {item.status_pembayaran?.toUpperCase() || 'LUNAS'}
                     </span>
                   </div>
                   <div className="pl-3">
                     <p className="font-medium text-gray-400">Metode Pembayaran</p>
-                    <p className="mt-1 font-bold text-[#1A335A]">{item.metode_pembayaran || 'Cash'}</p>
+                    <p className="mt-1 text-xs font-bold text-gray-800 capitalize">{item.metode_pembayaran || 'Cash'}</p>
                   </div>
                 </div>
               </div>
               
-              <div className="pt-2">
-                <p className="font-medium text-gray-400">Total Harga</p>
-                <p className="text-sm font-bold text-[#1A335A] mt-0.5">
-                  Rp. {item.total_harga?.toLocaleString('id-ID')}
-                </p>
+              <div className="flex items-end justify-between pt-2 border-t border-gray-200">
+                <div>
+                  <p className="font-medium text-gray-400">Total Nilai Kontrak Kerja</p>
+                  <p className="text-sm font-black text-[#1A335A] mt-0.5">
+                    Rp {totalHargaAkhir.toLocaleString('id-ID')}
+                  </p>
+                </div>
+                {sisaKekurangan > 0 && (
+                  <div className="text-right">
+                    <span className="text-[9px] bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded">Sisa Kurang: Rp {sisaKekurangan.toLocaleString('id-ID')}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* BARIS 2: Data Produk */}
-          <div className="p-4 space-y-3 bg-white border border-gray-100 rounded-lg">
-            <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs">
-              <span>📦</span> Data Produk ({daftarProduk.length} Item)
+
+          {/* BARIS 2: DATA PRODUK (MAPPING DINAMIS MULTI-BARANG) */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs border-b pb-1">
+              <Box size={14} /> Daftar Item Produk Custom ({daftarProduk.length} Item)
             </div>
             
-            {daftarProduk.length === 0 ? (
-              <p className="py-4 text-center text-gray-400">Tidak ada item kustom di pesanan ini.</p>
-            ) : (
-              daftarProduk.map((prod, index) => {
-                // Handle fallback data property kustom dari json backend
-                const lebarKain = prod.lebar_kain || (prod.lebar ? `${prod.lebar} cm` : '-');
-                const panjangKain = prod.panjang_kain || (prod.panjang ? `${prod.panjang} m` : '-');
-                const jumlahPo = prod.jumlah_po || prod.jumlah || 1;
-                const hargaSubtotal = prod.subtotal || prod.harga || 0;
-
-                return (
-                  <div key={index} className="bg-[#1A335A]/5 border border-gray-100 rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[11px] mb-2">
+            <div className="space-y-3 max-h-[30vh] overflow-y-auto custom-scrollbar pr-1 print:max-h-none">
+              {daftarProduk.length === 0 ? (
+                <div className="text-center py-6 text-gray-400 border border-dashed rounded-xl text-[11px]">
+                  Tidak ada item produk terlampir.
+                </div>
+              ) : (
+                daftarProduk.map((prodItem, idx) => (
+                  <div 
+                    key={prodItem.id || idx} 
+                    className="bg-[#5AE3ED1C] border border-[#1A335A]/10 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[11px]"
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 bg-gradient-to-br from-[#1A335A] to-[#2c4e82] rounded-lg shadow-inner shrink-0 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                        {prod.gambar_custom ? (
-                          <img src={prod.gambar_custom} alt="Custom" className="object-cover w-full h-full" />
+                      {/* Thumbnail Gambar Item */}
+                      <div className="flex items-center justify-center overflow-hidden bg-white border border-gray-200 rounded-lg shadow-inner w-14 h-14 shrink-0">
+                        {prodItem.gambar_custom || prodItem.image ? (
+                          <img 
+                            src={prodItem.gambar_custom || prodItem.image} 
+                            alt="Custom design" 
+                            className="object-cover w-full h-full"
+                          />
                         ) : (
-                          index + 1
+                          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center text-[8px] text-gray-400 font-bold p-1 text-center">
+                            <span>No Image</span>
+                          </div>
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-400">Kode Produksi</p>
-                        <p className="font-bold text-gray-700">{prod.kode_produksi || 'AKLBL-CUSTOM'}</p>
-                        <p className="mt-1 font-medium text-gray-400">Harga per Meter</p>
-                        <p className="font-semibold text-gray-700">
-                          {prod.harga_per_meter ? `Rp ${prod.harga_per_meter.toLocaleString('id-ID')}` : '-'}
+                        <p className="font-medium text-gray-400">Item Antrean ke-{(idx + 1)}</p>
+                        <p className="font-bold text-gray-700 capitalize">
+                          Lurik Custom - Pewarna {prodItem.jenis_pewarna || 'Klasik'}
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-gray-500">
+                          Tarif Master: Rp {Number(prodItem.harga_per_meter || 0).toLocaleString('id-ID')}/meter
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid w-full grid-cols-2 text-left sm:grid-cols-4 gap-x-6 gap-y-2 sm:w-auto sm:text-center">
+                    <div className="grid w-full grid-cols-4 gap-4 pt-2 text-left border-t border-gray-200 sm:gap-6 sm:text-center sm:w-auto sm:pt-0 sm:border-t-0">
                       <div>
                         <p className="font-medium text-gray-400">Lebar Kain</p>
-                        <p className="border border-gray-200 bg-white rounded px-2 py-0.5 font-bold text-gray-700 mt-0.5 inline-block min-w-[70px]">
-                          {lebarKain}
+                        <p className="font-bold text-gray-700 mt-0.5 text-xs">
+                          {prodItem.lebar ? `${prodItem.lebar} cm` : '-'}
                         </p>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-400">Jumlah PO</p>
-                        <p className="border border-gray-200 bg-white rounded px-2 py-0.5 font-bold text-gray-700 mt-0.5 inline-block min-w-[40px]">
-                          {jumlahPo}
+                        <p className="font-medium text-gray-400">Qty (Biji)</p>
+                        <p className="font-bold text-gray-700 mt-0.5 text-xs">
+                          {prodItem.jumlah || prodItem.qty || 1} Pcs
                         </p>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-400">Panjang Kain</p>
-                        <p className="border border-gray-200 bg-white rounded px-2 py-0.5 font-bold text-gray-700 mt-0.5 inline-block min-w-[60px]">
-                          {panjangKain}
+                        <p className="font-medium text-gray-400">Panjang</p>
+                        <p className="font-bold text-gray-700 mt-0.5 text-xs">
+                          {prodItem.panjang ? `${prodItem.panjang} m` : '-'}
                         </p>
                       </div>
-                      <div className="sm:text-right">
+                      <div className="text-right sm:text-center">
                         <p className="font-medium text-gray-400">Subtotal</p>
-                        <p className="border border-gray-200 bg-white rounded px-2 py-0.5 font-bold text-gray-700 mt-0.5 inline-block min-w-[90px] text-right">
-                          Rp.{hargaSubtotal.toLocaleString('id-ID')}
+                        <p className="font-black text-gray-800 mt-0.5 text-xs">
+                          Rp {hitungSubtotalItem(prodItem).toLocaleString('id-ID')}
                         </p>
                       </div>
                     </div>
                   </div>
-                );
-              })
-            )}
+                ))
+              )}
+            </div>
           </div>
 
-          {/* BARIS 3: Estimasi Produk Jadi & Status Produksi */}
+          {/* BARIS 3: ESTIMASI PRODUK JADI & STATUS PRODUKSI */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-            <div className="md:col-span-5 bg-[#1A335A]/5 border border-gray-100 rounded-lg p-4 text-[11px] space-y-2 flex flex-col justify-between">
+            
+            {/* Estimasi Box */}
+            <div className="md:col-span-5 bg-[#5AE3ED1C] border border-[#1A335A]/10 rounded-xl p-4 text-[11px] space-y-2 flex flex-col justify-between shadow-sm">
               <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs">
-                <span>🕒</span> Estimasi Produk Jadi
+                <Calendar size={13} /> Estimasi Produk Selesai
               </div>
-              <div className="w-full bg-[#F2B600] text-white font-bold text-center py-1.5 rounded-lg tracking-wider text-xs shadow-xs">
-                {formatEstimasiJadi(tanggalSelesaiRaw)}
+              <div className="w-full bg-[#f2b600] text-white font-black text-center py-2 rounded-lg tracking-wider text-xs shadow-sm">
+                {formatTanggalIndo(tanggalSelesaiRaw)}
               </div>
             </div>
 
-            <div className="md:col-span-7 bg-[#1A335A]/5 border border-gray-100 rounded-lg p-4 text-[11px] space-y-2 flex flex-col justify-between">
+            {/* Status Produksi Box */}
+            <div className="md:col-span-7 bg-[#5AE3ED1C] border border-[#1A335A]/10 rounded-xl p-4 text-[11px] space-y-2 flex flex-col justify-between shadow-sm">
               <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs">
-                <span>⚙️</span> Status Produksi
+                <Box size={13} /> Status Produksi Aktif
               </div>
-              <div className={`w-full text-white font-bold text-center py-1.5 rounded-lg text-xs tracking-wide ${
-                item.status === 'selesai_diproses' ? 'bg-[#409643]' : item.status === 'dalam_proses' ? 'bg-[#F2B600]' : 'bg-[#A63636]'
+              <div className={`w-full text-white font-black text-center py-2 rounded-lg text-xs tracking-wider uppercase shadow-sm ${
+                item.status === 'selesai_diproses' ? 'bg-[#1DB793]' : item.status === 'dalam_proses' ? 'bg-[#1A335A]' : 'bg-[#A63636]'
               }`}>
-                {item.status?.replace('_', ' ').toUpperCase() || 'BELUM DIPROSES'}
+                {item.status ? item.status.replace(/_/g, ' ').toUpperCase() : 'BELUM DIPROSES'}
               </div>
             </div>
+
           </div>
 
-          {/* BARIS 4: Catatan Khusus */}
-          <div className="bg-[#1A335A]/5 border border-gray-100 rounded-lg p-4 text-[11px] space-y-1.5">
-            <p className="font-bold text-[#1A335A] text-xs">Catatan</p>
-            <div className="w-full bg-white border border-gray-200 rounded-lg p-2.5 min-h-[50px] font-medium text-gray-600">
-              {item.catatan || 'Tidak ada catatan khusus untuk kustomisasi pesanan ini.'}
+          {/* BARIS 4: RINCIAN BREAKDOWN TRANSAKSI & CATATAN */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+            
+            {/* Catatan Khusus */}
+            <div className="md:col-span-6 bg-[#5AE3ED1C] border border-[#1A335A]/10 rounded-xl p-4 text-[11px] space-y-1.5 shadow-sm">
+              <p className="font-bold text-[#1A335A] text-xs flex items-center gap-1"><FileText size={13}/> Catatan Khusus Pesanan</p>
+              <div className="w-full bg-white border border-gray-200 rounded-lg p-2.5 min-h-[68px] font-medium text-gray-600 leading-relaxed">
+                {item.catatan || 'Tidak ada catatan khusus untuk kustomisasi pengerjaan lurik ini.'}
+              </div>
             </div>
+
+            {/* Rekap Finansial Rinci (Kanan) */}
+            <div className="md:col-span-6 bg-gray-50 border border-gray-200 rounded-xl p-3 text-[11px] space-y-1.5 shadow-sm">
+              <div className="flex justify-between text-gray-500">
+                <span>Subtotal ({daftarProduk.length} Item)</span>
+                <span className="font-semibold text-gray-700">Rp {hitungSubtotalKotor.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Potongan Diskon</span>
+                <span className="font-semibold text-gray-700">{item.diskon || 0}%</span>
+              </div>
+              <hr className="border-gray-200" />
+              <div className="flex justify-between font-bold text-gray-800">
+                <span>Total Nilai Kontrak</span>
+                <span>Rp {totalHargaAkhir.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between font-medium text-emerald-600">
+                <span>Dana yang Telah Diterima (DP/Cash)</span>
+                <span>Rp {totalDanaMasuk.toLocaleString('id-ID')}</span>
+              </div>
+              <hr className="border-gray-200 border-dashed" />
+              <div className={`flex justify-between p-1 rounded font-black ${sisaKekurangan > 0 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
+                <span>Sisa Kekurangan Pembayaran</span>
+                <span>Rp {sisaKekurangan.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+
           </div>
 
         </div>
 
-        {/* FOOTER MODAL */}
-        <div className="flex justify-end px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+        {/* FOOTER MODAL (TOMBOL AKSI) */}
+        <div className="sticky bottom-0 z-10 flex justify-end px-6 py-3 border-t border-gray-100 bg-gray-50/50 no-print">
           <button 
             onClick={handleCetakStrukDirect} 
             disabled={isPrinting}
@@ -351,10 +469,11 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                 <span>Cetak Struk</span>
               </>
             )}
+
           </button>
         </div>
 
       </div>
     </div>
-  )
+  );
 }
