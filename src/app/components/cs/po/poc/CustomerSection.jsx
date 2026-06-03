@@ -1,6 +1,7 @@
 import React from "react";
 import { User } from "lucide-react";
 
+
 export default function CustomerSection({ customer, setCustomer, item }) {
   return (
     <div className="space-y-4">
@@ -18,6 +19,7 @@ export default function CustomerSection({ customer, setCustomer, item }) {
             type="text"
             value={customer.nama_customer}
             onChange={(e) => setCustomer({ ...customer, nama_customer: e.target.value })}
+
             className="w-full h-9 bg-[#EBF9FB] rounded-xl px-3 focus:outline-none border-none font-medium text-stone-800"
           />
         </div>
@@ -50,6 +52,7 @@ export default function CustomerSection({ customer, setCustomer, item }) {
           rows={2}
           value={customer.alamat_customer}
           onChange={(e) => setCustomer({ ...customer, alamat_customer: e.target.value })}
+
           className="w-full bg-[#EBF9FB] rounded-xl p-3 focus:outline-none border-none resize-none overflow-hidden font-medium text-stone-800"
         />
       </div>

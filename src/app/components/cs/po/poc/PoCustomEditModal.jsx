@@ -8,9 +8,19 @@ import "react-datepicker/dist/react-datepicker.css";
 
 // Import Sub-Komponen Modular
 import CustomerSection from "./CustomerSection";
+
+
+// =====================================================
+// KONSTANTA STYLE & HELPER
+// =====================================================
+const LABEL = "block text-black font-medium mb-1";
+const INPUT_CYAN = "w-full border border-[#1A335A] bg-[#5AE3ED1C] rounded-lg p-2 focus:outline-none";
+const INPUT_WHITE = "w-full border border-[#1A335A] rounded-lg bg-white p-1.5 focus:outline-none";
+
 import ProductItemsSection from "./ProductItemsSection";
 import PaymentSection from "./PaymentSection";
 import ProductionSection from "./ProductionSection";
+
 
 // Helper & Formatters
 const formatRibuan = (val) => (Number(String(val).replace(/\D/g, "")) || 0).toLocaleString("id-ID");
@@ -30,14 +40,13 @@ const itemKosong = () => ({
 export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) {
   const [daftarHarga, setDaftarHarga] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // --- STATE DATA FORM ---
   const [customer, setCustomer] = useState({ nama_customer: "", kontak_customer: "", alamat_customer: "" });
   const [items, setItems] = useState([]);
   const [pembayaran, setPembayaran] = useState({ status_pembayaran: "dp", total_dp: 0, metode_pembayaran: "cash", diskon: 0 });
   const [produksi, setProduksi] = useState({ tanggal_selesai: "", status: "dalam_proses", catatan: "" });
-
-  // Snapshot data aseli dari DB (read-only)
   const [hargaLamaDariDb, setHargaLamaDariDb] = useState(0); 
   const [dpLamaDariDb, setDpLamaDariDb] = useState(0);      
 
@@ -51,7 +60,6 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
     }
   }, [isOpen]);
 
-  // --- Inisialisasi Snapshot Item ---
   useEffect(() => {
     if (!isOpen || !item) return;
 
@@ -95,10 +103,6 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
     });
   }, [isOpen, item]);
 
-  if (!isOpen) return null;
-
-  // =====================================================
-  // NILAI TURUNAN (DERIVED STATE)
   // =====================================================
   const hitungSubtotalItem = (it) =>
     Number(it.harga_per_meter || 0) * Number(it.panjang || 0) * Number(it.qty || 1);
@@ -119,6 +123,7 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
   const isDiskonLocked = isOriginallyLunas;
   const showSimpleLunasView = isOriginallyLunas && !hasNewItems;
   const isDpLocked = isOriginallyDp && !hasNewItems;
+
   const dibayarSebelumnya = isOriginallyLunas ? hargaLamaDariDb : dpLamaDariDb;
   const tagihanItemBaru = subTotalBaru;
   const minDpItemBaru = tagihanItemBaru * 0.3;
@@ -246,9 +251,7 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
       const json = await response.json();
       if (!response.ok) throw new Error(json.message || "Gagal menyimpan perubahan");
 
-      Swal.fire("Berhasil", "Perubahan berhasil disimpan.", "success");
-      onClose();
-      if (onSuccess) onSuccess();
+      setShowSuccess(true);
     } catch (err) {
       Swal.fire("Error", err.message, "error");
     } finally {
@@ -256,7 +259,27 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
     }
   };
 
+  // =====================================================
+  // RENDER ONDITIONAL MANAGEMENT
+  // =====================================================
+  if (!isOpen) return null;
+
+  // Jika sukses, Form utama langsung dilepas/ditutup dan diganti SuccessModal
+  if (showSuccess) {
+    return (
+      <SuccessModal 
+        isOpen={showSuccess} 
+        onClose={() => { 
+          setShowSuccess(false); 
+          onClose(); // Menutup modal utama di komponen parent
+          if (onSuccess) onSuccess(); // Memperbarui data halaman belakang
+        }} 
+      />
+    );
+  }
+
   return (
+
     <div className="fixed inset-0 bg-[#1A335A7A] backdrop-blur-[2px] flex items-center justify-center z-50 p-4 font-inter">
       <style dangerouslySetInnerHTML={{ __html: `
         .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #1A335A transparent; }
@@ -272,6 +295,7 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
         .react-datepicker__day--selected, .react-datepicker__day--keyboard-selected { background-color: #F59E0B !important; color: white !important; font-weight: bold !important; border-radius: 6px !important; }
         .react-datepicker__day:hover { background-color: rgba(90, 227, 237, 0.15) !important; border-radius: 6px !important; }
       `}} />
+
 
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto custom-scrollbar">
         {/* HEADER */}
@@ -347,6 +371,7 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
             className="w-full h-11 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl font-bold text-xs transition-all tracking-wider uppercase shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {loading ? "Menyimpan Perubahan..." : "Simpan Perubahan Pesanan"}
+
           </button>
         </div>
       </div>

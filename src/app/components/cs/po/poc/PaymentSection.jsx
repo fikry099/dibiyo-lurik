@@ -4,6 +4,7 @@ import { CreditCard, ChevronDown } from "lucide-react";
 export default function PaymentSection({
   pembayaran,
   setPembayaran,
+
   showSimpleLunasView,
   hasNewItems,
   isOriginallyLunas,
@@ -47,10 +48,12 @@ export default function PaymentSection({
           </p>
           <div className="flex items-center justify-between px-4 py-2 mt-3 bg-white border shadow-sm border-amber-200/60 rounded-xl">
             <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider">Subtotal Khusus Item Baru</span>
+
             <span className="text-sm font-black text-emerald-700">Rp {tagihanItemBaru.toLocaleString("id-ID")}</span>
           </div>
         </div>
       )}
+
 
       {/* KONTEN UTAMA PEMBAYARAN */}
       <div className="bg-[#EBF9FB]/60 border border-stone-100 rounded-2xl p-5 space-y-4 text-[11px]">
@@ -74,12 +77,14 @@ export default function PaymentSection({
                 <div className="text-right">
                   <span className="block text-stone-400 text-[9px] uppercase tracking-wider">Total Nilai Kontrak</span>
                   <span className="text-xs font-black text-stone-800">Rp {totalHargaAkhir.toLocaleString("id-ID")}</span>
+
                 </div>
               </div>
             </div>
           </div>
         ) : (
           <>
+
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="block mb-1.5 font-bold tracking-wide uppercase text-stone-500 text-[10px]">Status Pembayaran</label>
@@ -165,14 +170,17 @@ export default function PaymentSection({
             <div className="grid items-end grid-cols-1 gap-4 pt-1 md:grid-cols-12">
               <div className="relative md:col-span-5">
                 <label className="block mb-1.5 font-bold tracking-wide uppercase text-stone-500 text-[10px]">Metode Pembayaran</label>
+
                 <div className="relative">
                   <select
                     value={pembayaran.metode_pembayaran}
                     onChange={(e) => setPembayaran({ ...pembayaran, metode_pembayaran: e.target.value })}
+
                     className="w-full pl-3 pr-10 text-xs font-medium bg-white border shadow-sm appearance-none cursor-pointer h-9 border-stone-200 rounded-xl focus:outline-none text-stone-700"
                   >
                     <option value="cash">Cash / Tunai</option>
                     <option value="transfer">Transfer Bank</option>
+
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#1A335A]">
                     <ChevronDown size={14} />
@@ -180,14 +188,17 @@ export default function PaymentSection({
                 </div>
               </div>
 
+
               <div className="md:col-span-2">
                 <label className="block mb-1.5 font-bold tracking-wide uppercase text-stone-500 text-[10px]">Diskon</label>
+
                 <input
                   type="text"
                   value={pembayaran.diskon ? `${pembayaran.diskon}%` : ""}
                   placeholder="0%"
                   disabled={isDiskonLocked}
                   onChange={(e) => setPembayaran({ ...pembayaran, diskon: Number(e.target.value.replace("%", "")) || 0 })}
+
                   className={`w-full border rounded-xl px-2 text-center focus:outline-none font-bold text-xs h-9 shadow-sm ${
                     isDiskonLocked
                       ? "border-stone-200 bg-stone-50 text-stone-400 cursor-not-allowed"
@@ -197,10 +208,12 @@ export default function PaymentSection({
                 />
                 {isDiskonLocked && (
                   <span className="text-[9px] text-stone-400 block mt-1 leading-tight text-center">Terkunci (Lunas)</span>
+
                 )}
               </div>
 
               <div className="md:col-span-5">
+
                 <label className="block mb-1.5 font-bold tracking-wide uppercase text-stone-500 text-[10px]">Kalkulasi Ringkasan Kontrak</label>
                 <div className="bg-white border border-stone-100 rounded-xl p-4 space-y-2 text-[11px] shadow-sm">
                   <div className="flex justify-between text-stone-500"><span>Sub Total Barang</span><span className="font-semibold text-stone-700">Rp {subTotal.toLocaleString("id-ID")}</span></div>
@@ -228,6 +241,7 @@ export default function PaymentSection({
                       <div className={`flex justify-between font-bold p-1.5 rounded-lg mt-1 ${sisaTagihan > 0 ? "text-red-600 bg-red-50/40" : "text-emerald-700 bg-emerald-50/40"}`}>
                         <span className="text-[10px] uppercase tracking-wide">{sisaTagihan > 0 ? "Sisa Tagihan / Piutang" : "Lunas Kontrak"}</span>
                         <span className="font-black">Rp {sisaTagihan.toLocaleString("id-ID")}</span>
+
                       </div>
                     </>
                   )}
