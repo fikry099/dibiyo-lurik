@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ... sisa kode :root dll di bawahnya ... */
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -58,8 +56,8 @@ a {
 #nprogress .bar {
   /* Menggunakan gradient agar terlihat terang (Biru ke Putih) */
   background: linear-gradient(to right, #3b82f6, #ffffff, #94a3b8) !important;
-  
-  height: 4px !important; /* Sedikit lebih tebal agar lebih terlihat */
+  height: 4px !important;
+  /* Sedikit lebih tebal agar lebih terlihat */
   position: fixed;
   top: 0;
   left: 0;
@@ -97,4 +95,77 @@ input.nominal-input:-webkit-autofill:focus {
   caret-color: #111827;
   transition: background-color 9999s ease-in-out 0s;
   /* tahan override autofill */
+}
+
+/* ==========================================================================
+   KUSTOMISASI REACT DATEPICKER (THEME CONCEPT: NAVY, CYAN & GOLD)
+   ========================================================================== */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+/* Box Utama Kalender */
+.react-datepicker {
+  border: 1px solid #1A335A !important;
+  background: #FDFDFD !important;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px !important;
+}
+
+/* Bagian Atas / Header Kalender */
+.react-datepicker__header {
+  background: #1A335A !important;
+  border-bottom: 1px solid #1A335A !important;
+  border-top-left-radius: 7px !important;
+  border-top-right-radius: 7px !important;
+  padding-top: 10px !important;
+}
+
+/* Nama Bulan & Hari di Header */
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+/* Angka Tanggal Biasa */
+.react-datepicker__day {
+  color: #1A335A !important;
+  font-weight: 600;
+}
+
+/* Efek Hover Tanggal */
+.react-datepicker__day:hover {
+  background-color: rgba(90, 227, 237, 0.25) !important;
+  color: #1A335A !important;
+  border-radius: 4px;
+}
+
+/* Tanggal yang Sedang Dipilih (Gold Accent) */
+.react-datepicker__day--selected {
+  background: #F2B600 !important;
+  color: #FFFFFF !important;
+  border-radius: 4px !important;
+}
+
+/* Tanggal yang Terpilih via Keyboard */
+.react-datepicker__day--keyboard-selected {
+  background: rgba(90, 227, 237, 0.4) !important;
+  color: #1A335A !important;
+}
+
+/* Navigasi Panah Bulan */
+.react-datepicker__navigation-icon::before {
+  border-color: #FFFFFF !important;
+}
+
+/* Sinkronisasi warna Teks Input */
+.react-datepicker__input-container input {
+  color: #1A335A !important;
+  font-weight: bold;
+}
+
+.react-datepicker__input-container input::placeholder {
+  color: rgba(26, 51, 90, 0.4) !important;
 }

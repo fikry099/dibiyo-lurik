@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Printer, CreditCard, Box, Calendar, FileText } from 'lucide-react';
+import { X, Printer, CreditCard, Box, Calendar, FileText, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import qz from 'qz-tray';
 
