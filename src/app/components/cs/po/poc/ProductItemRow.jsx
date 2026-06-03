@@ -46,22 +46,22 @@ export default function ProductItemRow({
         <div className="flex flex-col space-y-1">
           <label className="text-[10px] font-bold">Lebar Kain</label>
           <select 
-            className="h-[34px] w-full px-2 bg-[#F1E9E987] border border-black rounded-[8px] font-bold text-[11px] outline-none" 
+            className="h-[34px] w-full px-2 bg-[#F1E9E987] border border-black rounded-[8px] font-bold text-[11px] outline-none cursor-pointer" 
             value={item.lebar} 
             onChange={(e) => updateItem(item.id, "lebar", e.target.value)}
           >
             <option value="">Pilih</option>
-            {[...new Set(daftarHarga.map((d) => d.lebar))].map((l) => (
+            {[...new Set(daftarHarga.map((d) => String(d.lebar)))].map((l) => (
               <option key={l} value={l}>Lebar {l} cm</option>
             ))}
           </select>
         </div>
 
-        {/* Pewarna (Sudah Diperbaiki agar Unik/Tidak Duplikat) */}
+        {/* Pewarna (unik, difilter berdasarkan lebar) */}
         <div className="flex flex-col space-y-1">
           <label className="text-[10px] font-bold">Pilih Pewarna</label>
           <select 
-            className="h-[34px] w-full px-2 bg-[#F1E9E987] border border-black rounded-[8px] font-bold text-[11px] outline-none" 
+            className="h-[34px] w-full px-2 bg-[#F1E9E987] border border-black rounded-[8px] font-bold text-[11px] outline-none cursor-pointer" 
             value={item.jenis_pewarna} 
             onChange={(e) => updateItem(item.id, "jenis_pewarna", e.target.value)}
           >
@@ -80,11 +80,11 @@ export default function ProductItemRow({
         <div className="flex flex-col space-y-1">
           <label className="text-[10px] font-bold">Jumlah</label>
           <div className="flex items-center border border-black bg-[#F1E9E987] rounded-[8px] h-[34px] w-full overflow-hidden">
-            <button type="button" onClick={() => updateItem(item.id, "qty", Math.max(1, item.qty - 1))} className="flex items-center justify-center h-full px-2 font-bold">
+            <button type="button" onClick={() => updateItem(item.id, "qty", Math.max(1, item.qty - 1))} className="flex items-center justify-center h-full px-2 font-bold cursor-pointer">
               <Minus size={10} />
             </button>
             <span className="flex-1 text-center font-bold text-[11px]">{item.qty}</span>
-            <button type="button" onClick={() => updateItem(item.id, "qty", item.qty + 1)} className="flex items-center justify-center h-full px-2 font-bold">
+            <button type="button" onClick={() => updateItem(item.id, "qty", item.qty + 1)} className="flex items-center justify-center h-full px-2 font-bold cursor-pointer">
               <Plus size={10} />
             </button>
           </div>
@@ -94,7 +94,11 @@ export default function ProductItemRow({
         <div className="flex flex-col space-y-1">
           <label className="text-[10px] font-bold">Panjang (m)</label>
           <input 
-            type="number" 
+            type="number"
+            min="0"
+            name="panjang-item-poc"
+            autoComplete="off"
+            data-lpignore="true"
             value={item.panjang} 
             className="h-[34px] w-full px-2 bg-[#F1E9E987] border border-black rounded-[8px] font-bold text-[11px] outline-none" 
             onChange={(e) => updateItem(item.id, "panjang", e.target.value)} 

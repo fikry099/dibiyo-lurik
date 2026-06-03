@@ -3,9 +3,6 @@ import supabaseAdmin from '@/lib/supabase-admin';
 import nodemailer from 'nodemailer'; 
 import { realtime } from '@/lib/realtime';
 
-// =====================================================
-// KONFIGURASI TRANSPORTER NODEMAILER (SMTP)
-// =====================================================
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '465'),
@@ -16,33 +13,36 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// =====================================================
-// HELPER LOKAL (Pengganti @/lib/preorder-helper)
-// =====================================================
-
-// 1. Menghitung subtotal per item (panjang * jumlah * harga_per_meter)
 function localCalculateItemSubtotal(panjang, jumlah, hargaPerMeter) {
   return Number(panjang || 0) * Number(jumlah || 0) * Number(hargaPerMeter || 0);
 }
 
-// 2. TENTUKAN HARGA BERDASARKAN JENIS PEWARNA, MOTIF_ID, DAN LEBAR
 async function localLookupHargaPerMeter(jenisPewarna, motifId, lebar) {
-  const { data: hargaData, error } = await supabaseAdmin
-    .from('daftar_harga') 
+  // 1. Coba cari harga spesifik motif
+  if (motifId) {
+    const { data: hargaMotif } = await supabaseAdmin
+      .from('daftar_harga')
+      .select('harga_per_meter')
+      .eq('jenis_pewarna', jenisPewarna)
+      .eq('motif_id', motifId)
+      .eq('lebar', Number(lebar))
+      .maybeSingle();
+      
+    if (hargaMotif) return Number(hargaMotif.harga_per_meter);
+  }
+
+  // 2. Jika tidak ada harga motif (atau motifId null), cari harga standar (motif_id = NULL)
+  const { data: hargaGeneral } = await supabaseAdmin
+    .from('daftar_harga')
     .select('harga_per_meter')
     .eq('jenis_pewarna', jenisPewarna)
-    .eq('motif_id', motifId) 
+    .is('motif_id', null)
     .eq('lebar', Number(lebar))
     .maybeSingle();
 
-  if (error) {
-    console.error("Error saat lookup daftar_harga:", error.message);
-  }
-
-  return hargaData ? Number(hargaData.harga_per_meter) : 0;
+  return hargaGeneral ? Number(hargaGeneral.harga_per_meter) : 0;
 }
 
-// 3. Menghitung ulang total harga header berdasarkan semua item_pre_order_reguler
 async function localRecalculateTotalPOR(poId) {
   const { data: items } = await supabaseAdmin
     .from('item_pre_order_reguler')
@@ -67,7 +67,7 @@ async function localRecalculateTotalPOR(poId) {
 }
 
 // =====================================================
-// GET - list PO reguler (Fleksibel untuk Antrean & Riwayat)
+// GET - list PO reguler (Dengan Kolom jenis_pewarna)
 // =====================================================
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -93,6 +93,7 @@ export async function GET(request) {
       total_dp, 
       diskon, 
       total_harga, 
+      catatan,
       created_at,
       items:item_pre_order_reguler(
         id,
@@ -101,6 +102,7 @@ export async function GET(request) {
         lebar,
         harga_per_meter,
         subtotal,
+        jenis_pewarna,
         produk:produk(
           id,
           gambar_url,
@@ -125,9 +127,8 @@ export async function GET(request) {
   return NextResponse.json({ data, meta: { total: count, page, limit } });
 }
 
-
 // =====================================================
-// POST - create PO reguler (Dari CS ke KP) - OPTIMIZED
+// POST - create PO reguler (Menyimpan jenis_pewarna ke Item)
 // =====================================================
 export async function POST(request) {
   try {
@@ -137,9 +138,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Items wajib diisi' }, { status: 400 });
     }
 
-    console.log("🚀 [POR-POST] Menjalankan TAHAP 1: Insert induk pre_order_reguler...");
-
-    // 1. Insert header PO Utama (WAJIB AWAIT)
     const { data: poHeader, error: headerErr } = await supabaseAdmin
       .from('pre_order_reguler')
       .insert({
@@ -152,7 +150,7 @@ export async function POST(request) {
         total_dp: Number(body.total_dp || 0),
         diskon: Number(body.diskon || 0),
         catatan: body.catatan || null,
-        total_harga: 0, // Akan dihitung ulang nanti
+        total_harga: 0, 
         status: 'dalam_proses',
         status_penerimaan: 'belum_diambil',
       })
@@ -161,10 +159,6 @@ export async function POST(request) {
 
     if (headerErr) throw new Error(headerErr.message);
 
-    console.log("✅ [POR-POST] TAHAP 1 Berhasil. ID Induk:", poHeader.id);
-    console.log("🚀 [POR-POST] Menjalankan TAHAP 2: Pengolahan & kalkulasi item...");
-
-    // 2. Proses data item (WAJIB AWAIT karena melibatkan pengecekan stok/harga produk)
     const itemsToInsert = [];
     const emailItemsDetails = []; 
 
@@ -191,6 +185,7 @@ export async function POST(request) {
         jumlah: Number(item.jumlah),
         harga_per_meter: hargaPerMeter,
         subtotal: subtotalItem,
+        jenis_pewarna: produk.jenis_pewarna // Simpan jenis_pewarna di sini
       });
 
       emailItemsDetails.push({
@@ -202,20 +197,15 @@ export async function POST(request) {
       });
     }
 
-    // Bulk Insert seluruh item ke tabel anak (WAJIB AWAIT)
     const { error: itemsErr } = await supabaseAdmin
       .from('item_pre_order_reguler')
       .insert(itemsToInsert);
 
     if (itemsErr) {
-      console.error("❌ [POR-POST] Gagal simpan item, melakukan rollback...");
       await supabaseAdmin.from('pre_order_reguler').delete().eq('id', poHeader.id);
       throw new Error(itemsErr.message);
     }
 
-    console.log("🚀 [POR-POST] Menjalankan TAHAP 3: Sinkronisasi kalkulasi total_harga di DB...");
-
-    // 3. Recalculate & Ambil Kondisi Data Final Utama (WAJIB AWAIT)
     await localRecalculateTotalPOR(poHeader.id);
 
     const { data: poComplete } = await supabaseAdmin
@@ -224,11 +214,8 @@ export async function POST(request) {
       .eq('id', poHeader.id)
       .single();
 
-    console.log("🎉 [POR-POST] DATA UTAMA BERHASIL DISIMPAN PERMANEN. ID:", poComplete.id);
-
-    // 4. OPERASI DATABASE UNTUK RIWAYAT NOTIFIKASI (WAJIB AWAIT agar log sistem konsisten)
     try {
-      const { error: notifDbErr } = await supabaseAdmin
+      await supabaseAdmin
         .from('notifikasi_sistem')
         .insert({
           penerima_role: 'kp',
@@ -238,17 +225,10 @@ export async function POST(request) {
           pesan: `Ada pesanan Reguler baru dari ${poComplete.nama_customer} (Estimasi: ${poComplete.tanggal_selesai || '-'}).`,
           status_dibaca: false
         });
-
-      if (notifDbErr) console.error("⚠️ [DATABASE-NOTIFIKASI-ERROR]:", notifDbErr.message);
     } catch (dbNotifErr) {
       console.error("⚠️ [DATABASE-NOTIFIKASI-ERROR]:", dbNotifErr);
     }
 
-    // =========================================================================
-    // BACKGROUND PROCESS: PROSES BACKSTAGE ASINKRONUS (TANPA AWAIT)
-    // =========================================================================
-    
-    // 1. Trigger Broadcast Realtime Upstash
     realtime.emit("notification.created", {
       id_order: poComplete.id.toString(),
       tipe: "POR", 
@@ -256,14 +236,11 @@ export async function POST(request) {
       pesan: `Ada pesanan Reguler baru dari ${poComplete.nama_customer} (Estimasi: ${poComplete.tanggal_selesai || '-'})`,
       waktu: new Date().toISOString()
     }).catch(realtimeErr => {
-      console.error("⚠️ [BACKGROUND-REALTIME-ERROR] Gagal kirim websocket:", realtimeErr);
+      console.error("⚠️ [BACKGROUND-REALTIME-ERROR]", realtimeErr);
     });
 
-    // 2. Pembuatan Template & Pengiriman Email Mandiri (IIFE)
     (async () => {
       try {
-        console.log("📧 [BACKGROUND-EMAIL-POR] Memulai penyusunan kerangka HTML...");
-
         const daftarItemHtml = emailItemsDetails.map((item, index) => `
           <tr>
             <td style="padding: 10px; border: 1px solid #DDB892; text-align: center; color: #555;">${index + 1}</td>
@@ -282,7 +259,6 @@ export async function POST(request) {
             <p style="font-size: 14px; line-height: 1.5; color: #555;">
               Halo Kepala Produksi, terdapat pesanan kain bertipe <b>Reguler (Katalog Standar)</b> baru yang telah divalidasi oleh Customer Service. Mohon siapkan kebutuhan logistik bahan baku kain terkait.
             </p>
-            
             <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
               <tr>
                 <td style="width: 160px; padding: 8px 0; font-weight: bold; color: #1A335A;">Nama Pelanggan</td>
@@ -297,10 +273,7 @@ export async function POST(request) {
                 <td>: <span style="color: #EF4444; font-weight: bold;">${poComplete.tanggal_selesai || '-'}</span></td>
               </tr>
             </table>
-
-            <h3 style="color: #1A335A; margin-top: 24px; margin-bottom: 12px; font-size: 16px; border-left: 4px solid #1A335A; padding-left: 8px;">
-              Rincian Item Katalog yang Harus Diproses:
-            </h3>
+            <h3>Rincian Item Katalog yang Harus Diproses:</h3>
             <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
               <thead>
                 <tr style="background-color: #1A335A; color: white;">
@@ -315,7 +288,6 @@ export async function POST(request) {
                 ${daftarItemHtml}
               </tbody>
             </table>
-
             <div style="margin-top: 20px; background-color: #EBF3FF; padding: 12px; border-left: 4px solid #1A335A; border-radius: 4px; font-size: 13px;">
               <b style="color: #1A335A;">Memo Tambahan CS:</b><br/>
               <span style="color: #555; font-style: italic;">${poComplete.catatan || 'Tidak ada instruksi khusus.'}</span>
@@ -329,37 +301,28 @@ export async function POST(request) {
           subject: `🚨 [PRODUKSI REGULER] PO Baru - POR-${poComplete.id.substring(0,8)} (${poComplete.nama_customer})`,
           html: emailHtmlContent,
         });
-        console.log("✅ [BACKGROUND-EMAIL-POR] Surat penugasan berhasil masuk mailbox KP!");
       } catch (emailErr) {
-        console.error("⚠️ [BACKGROUND-EMAIL-ERROR] Gagal kirim email background:", emailErr);
+        console.error("⚠️ [BACKGROUND-EMAIL-ERROR]", emailErr);
       }
     })();
 
-    // =========================================================================
-    // HIGH-SPEED RESPONSE: DATA UTAMA DIKEMBALIKAN KE KLIEN SECARA INSTAN
-    // =========================================================================
     return NextResponse.json({ 
       message: 'Pre-Order Reguler berhasil dibuat', 
       data: poComplete 
     }, { status: 201 });
 
   } catch (err) {
-    console.error("💥 [POR-POST] GLOBAL CRASH DETECTED:", err.message);
+    console.error("💥 [POST POR ERROR]:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// =====================================================
-// PATCH - Konfirmasi Penerimaan Barang oleh Customer
-// =====================================================
 export async function PATCH(request) {
   try {
     const body = await request.json();
     const { id } = body;
 
-    if (!id) {
-      return NextResponse.json({ error: 'ID Pesanan wajib disertakan' }, { status: 400 });
-    }
+    if (!id) return NextResponse.json({ error: 'ID Pesanan wajib disertakan' }, { status: 400 });
 
     const { data, error } = await supabaseAdmin
       .from('pre_order_reguler')
@@ -371,16 +334,9 @@ export async function PATCH(request) {
       .select()
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Status penerimaan barang berhasil dikonfirmasi', 
-      data 
-    }, { status: 200 });
-
+    return NextResponse.json({ success: true, message: 'Status penerimaan barang berhasil dikonfirmasi', data }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
