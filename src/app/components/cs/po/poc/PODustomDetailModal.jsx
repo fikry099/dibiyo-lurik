@@ -10,6 +10,9 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
 
   if (!isOpen || !item) return null;
 
+  // Cek status pembayaran lunas atau bukan
+  const isLunas = item.status_pembayaran?.toLowerCase() === 'lunas';
+
   // SINKRONISASI DATA PRODUK: Diambil sekali agar konsisten di struk & UI modal
   const daftarProduk = Array.isArray(item.item_pre_order_custom) 
     ? item.item_pre_order_custom 
@@ -112,8 +115,8 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
 
         printData.push(
           ` ${index + 1}. Lurik Custom - ${prod.jenis_pewarna || 'Klasik'} (${jumlah}x)\n`,
-          `    L: ${lebar} . P: ${panjang}\n`,
-          `    Subtotal : Rp ${hargaItem.toLocaleString('id-ID')}\n`
+          `     L: ${lebar} . P: ${panjang}\n`,
+          `     Subtotal : Rp ${hargaItem.toLocaleString('id-ID')}\n`
         );
       });
 
@@ -122,10 +125,17 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
         boldOn,
         'Detail Pembayaran\n',
         boldOff,
-        `Total             : Rp ${totalHargaAkhir.toLocaleString('id-ID')}\n`,
-        `DP / Uang Masuk   : Rp ${totalDanaMasuk.toLocaleString('id-ID')}\n`,
-        `Sisa Kekurangan   : Rp ${sisaKekurangan.toLocaleString('id-ID')}\n`,
-        `Status            : ${item.status_pembayaran?.toUpperCase() || 'LUNAS'}\n`,
+        `Total             : Rp ${totalHargaAkhir.toLocaleString('id-ID')}\n`
+      );
+
+      // STRUK KONDISI: Hanya tampilkan baris DP jika status pembayaran BELUM LUNAS
+      if (!isLunas) {
+        printData.push(`DP / Uang Masuk   : Rp ${totalDanaMasuk.toLocaleString('id-ID')}\n`);
+        printData.push(`Sisa Kekurangan   : Rp ${sisaKekurangan.toLocaleString('id-ID')}\n`);
+      }
+
+      printData.push(
+        `Status            : ${item.status_pembayaran?.toUpperCase() || 'DP'}\n`,
         '------------------------------------------------\n',
         boldOn,
         'Metode Pembayaran\n',
@@ -177,14 +187,10 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
     }
   };
 
-
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A335A7A] font-inter backdrop-blur-[3px] print:p-0 print:bg-white print:relative">
       
-      {/* INJEKSI STYLE CUSTOM UNTUK SCROLLBAR TIPIS & STYLING PRINT OUT */}
       <style dangerouslySetInnerHTML={{ __html: `
-        /* --- UTALITAS SCROLLBAR MODERN --- */
         .custom-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: #1A335A transparent;
@@ -200,8 +206,6 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
           background-color: #1A335A;
           border-radius: 10px;
         }
-
-        /* --- ATURAN CETAK STRUK STRIP ELEMEN UI --- */
         @media print {
           body * { visibility: hidden; }
           .print-modal-container, .print-modal-container * { visibility: visible; }
@@ -217,7 +221,6 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
         }
       `}} />
 
-      {/* CONTAINER MODAL UTAMA */}
       <div className="print-modal-container bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto custom-scrollbar flex flex-col">
         
         {/* HEADER MODAL */}
@@ -250,7 +253,6 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                 <div className="px-3 border-r border-gray-200">
                   <p className="font-medium text-gray-400">No Telpon</p>
                   <p className="font-bold mt-0.5 text-[#1A335A]">{item.kontak_customer || '-'}</p>
-
                 </div>
                 <div className="pl-3">
                   <p className="font-medium text-gray-400">Tanggal Pre-Order</p>
@@ -268,7 +270,6 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
             </div>
 
             {/* Box Detail Pembayaran */}
-
             <div className="md:col-span-5 bg-[#5AE3ED1C] border border-[#1A335A]/20 rounded-xl p-4 text-[11px] flex flex-col justify-between shadow-sm">
               <div>
                 <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs border-b border-[#1A335A]/10 pb-1.5 mb-2">
@@ -279,9 +280,9 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                   <div className="pr-3 border-r border-gray-300">
                     <p className="font-medium text-gray-400">Status Pembayaran</p>
                     <span className={`inline-block mt-1 text-[9px] font-black px-2.5 py-0.5 rounded-md text-white uppercase tracking-wider ${
-                      item.status_pembayaran?.toLowerCase() === 'lunas' ? 'bg-[#1DB793]' : 'bg-[#F2B600]'
+                      isLunas ? 'bg-[#1DB793]' : 'bg-[#F2B600]'
                     }`}>
-                      {item.status_pembayaran?.toUpperCase() || 'LUNAS'}
+                      {item.status_pembayaran?.toUpperCase() || 'DP'}
                     </span>
                   </div>
                   <div className="pl-3">
@@ -298,7 +299,8 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                     Rp {totalHargaAkhir.toLocaleString('id-ID')}
                   </p>
                 </div>
-                {sisaKekurangan > 0 && (
+                {/* UI KONDISI: Sisa Kurang di bagian atas hanya tampil jika belum lunas */}
+                {!isLunas && sisaKekurangan > 0 && (
                   <div className="text-right">
                     <span className="text-[9px] bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded">Sisa Kurang: Rp {sisaKekurangan.toLocaleString('id-ID')}</span>
                   </div>
@@ -307,8 +309,7 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
             </div>
           </div>
 
-
-          {/* BARIS 2: DATA PRODUK (MAPPING DINAMIS MULTI-BARANG) */}
+          {/* BARIS 2: DATA PRODUK */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs border-b pb-1">
               <Box size={14} /> Daftar Item Produk Custom ({daftarProduk.length} Item)
@@ -326,7 +327,6 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                     className="bg-[#5AE3ED1C] border border-[#1A335A]/10 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[11px]"
                   >
                     <div className="flex items-center gap-3">
-                      {/* Thumbnail Gambar Item */}
                       <div className="flex items-center justify-center overflow-hidden bg-white border border-gray-200 rounded-lg shadow-inner w-14 h-14 shrink-0">
                         {prodItem.gambar_custom || prodItem.image ? (
                           <img 
@@ -385,8 +385,6 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
 
           {/* BARIS 3: ESTIMASI PRODUK JADI & STATUS PRODUKSI */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-            
-            {/* Estimasi Box */}
             <div className="md:col-span-5 bg-[#5AE3ED1C] border border-[#1A335A]/10 rounded-xl p-4 text-[11px] space-y-2 flex flex-col justify-between shadow-sm">
               <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs">
                 <Calendar size={13} /> Estimasi Produk Selesai
@@ -396,7 +394,6 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
               </div>
             </div>
 
-            {/* Status Produksi Box */}
             <div className="md:col-span-7 bg-[#5AE3ED1C] border border-[#1A335A]/10 rounded-xl p-4 text-[11px] space-y-2 flex flex-col justify-between shadow-sm">
               <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs">
                 <Box size={13} /> Status Produksi Aktif
@@ -407,12 +404,10 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                 {item.status ? item.status.replace(/_/g, ' ').toUpperCase() : 'BELUM DIPROSES'}
               </div>
             </div>
-
           </div>
 
           {/* BARIS 4: RINCIAN BREAKDOWN TRANSAKSI & CATATAN */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-            
             {/* Catatan Khusus */}
             <div className="md:col-span-6 bg-[#5AE3ED1C] border border-[#1A335A]/10 rounded-xl p-4 text-[11px] space-y-1.5 shadow-sm">
               <p className="font-bold text-[#1A335A] text-xs flex items-center gap-1"><FileText size={13}/> Catatan Khusus Pesanan</p>
@@ -436,17 +431,22 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                 <span>Total Nilai Kontrak</span>
                 <span>Rp {totalHargaAkhir.toLocaleString('id-ID')}</span>
               </div>
-              <div className="flex justify-between font-medium text-emerald-600">
-                <span>Dana yang Telah Diterima (DP/Cash)</span>
-                <span>Rp {totalDanaMasuk.toLocaleString('id-ID')}</span>
-              </div>
-              <hr className="border-gray-200 border-dashed" />
-              <div className={`flex justify-between p-1 rounded font-black ${sisaKekurangan > 0 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
-                <span>Sisa Kekurangan Pembayaran</span>
-                <span>Rp {sisaKekurangan.toLocaleString('id-ID')}</span>
-              </div>
+              
+              {/* UI KONDISI BREAKDOWN: Hanya tampil jika status belum lunas (DP) */}
+              {!isLunas && (
+                <>
+                  <div className="flex justify-between font-medium text-emerald-600">
+                    <span>Dana yang Telah Diterima (DP/Cash)</span>
+                    <span>Rp {totalDanaMasuk.toLocaleString('id-ID')}</span>
+                  </div>
+                  <hr className="border-gray-200 border-dashed" />
+                  <div className={`flex justify-between p-1 rounded font-black ${sisaKekurangan > 0 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
+                    <span>Sisa Kekurangan Pembayaran</span>
+                    <span>Rp {sisaKekurangan.toLocaleString('id-ID')}</span>
+                  </div>
+                </>
+              )}
             </div>
-
           </div>
 
         </div>
@@ -469,7 +469,6 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                 <span>Cetak Struk</span>
               </>
             )}
-
           </button>
         </div>
 

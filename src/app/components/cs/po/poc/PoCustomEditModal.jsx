@@ -8,10 +8,7 @@ import "react-datepicker/dist/react-datepicker.css";
 
 // Import Sub-Komponen Modular
 import CustomerSection from "./CustomerSection";
-import ProductSection from "./ProductSection";
-import PaymentSection from "./PaymentSection";
-import ProductionSection from "./ProductionSection";
-import SuccessModal from "./SuccessModal";
+
 
 // =====================================================
 // KONSTANTA STYLE & HELPER
@@ -20,6 +17,12 @@ const LABEL = "block text-black font-medium mb-1";
 const INPUT_CYAN = "w-full border border-[#1A335A] bg-[#5AE3ED1C] rounded-lg p-2 focus:outline-none";
 const INPUT_WHITE = "w-full border border-[#1A335A] rounded-lg bg-white p-1.5 focus:outline-none";
 
+import ProductItemsSection from "./ProductItemsSection";
+import PaymentSection from "./PaymentSection";
+import ProductionSection from "./ProductionSection";
+
+
+// Helper & Formatters
 const formatRibuan = (val) => (Number(String(val).replace(/\D/g, "")) || 0).toLocaleString("id-ID");
 const parseRibuan = (str) => Number(String(str).replace(/\D/g, "")) || 0;
 
@@ -44,11 +47,10 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
   const [items, setItems] = useState([]);
   const [pembayaran, setPembayaran] = useState({ status_pembayaran: "dp", total_dp: 0, metode_pembayaran: "cash", diskon: 0 });
   const [produksi, setProduksi] = useState({ tanggal_selesai: "", status: "dalam_proses", catatan: "" });
-
   const [hargaLamaDariDb, setHargaLamaDariDb] = useState(0); 
   const [dpLamaDariDb, setDpLamaDariDb] = useState(0);      
 
-  // --- Ambil master harga ---
+  // --- Fetch Master Harga ---
   useEffect(() => {
     if (isOpen) {
       fetch("/api/daftar-harga")
@@ -58,7 +60,6 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
     }
   }, [isOpen]);
 
-  // --- Set data awal saat modal dibuka ---
   useEffect(() => {
     if (!isOpen || !item) return;
 
@@ -102,8 +103,6 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
     });
   }, [isOpen, item]);
 
-  // =====================================================
-  // NILAI TURUNAN (derived state)
   // =====================================================
   const hitungSubtotalItem = (it) =>
     Number(it.harga_per_meter || 0) * Number(it.panjang || 0) * Number(it.qty || 1);
@@ -149,10 +148,8 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
       ? (bayarSekarang < minDpItemBaru || bayarSekarang > tagihanItemBaru)
       : (dpFinal < minDpRequired || dpFinal > totalHargaAkhir));
 
-  const inputTerkunci = isLunas || (isDpLocked && !hasNewItems) || (!hasNewItems);
-
   // =====================================================
-  // HANDLERS
+  // HANDLERS MUTASI STATE
   // =====================================================
   const updateItem = (id, field, value) => {
     setItems((prev) =>
@@ -223,7 +220,6 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
     }
 
     setLoading(true);
-
     try {
       const cleanItems = items.map((i) => ({
         id: i.isFromDb ? i.id : undefined,
@@ -283,109 +279,99 @@ export default function PoCustomEditModal({ isOpen, onClose, item, onSuccess }) 
   }
 
   return (
-    <div className="fixed inset-0 bg-[#1A335A]/48 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 font-inter">
-      {/* Datepicker global CSS template injection */}
+
+    <div className="fixed inset-0 bg-[#1A335A7A] backdrop-blur-[2px] flex items-center justify-center z-50 p-4 font-inter">
       <style dangerouslySetInnerHTML={{ __html: `
         .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #1A335A transparent; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #1A335A; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(26, 51, 90, 0.4); border-radius: 10px; }
         .react-datepicker-wrapper { width: 100% !important; }
-        .react-datepicker { font-family: 'Inter', sans-serif !important; border: 1px solid #1A335A !important; border-radius: 10px !important; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1) !important; overflow: hidden; }
+        .react-datepicker { font-family: 'Inter', sans-serif !important; border: 1px solid #f1f1f1 !important; border-radius: 12px !important; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05) !important; overflow: hidden; }
         .react-datepicker__header { background-color: #1A335A !important; border-bottom: 1px solid #1A335A !important; padding: 8px 0 !important; }
         .react-datepicker__current-month, .react-datepicker__day-name { color: white !important; font-weight: 700 !important; }
         .react-datepicker__day-name { color: rgba(255,255,255,0.7) !important; }
         .react-datepicker__navigation-icon::before { border-color: white !important; }
-        .react-datepicker__day--selected, .react-datepicker__day--keyboard-selected { background-color: #f2b600 !important; color: white !important; font-weight: bold !important; border-radius: 6px !important; }
-        .react-datepicker__day:hover { background-color: #5AE3ED30 !important; border-radius: 6px !important; }
+        .react-datepicker__day--selected, .react-datepicker__day--keyboard-selected { background-color: #F59E0B !important; color: white !important; font-weight: bold !important; border-radius: 6px !important; }
+        .react-datepicker__day:hover { background-color: rgba(90, 227, 237, 0.15) !important; border-radius: 6px !important; }
       `}} />
 
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto custom-scrollbar">
+
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto custom-scrollbar">
         {/* HEADER */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <h2 className="text-sm font-bold text-black tracking-wide">Pre-Order Custom</h2>
-          <button onClick={onClose} className="text-[#1A335A] hover:opacity-70 transition-opacity cursor-pointer">
-            <X size={20} strokeWidth={2.5} />
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white border-b border-stone-100">
+          <h2 className="text-sm font-bold tracking-wider uppercase text-stone-800">Pre-Order Custom Portal</h2>
+          <button onClick={onClose} className="transition-colors cursor-pointer text-stone-400 hover:text-stone-600">
+            <X size={18} strokeWidth={2.5} />
           </button>
         </div>
 
         <div className="p-6 space-y-6">
           {/* SECTION 1: DATA CUSTOMER */}
-          <CustomerSection 
-            customer={customer} 
-            setCustomer={setCustomer} 
-            createdAt={item?.created_at} 
-            labelStyle={LABEL} 
-            inputStyle={INPUT_CYAN} 
-          />
+          <CustomerSection customer={customer} setCustomer={setCustomer} item={item} />
 
           {/* SECTION 2: DATA PRODUK */}
-          <ProductSection 
-            items={items} 
-            setItems={setItems} 
-            daftarHarga={daftarHarga} 
-            updateItem={updateItem} 
-            handleImageUpload={handleImageUpload} 
-            hitungSubtotalItem={hitungSubtotalItem} 
-            itemKosong={itemKosong} 
-            isOriginallyLunas={isOriginallyLunas} 
-            statusPembayaran={pembayaran.status_pembayaran} 
-            labelStyle={LABEL} 
-            inputWhiteStyle={INPUT_WHITE} 
+          <ProductItemsSection
+            items={items}
+            setItems={setItems}
+            daftarHarga={daftarHarga}
+            updateItem={updateItem}
+            handleImageUpload={handleImageUpload}
+            hitungSubtotalItem={hitungSubtotalItem}
+            itemKosong={itemKosong}
+            isOriginallyLunas={isOriginallyLunas}
+            pembayaran={pembayaran}
           />
 
           {/* SECTION 3: DETAIL PEMBAYARAN */}
-          <PaymentSection 
-            pembayaran={pembayaran} 
-            setPembayaran={setPembayaran} 
-            hasNewItems={hasNewItems} 
-            isOriginallyLunas={isOriginallyLunas} 
-            isOriginallyDp={isOriginallyDp} 
-            dibayarSebelumnya={dibayarSebelumnya} 
-            tagihanItemBaru={tagihanItemBaru} 
-            minDpItemBaru={minDpItemBaru} 
-            showSimpleLunasView={showSimpleLunasView} 
-            isDpLocked={isDpLocked} 
-            isDiskonLocked={isDiskonLocked} 
-            bayarSekarang={bayarSekarang} 
-            sisaTagihan={sisaTagihan} 
-            isDpInvalid={isDpInvalid} 
-            inputTerkunci={inputTerkunci} 
-            subTotal={subTotal} 
-            nilaiDiskon={nilaiDiskon} 
-            subTotalBaru={subTotalBaru} 
-            totalHargaAkhir={totalHargaAkhir} 
-            formatRibuan={formatRibuan} 
-            parseRibuan={parseRibuan} 
+          <PaymentSection
+            pembayaran={pembayaran}
+            setPembayaran={setPembayaran}
+            showSimpleLunasView={showSimpleLunasView}
+            hasNewItems={hasNewItems}
+            isOriginallyLunas={isOriginallyLunas}
+            isOriginallyDp={isOriginallyDp}
+            isDpLocked={isDpLocked}
+            isDiskonLocked={isDiskonLocked}
+            inputTerkunci={isOriginallyLunas}
+            isDpInvalid={isDpInvalid}
+            dibayarSebelumnya={dibayarSebelumnya}
+            tagihanItemBaru={tagihanItemBaru}
+            minDpItemBaru={minDpItemBaru}
+            bayarSekarang={bayarSekarang}
+            sisaTagihan={sisaTagihan}
+            subTotal={subTotal}
+            subTotalBaru={subTotalBaru}
+            nilaiDiskon={nilaiDiskon}
+            totalHargaAkhir={totalHargaAkhir}
+            formatRibuan={formatRibuan}
+            parseRibuan={parseRibuan}
           />
 
           {/* SECTION 4: ESTIMASI & STATUS PRODUKSI */}
-          <ProductionSection 
-            produksi={produksi} 
-            setProduksi={setProduksi} 
-            labelStyle={LABEL} 
-          />
+          <ProductionSection produksi={produksi} setProduksi={setProduksi} />
 
-          {/* SECTION 5: CATATAN */}
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-black border-b pb-1">Catatan</label>
-            <textarea 
-              rows={3} 
-              value={produksi.catatan} 
-              onChange={(e) => setProduksi({ ...produksi, catatan: e.target.value })} 
-              className={`${INPUT_CYAN} text-[11px] resize-none`} 
-              placeholder="Tambahkan catatan khusus pengerjaan lurik di sini..." 
+          {/* SECTION 5: CATATAN TAMBAHAN */}
+          <div className="space-y-2 text-[11px]">
+            <label className="block pb-1 text-xs font-bold tracking-wider uppercase border-b text-stone-800 border-stone-100">Catatan Tambahan</label>
+            <textarea
+              rows={3}
+              value={produksi.catatan}
+              onChange={(e) => setProduksi({ ...produksi, catatan: e.target.value })}
+              className="w-full bg-[#EBF9FB]/60 rounded-xl p-3 focus:outline-none border-none resize-none font-medium text-stone-800"
+              placeholder="Tambahkan instruksi pengerjaan lurik di sini..."
             />
           </div>
 
-          {/* SUBMIT */}
-          <button 
-            type="button" 
-            disabled={loading} 
-            onClick={handleUpdateSubmit} 
-            className="w-full py-3 bg-[#f2b600] hover:bg-[#d9a300] text-white rounded-lg font-bold text-xs transition-all tracking-wide shadow disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          {/* SUBMIT BUTTON */}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={handleUpdateSubmit}
+            className="w-full h-11 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl font-bold text-xs transition-all tracking-wider uppercase shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            {loading ? "Menyimpan Perubahan..." : "Simpan"}
+            {loading ? "Menyimpan Perubahan..." : "Simpan Perubahan Pesanan"}
+
           </button>
         </div>
       </div>

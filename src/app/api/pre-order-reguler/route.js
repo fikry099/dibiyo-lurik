@@ -149,7 +149,7 @@ export async function POST(request) {
         status_pembayaran: body.status_pembayaran,
         total_dp: Number(body.total_dp || 0),
         diskon: Number(body.diskon || 0),
-        catatan: body.catatan || null,
+        // catatan: body.catatan || null,
         total_harga: 0, 
         status: 'dalam_proses',
         status_penerimaan: 'belum_diambil',

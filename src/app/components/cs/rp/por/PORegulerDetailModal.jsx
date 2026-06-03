@@ -16,6 +16,9 @@ export default function PORegulerDetailModal({ isOpen, onClose, item }) {
   }
 
   const statusProd = getStatusProduksiLabel(item.status)
+  
+  // Memeriksa apakah status pembayaran saat ini adalah lunas
+  const isLunas = item.status_pembayaran?.toLowerCase() === 'lunas'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A335A7A] backdrop-blur-xs font-inter animate-fade-in">
@@ -81,13 +84,16 @@ export default function PORegulerDetailModal({ isOpen, onClose, item }) {
                   <div className="pr-3 border-r border-black">
                     <p className="text-gray-500 text-[10px]">Status Pembayaran</p>
                     <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-md mt-1 text-white ${
-                      item.status_pembayaran?.toLowerCase() === 'lunas' ? 'bg-[#1DB793]' : 'bg-[#F0A864]'
+                      isLunas ? 'bg-[#1DB793]' : 'bg-[#F0A864]'
                     }`}>{item.status_pembayaran?.toUpperCase() || 'DP'}</span>
                   </div>
                   
+                  {/* KOLOM NOMINAL DP (Hanya muncul jika status BUKAN lunas) */}
                   <div className="px-3 border-r border-black">
                     <p className="text-gray-500 text-[10px]">Nominal DP</p>
-                    <p className="mt-1 font-bold">Rp.{item.total_dp?.toLocaleString('id-ID') || '0'}</p>
+                    <p className="mt-1 font-bold">
+                      {isLunas ? '-' : `Rp.${item.total_dp?.toLocaleString('id-ID') || '0'}`}
+                    </p>
                   </div>
                   
                   <div className="pl-3">

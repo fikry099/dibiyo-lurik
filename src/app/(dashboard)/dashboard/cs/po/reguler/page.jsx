@@ -27,7 +27,7 @@ function TableSkeleton({ limit = 10 }) {
         <div className="flex-1 w-24 h-4 rounded bg-stone-300/30"></div>
         <div className="w-16 h-4 rounded bg-stone-300/30"></div>
       </div>
-      
+
       {/* Rows Skeleton */}
       <div className="bg-white divide-y divide-stone-100">
         {[...Array(limit)].map((_, index) => (
@@ -55,39 +55,46 @@ export default function PreOrderRegulerPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedItemToEdit, setSelectedItemToEdit] = useState(null)
 
-  // State Pagination & Metadata Backend
   const [currentPage, setCurrentPage] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   const itemsPerPage = 10
 
-  // Satukan efek pemanggilan data ke dalam satu useEffect berdasarkan perubahan currentPage
+
+  const fetchData = async (isInitial = false) => {
+  if (isInitial) setLoading(true)
+  try {
+    const res = await fetch(`/api/pre-order-reguler?page=${currentPage}&limit=${itemsPerPage}`)
+    if (!res.ok) throw new Error('Gagal mengambil data')
+    const json = await res.json()
+    
+    // 1. LOG DATA MURNI DARI BACKEND
+    console.log("=== DEBUG PARENT: DATA DARI BACKEND ===", json.data)
+
+    if (json && Array.isArray(json.data)) {
+      setData(json.data)
+      setTotalItems(json.meta?.total || json.data.length || 0)
+    } else {
+      setData([])
+      setTotalItems(0)
+    }
+  } catch (err) {
+    console.error("Error fetchData:", err)
+    setData([])
+    setTotalItems(0)
+  } finally {
+    if (isInitial) setLoading(false)
+  }
+}
+
+
+  // Setiap kali halaman berganti, picu pemanggilan ulang data ke backend
   useEffect(() => {
     fetchData(true)
   }, [currentPage])
 
-  const fetchData = async (isInitial = false) => {
-    if (isInitial) setLoading(true)
-    try {
-      const res = await fetch(`/api/pre-order-reguler?page=${currentPage}&limit=${itemsPerPage}`)
-      if (!res.ok) throw new Error('Gagal mengambil data')
-      const json = await res.json()
-      
-      if (json && Array.isArray(json.data)) {
-        setData(json.data)
-        setTotalItems(json.meta?.total || json.data.length || 0)
-      } else {
-        setData([])
-        setTotalItems(0)
-      }
-    } catch (err) {
-      setData([])
-      setTotalItems(0)
-    } finally {
-      if (isInitial) setLoading(false)
-    }
-  }
-
   const handleConfirmReceiptSuccess = (confirmedId) => {
+
+      console.log("=== DEBUG PARENT: ITEM UNTUK MODAL ===", selectedItem)
     setData((prevData) => prevData.filter((item) => item.id !== confirmedId))
     fetchData(false)
   }
@@ -162,7 +169,7 @@ export default function PreOrderRegulerPage() {
         <div className="flex flex-col justify-between gap-4 pb-4 border-b border-gray-400 sm:flex-row sm:items-center">
           <h2 className="text-sm font-bold text-black min-w-max">List Pre Order Reguler</h2>
           
-          <div className="flex items-center flex-1 w-full max-w-2xl gap-3 sm:justify-end ">
+          <div className="flex items-center flex-1 w-full max-w-2xl gap-3 sm:justify-end">
             <div className="relative flex-1 max-w-md">
               <input 
                 type="text"
@@ -199,15 +206,22 @@ export default function PreOrderRegulerPage() {
             <p className="text-xs font-medium text-stone-400">Tidak ada antrean pre-order ditemukan.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <PORegulerTable 
-              data={filteredData} 
-              onConfirmReceipt={handleConfirmReceiptSuccess}
-              onEdit={handleEditClick}
-              onDelete={handleDeleteClick}
-            />
-          </div>
-        )}
+          <>
+            {filteredData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 border border-dashed rounded-sm border-stone-200 bg-stone-50/50">
+                <p className="text-xs font-medium text-stone-400">Tidak ada antrean pre-order ditemukan.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <PORegulerTable 
+                  data={filteredData} 
+                  onConfirmReceipt={handleConfirmReceiptSuccess}
+                  onEdit={handleEditClick}
+                  onDelete={handleDeleteClick}
+                />
+              </div>
+            )}
+
 
         {/* ================= CONTROLLER PAGINATION MODERN ================= */}
         {totalPages > 1 && (

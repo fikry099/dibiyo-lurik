@@ -17,7 +17,7 @@ const formatRibuan = (nilai) => {
 function FormSkeleton() {
   return (
     <div className="w-full mx-auto text-black font-inter animate-pulse">
-      <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+      <div className="w-1/4 h-8 mb-4 bg-gray-200 rounded"></div>
       <div className="h-64 bg-gray-200 rounded"></div>
     </div>
   );
@@ -40,7 +40,7 @@ export default function PembayaranPOR() {
     metode: orderData.paymentData?.metode || 'cash', 
     diskon: orderData.paymentData?.diskon || 0,
     tgl_selesai: orderData.paymentData?.tgl_selesai || '',
-    catatan: orderData.paymentData?.catatan || ''
+    // catatan: orderData.paymentData?.catatan || ''
   });
 
   useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
@@ -104,7 +104,7 @@ const handleSubmit = async () => {
       
       total_dp: Number(formData.nominal),
       diskon: Number(formData.diskon),
-      catatan: formData.catatan || '',
+      // catatan: formData.catatan || '',
       items: itemsPayload 
     };
 
@@ -202,7 +202,7 @@ const handleSubmit = async () => {
               }
             </label>
             <div className="relative flex items-center">
-              <span className="absolute text-xs font-bold left-3 text-black/60 select-none">Rp</span>
+              <span className="absolute text-xs font-bold select-none left-3 text-black/60">Rp</span>
               <input 
                 type="text" 
                 value={formatRibuan(formData.nominal)} 
@@ -258,7 +258,7 @@ const handleSubmit = async () => {
                     }
                   }} 
                 />
-                <span className="absolute text-xs font-bold right-3 text-black/60 select-none">%</span>
+                <span className="absolute text-xs font-bold select-none right-3 text-black/60">%</span>
               </div>
             </div>
             
@@ -284,7 +284,7 @@ const handleSubmit = async () => {
             </div>
             <div className="flex flex-col space-y-1.5 bg-[#5AE3ED1C] border border-[#5AE3ED1C] p-3 rounded-md">
               <label className="text-[10px] font-bold text-black">Tanggal Estimasi Selesai</label>
-              <div className="relative w-full flex items-center">
+              <div className="relative flex items-center w-full">
                 <Calendar size={14} className="absolute left-3 text-[#1A335A] -translate-y-1/2 pointer-events-none z-10 top-1/2" />
                 <DatePicker
                   selected={formData.tgl_selesai ? new Date(formData.tgl_selesai) : null}
@@ -316,7 +316,7 @@ const handleSubmit = async () => {
         </div>
 
         {/* Isian Lembar Catatan */}
-        <div className="space-y-1.5">
+        {/* <div className="space-y-1.5">
           <label className="text-[11px] font-bold text-black pl-1">Catatan</label>
           <textarea 
             value={formData.catatan} 
@@ -324,7 +324,7 @@ const handleSubmit = async () => {
             className="w-full h-24 p-3 text-xs font-medium text-black border rounded-md outline-none resize-none bg-[#FDFDFD] border-[#1A335A] placeholder-black/40" 
             onChange={(e) => setFormData({...formData, catatan: e.target.value})} 
           />
-        </div>
+        </div> */}
 
         <button 
           type="button"
@@ -340,7 +340,7 @@ const handleSubmit = async () => {
       {showSuccess && mounted && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={BACKDROP_STYLE}>
           <div className="bg-white rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] w-[372px] relative overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex flex-col items-center justify-center py-12 px-6">
+            <div className="flex flex-col items-center justify-center px-6 py-12">
               <ThumbsUp size={56} className="text-[#1A335A] mb-5" strokeWidth={1.5} />
               <p className="text-[#000000] text-[18px] font-bold text-center leading-snug">
                 Pre Order Reguler Berhasil<br />diTambah
