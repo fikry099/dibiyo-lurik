@@ -1,9 +1,20 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, CornerDownLeft, X } from "lucide-react";
+import { Minus, Plus, CornerDownLeft, X, User, Calendar } from "lucide-react";
 import { useOrderStore } from "../../../../../store/useOrderStore";
 import ProductSelectionModal from "../../../../../components/cs/produk/ProductSelectionModal";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+// Helper dapatkan tanggal hari ini format YYYY-MM-DD
+const getTodayDate = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 export default function AddPreOrderReguler() {
   const router = useRouter();
@@ -11,88 +22,128 @@ export default function AddPreOrderReguler() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [daftarHarga, setDaftarHarga] = useState([]);
 
-  const [customer, setCustomer] = useState(
-    orderData?.customer || {
-      nama: "",
-      telpon: "",
-      tgl: "",
-      alamat: "",
-    }
-  );
+  // Auto-set tanggal hari ini jika data customer baru diinisialisasi
+  const [customer, setCustomer] = useState({
+    nama: orderData?.customer?.nama || "",
+    telpon: orderData?.customer?.telpon || "",
+    tgl: orderData?.customer?.tgl || getTodayDate(),
+    alamat: orderData?.customer?.alamat || "",
+  });
 
   // Sinkronisasi data customer ke Zustand
   useEffect(() => {
     setOrderData({ ...orderData, customer });
   }, [customer]);
 
-  // Ambil data master daftar harga dari backend
+  // ENGINE UTAMA: Fungsi pencari harga cerdas berdasarkan master data API
+  const hitungHargaItem = (lebar, jenisPewarna, itemData) => {
+    if (!lebar || !jenisPewarna || daftarHarga.length === 0) return 0;
+
+    // Standardisasi input pewarna agar sinkron dengan enum DB ('sintetis' / 'alami')
+    let targetPewarna = String(jenisPewarna).trim().toLowerCase();
+    if (targetPewarna === "alam") targetPewarna = "alami";
+
+    // Ambil ID motif dari berbagai kemungkinan struktur payload produk/modal
+    const currentMotifId = itemData.motif_id || itemData.motif?.id || itemData.id_motif || itemData.id;
+
+    // Langkah 1: Cari harga spesifik untuk motif + lebar + jenis pewarna ini
+    let match = daftarHarga.find((d) => {
+      const matchLebar = String(d.lebar) === String(lebar);
+      const matchPewarna = String(d.jenis_pewarna).trim().toLowerCase() === targetPewarna;
+      const apiMotifId = d.motif?.id || null;
+
+      return matchLebar && matchPewarna && apiMotifId && String(apiMotifId) === String(currentMotifId);
+    });
+
+    // Langkah 2: Jika tidak ada harga spesifik motif, ambil harga global (motif_id di DB nilainya null)
+    if (!match) {
+      match = daftarHarga.find((d) => {
+        const matchLebar = String(d.lebar) === String(lebar);
+        const matchPewarna = String(d.jenis_pewarna).trim().toLowerCase() === targetPewarna;
+        const apiMotifId = d.motif?.id || null;
+
+        return matchLebar && matchPewarna && !apiMotifId;
+      });
+    }
+
+    return match ? parseFloat(match.harga_per_meter) || 0 : 0;
+  };
+
+  // Ambil data master daftar harga dari backend saat komponen dimuat
   useEffect(() => {
     fetch("/api/daftar-harga")
       .then((res) => res.json())
-      .then((res) => setDaftarHarga(res.data || []))
+      .then((res) => {
+        const dataHarga = res.data || [];
+        setDaftarHarga(dataHarga);
+      })
       .catch((err) => console.error("Gagal ambil daftar harga:", err));
   }, []);
 
-  const updateProductField = (index, field, value) => {
-  const newItems = [...(orderData.items || [])];
-  if (!newItems[index]) return;
+  // Trigger kalkulasi ulang setiap kali daftar master harga berhasil dimuat atau item berubah
+  useEffect(() => {
+    if (daftarHarga.length > 0 && orderData?.items?.length > 0) {
+      // Cek apakah ada item yang harganya masih salah/belum terhitung
+      const needUpdate = orderData.items.some((item) => {
+        const tepatHarga = hitungHargaItem(item.lebar, item.jenis_pewarna, item);
+        const totalSeharusnya = tepatHarga * (parseFloat(item.panjang) || 0) * (parseInt(item.qty) || 1);
+        return item.harga !== tepatHarga || item.totalHargaItem !== totalSeharusnya;
+      });
 
-  // 1. Update field yang berubah
-  newItems[index] = { ...newItems[index], [field]: value };
-
-  const currentItem = newItems[index];
-  
-  // Ambil data filter dari state UI
-  const currentMotifId = currentItem.motif_id || currentItem.motif?.id || currentItem.id_motif;
-  const targetLebar = currentItem.lebar;
-  const targetPewarna = currentItem.jenis_pewarna;
-
-  // 2. Logika cari harga dinamis dengan toleransi struktur nama kolom API
-  if (targetLebar && targetPewarna) {
-    const found = daftarHarga.find((d) => {
-      const matchLebar = String(d.lebar) === String(targetLebar);
-      const matchPewarna = String(d.jenis_pewarna).trim().toLowerCase() === String(targetPewarna).trim().toLowerCase();
-      
-      // Deteksi dinamis: akomodir kemungkinan nama kolom 'id_motif' atau 'motif_id' dari database API
-      const apiMotifId = d.id_motif || d.motif_id;
-
-      // JIKA di API ada data motif-nya, maka wajib dicocokkan dengan UI.
-      // JIKA di API properti motif-nya kosong/tidak ada, kita anggap harga berlaku umum untuk semua motif.
-      const matchMotif = apiMotifId ? String(apiMotifId) === String(currentMotifId) : true;
-
-      return matchLebar && matchPewarna && matchMotif;
-    });
-
-    if (found) {
-      // Pastikan nama properti harga sesuai (harga_per_meter atau harga)
-      newItems[index].harga = parseFloat(found.harga_per_meter || found.harga) || 0;
-    } else {
-      newItems[index].harga = 0;
+      if (needUpdate) {
+        const updatedItems = orderData.items.map((item) => {
+          const hargaMurni = hitungHargaItem(item.lebar, item.jenis_pewarna, item);
+          const panjang = parseFloat(item.panjang) || 0;
+          const qty = parseInt(item.qty) || 1;
+          return {
+            ...item,
+            harga: hargaMurni,
+            totalHargaItem: hargaMurni * panjang * qty
+          };
+        });
+        setOrderData({ ...orderData, items: updatedItems });
+      }
     }
-  }
+  }, [daftarHarga, orderData?.items]);
 
-  // 3. Kalkulasi total harga item (Harga * Panjang * Qty)
-  const finalHarga = parseFloat(newItems[index].harga) || 0;
-  const finalPanjang = parseFloat(newItems[index].panjang) || 0;
-  const finalQty = parseInt(newItems[index].qty) || 1;
+  const updateProductField = (index, field, value) => {
+    const newItems = [...(orderData.items || [])];
+    if (!newItems[index]) return;
 
-  newItems[index].totalHargaItem = finalHarga * finalPanjang * finalQty;
+    // Update field dasar
+    newItems[index] = { ...newItems[index], [field]: value };
+    
+    // Hitung ulang harga satuan & total harga secara real-time
+    const item = newItems[index];
+    const hargaMurni = hitungHargaItem(item.lebar, item.jenis_pewarna, item);
+    const panjang = parseFloat(item.panjang) || 0;
+    const qty = parseInt(item.qty) || 1;
 
-  // 4. Update state global Zustand
-  setOrderData({ ...orderData, items: newItems });
-};
+    newItems[index].harga = hargaMurni;
+    newItems[index].totalHargaItem = hargaMurni * panjang * qty;
+
+    setOrderData({ ...orderData, items: newItems });
+  };
 
   const handleAddItems = (newSelectedProducts) => {
     const currentItems = orderData.items || [];
     const newItems = [
       ...currentItems,
-      ...newSelectedProducts.map((p) => ({
-        ...p,
-        qty: 1,
-        panjang: 0,
-        harga: 0,
-        totalHargaItem: 0,
-      })),
+      ...newSelectedProducts.map((p) => {
+        const defaultPewarna = p.jenis_pewarna || "";
+        const defaultLebar = p.lebar || "";
+        const hargaMurni = hitungHargaItem(defaultLebar, defaultPewarna, p);
+
+        return {
+          ...p,
+          lebar: defaultLebar,
+          jenis_pewarna: defaultPewarna,
+          qty: 1,
+          panjang: 0,
+          harga: hargaMurni,
+          totalHargaItem: 0,
+        };
+      }),
     ];
     setOrderData({ ...orderData, items: newItems });
   };
@@ -106,7 +157,6 @@ export default function AddPreOrderReguler() {
     }
   };
 
-  // Tampilkan loading/state aman jika items masih kosong saat inisialisasi
   if (!orderData?.items || orderData.items.length === 0) {
     return (
       <div className="p-10 text-center text-black">
@@ -123,53 +173,138 @@ export default function AddPreOrderReguler() {
 
   return (
     <div className="w-full mx-auto space-y-6">
+      {/* Inject Kustomisasi Tema Datepicker Navy, Cyan & Gold secara Global */}
+      <style jsx global>{`
+        .react-datepicker-wrapper {
+          width: 100%;
+        }
+        .react-datepicker {
+          border: 1px solid #1A335A !important;
+          background: #FDFDFD !important;
+          font-family: inherit;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          border-radius: 8px !important;
+        }
+        .react-datepicker__header {
+          background: #1A335A !important;
+          border-bottom: 1px solid #1A335A !important;
+          border-top-left-radius: 7px !important;
+          border-top-right-radius: 7px !important;
+          padding-top: 10px !important;
+        }
+        .react-datepicker__current-month,
+        .react-datepicker__day-name {
+          color: #FFFFFF !important;
+          font-weight: 600;
+        }
+        .react-datepicker__day {
+          color: #1A335A !important;
+          font-weight: 600;
+        }
+        .react-datepicker__day:hover {
+          background-color: rgba(90, 227, 237, 0.25) !important;
+          color: #1A335A !important;
+          border-radius: 4px;
+        }
+        .react-datepicker__day--selected {
+          background: #F2B600 !important;
+          color: #FFFFFF !important;
+          border-radius: 4px !important;
+        }
+        .react-datepicker__day--keyboard-selected {
+          background: rgba(90, 227, 237, 0.4) !important;
+          color: #1A335A !important;
+        }
+      `}</style>
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-stone-800">Pre-Order Reguler</h1>
       </div>
 
-      {/* Data Customer */}
-      <div className="relative p-6 bg-[#5AE3ED1C] border shadow-sm rounded-lg">
+      {/* Container Data Customer */}
+      <div className="relative bg-[#5AE3ED1C] border border-[#1A335A] rounded-lg p-6 shadow-sm font-inter space-y-5">
         <button
           onClick={() => router.push("/dashboard/cs/order")}
           className="absolute flex items-center gap-2 px-3 py-1 text-sm font-medium transition-all bg-[#1A335A] border border-[#1A335A] rounded-xl top-4 right-4 text-[#f7efe9] hover:bg-[#264982]"
         >
           <CornerDownLeft size={16} /> kembali
         </button>
-        <h2 className="mb-4 font-semibold text-stone-700">Data Customer</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-black">Nama Customer</label>
+
+        <div className="flex items-center gap-2 text-sm font-semibold text-black select-none">
+          <User size={18} strokeWidth={2.5} className="opacity-90" />
+          <h2 className="text-black">Data Customer</h2>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 text-xs md:grid-cols-3">
+          {/* Nama Customer */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] text-black font-bold tracking-wide">Nama Customer</label>
             <input
-              placeholder="Nama Customer"
+              type="text"
+              name="nama-customer-por"
+              autoComplete="off"
+              data-lpignore="true"
+              placeholder="Masukkan Nama"
               value={customer.nama}
-              className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
+              className="w-full h-[38px] px-3 bg-[#F1E9E987] border border-[#1A335A] rounded-[10px] text-black placeholder-black/60 outline-none focus:border-[#1A335A] transition-colors"
               onChange={(e) => setCustomer({ ...customer, nama: e.target.value })}
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-black">No Telpon</label>
+
+          {/* No Telpon */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] text-black font-bold tracking-wide">No Telpon</label>
             <input
-              placeholder="No Telpon"
+              type="text"
+              name="telpon-customer-por"
+              autoComplete="off"
+              data-lpignore="true"
+              placeholder="Masukkan No Telpon"
               value={customer.telpon}
-              className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
-              onChange={(e) => setCustomer({ ...customer, telpon: e.target.value })}
+              className="w-full h-[38px] px-3 bg-[#F1E9E987] border border-[#1A335A] rounded-[10px] text-black placeholder-black/60 outline-none focus:border-[#1A335A] transition-colors"
+              onChange={(e) => {
+                // Regex untuk memfilter hanya angka saja
+                const hanyaAngka = e.target.value.replace(/[^0-9]/g, "");
+                setCustomer({ ...customer, telpon: hanyaAngka });
+              }}
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-black">Tanggal Pre-Order Reguler</label>
-            <input
-              type="date"
-              value={customer.tgl}
-              className="w-full p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
-              onChange={(e) => setCustomer({ ...customer, tgl: e.target.value })}
-            />
+
+          {/* Tanggal Pre-Order dengan React Datepicker */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] text-black font-bold tracking-wide">Tanggal Pre-Order Reguler</label>
+            <div className="relative w-full">
+              <DatePicker
+                selected={customer.tgl ? new Date(customer.tgl) : null}
+                onChange={(date) => {
+                  if (date) {
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    setCustomer({ ...customer, tgl: `${yyyy}-${mm}-${dd}` });
+                  } else {
+                    setCustomer({ ...customer, tgl: "" });
+                  }
+                }}
+                dateFormat="yyyy-MM-dd"
+                placeholderText="Pilih Tanggal"
+                wrapperClassName="w-full"
+                className="w-full h-[38px] px-3 bg-[#F1E9E987] border border-[#1A335A] rounded-[10px] text-black font-bold outline-none focus:border-[#1A335A] transition-colors cursor-pointer placeholder-black/60"
+              />
+              <Calendar
+                size={14}
+                className="absolute text-black -translate-y-1/2 pointer-events-none right-3 top-1/2"
+              />
+            </div>
           </div>
-          <div className="col-span-1 space-y-1 md:col-span-3">
-            <label className="text-xs font-semibold text-black">Alamat</label>
+
+          {/* Alamat */}
+          <div className="col-span-1 md:col-span-3 space-y-1.5">
+            <label className="text-[11px] text-black font-bold tracking-wide">Alamat</label>
             <textarea
               placeholder="Alamat lengkap..."
               value={customer.alamat}
-              className="w-full h-20 p-2 bg-[#F1E9E987] text-black border rounded-lg border-[#1A335A]"
+              className="w-full h-[60px] p-3 bg-[#F1E9E987] border border-[#1A335A] rounded-[10px] text-black placeholder-black/60 outline-none focus:border-[#1A335A] transition-colors resize-none"
               onChange={(e) => setCustomer({ ...customer, alamat: e.target.value })}
             />
           </div>
@@ -214,36 +349,32 @@ export default function AddPreOrderReguler() {
               </div>
 
               <div className="flex flex-wrap items-center flex-1 gap-4 border-t md:border-t-0 md:border-l border-[#1A335A]/20 pt-4 md:pt-0 md:pl-4">
+                
                 {/* Select Lebar Kain */}
                 <div className="w-32">
                   <p className="text-xs text-black">Lebar Kain</p>
                   <select
-                    className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm"
+                    className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm cursor-pointer font-semibold"
                     value={item.lebar || ""}
                     onChange={(e) => updateProductField(index, "lebar", e.target.value)}
                   >
                     <option value="">Pilih Lebar</option>
-                    {[...new Set(daftarHarga.map((d) => String(d.lebar)))].map((lebar) => (
-                      <option key={lebar} value={lebar}>{lebar} cm</option>
-                    ))}
+                    <option value="70">70 cm</option>
+                    <option value="110">110 cm</option>
                   </select>
                 </div>
 
-                {/* Select Jenis Pewarna */}
+                {/* Select Jenis Pewarna (Sinkron dengan DB Option) */}
                 <div className="w-32">
                   <p className="text-xs text-black">Jenis Pewarna</p>
                   <select
-                    className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm"
+                    className="w-full p-2 bg-[#5AE3ED1C] text-black rounded-md border-b border-[#1A335A] outline-none text-sm cursor-pointer font-semibold"
                     value={item.jenis_pewarna || ""}
                     onChange={(e) => updateProductField(index, "jenis_pewarna", e.target.value)}
-                    disabled={!item.lebar}
                   >
                     <option value="">Pilih Jenis</option>
-                    {daftarHarga
-                      .filter((d) => String(d.lebar) === String(item.lebar))
-                      .map((d) => (
-                        <option key={d.id} value={d.jenis_pewarna}>{d.jenis_pewarna}</option>
-                      ))}
+                    <option value="alami">Alam</option>
+                    <option value="sintetis">Sintetis</option>
                   </select>
                 </div>
 
@@ -251,15 +382,31 @@ export default function AddPreOrderReguler() {
                 <div>
                   <p className="text-xs text-black">Jumlah Order</p>
                   <div className="flex items-center bg-[#5AE3ED1C] text-black rounded-md border border-[#1A335A] w-24">
+                    {/* Tombol Minus */}
                     <button 
-                      onClick={() => updateProductField(index, "qty", Math.max(1, (parseInt(item.qty) || 1) - 1))} 
+                      onClick={() => updateProductField(index, "qty", Math.max(1, (parseInt(item.qty) || 0) - 1))} 
                       className="px-2 py-2.5"
                     >
                       <Minus size={12} />
                     </button>
-                    <span className="flex-1 text-xs text-center">{item.qty || 1}</span>
+                    
+                    {/* Input Qty (Bisa Diketik & Nggak Ngunci Angka 0) */}
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="1"
+                      value={item.qty === 0 ? "" : item.qty}
+                      className="w-full bg-transparent text-xs text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // Jika kosong set ke 0 agar placeholder '1' aktif, jika diisi parse ke integer
+                        updateProductField(index, "qty", val === "" ? 0 : parseInt(val) || 0);
+                      }}
+                    />
+
+                    {/* Tombol Plus */}
                     <button 
-                      onClick={() => updateProductField(index, "qty", (parseInt(item.qty) || 1) + 1)} 
+                      onClick={() => updateProductField(index, "qty", (parseInt(item.qty) || 0) + 1)} 
                       className="px-2 py-2"
                     >
                       <Plus size={12} />
@@ -274,13 +421,18 @@ export default function AddPreOrderReguler() {
                     type="number"
                     step="0.1"
                     min="0"
-                    value={item.panjang ?? ""}
-                    className="w-full p-1.5 border bg-[#5AE3ED1C] text-black rounded-md border-[#1A335A] text-sm"
-                    onChange={(e) => updateProductField(index, "panjang", parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    value={item.panjang === 0 ? "" : item.panjang}
+                    className="w-full p-1.5 border bg-[#5AE3ED1C] text-black rounded-md border-[#1A335A] text-sm font-semibold"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Jika kosong set ke 0, jika diinput parse ke float
+                      updateProductField(index, "panjang", val === "" ? 0 : parseFloat(val) || 0);
+                    }}
                   />
                 </div>
 
-                {/* Output Display Total Harga */}
+                {/* Output Display Total Harga Otomatis */}
                 <div className="flex-1 min-w-[120px]">
                   <p className="text-xs text-black">Total Harga</p>
                   <div className="w-full p-2 border bg-[#5AE3ED1C] text-black rounded-md border-[#1A335A] text-xs font-bold h-[38px] flex items-center">

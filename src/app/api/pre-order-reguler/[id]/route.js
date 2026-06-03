@@ -1,117 +1,273 @@
-// // /api/pre-order-reguler/[id]
-// // GET   — detail POR lengkap (semua role)
-// // PATCH — update field umum seperti nama, alamat, estimasi (CS only)
-// // DELETE — hapus POR (CS only)
-// //
-// // Note: update STATUS pakai dedicated endpoints:
-// //   POST /[id]/start-produksi   → sedang_diproses
-// //   POST /[id]/finish-produksi  → selesai_diproses
-// //   POST /[id]/mark-paid        → status_pembayaran lunas
+import { NextResponse } from 'next/server';
+import supabaseAdmin from '@/lib/supabase-admin';
 
-// import { withAuth } from '@/lib/api-helper'
-// import {
-//   successResponse,
-//   errorResponse,
-//   notFoundResponse,
-//   forbiddenResponse,
-// } from '@/lib/response-helper'
-// import { safeParseBody } from '@/lib/validation'
-// import supabaseAdmin from '@/lib/supabase-admin'
+function localCalculateItemSubtotal(panjang, jumlah, hargaPerMeter) {
+  return Number(panjang || 0) * Number(jumlah || 0) * Number(hargaPerMeter || 0);
+}
 
-// // =====================================================
-// // GET - detail POR dengan items + produk info
-// // =====================================================
-// export const GET = withAuth(async ({ params }) => {
-//   const { id } = await params
-//   if (!id) return errorResponse('ID wajib diisi', 400)
+async function localLookupHargaPerMeter(jenisPewarna, motifId, lebar) {
+  const { data: hargaData } = await supabaseAdmin
+    .from('daftar_harga')
+    .select('harga_per_meter')
+    .eq('jenis_pewarna', jenisPewarna)
+    .eq('motif_id', motifId)
+    .eq('lebar', Number(lebar))
+    .maybeSingle();
 
-//   const { data, error } = await supabaseAdmin
-//     .from('pre_order_reguler')
-//     .select(`
-//       id, nama_customer, no_telpon, alamat,
-//       tanggal_po, tanggal_estimasi,
-//       status_produksi, status_pembayaran,
-//       nominal_dp, diskon, total_harga, metode_pembayaran,
-//       created_at, updated_at,
-//       item_pre_order_reguler(
-//         id, lebar, jumlah, panjang_kain, harga_per_meter,
-//         produk:produk_id(
-//           id, kode_produk, gambar_url,
-//           kategori:kategori_id(nama),
-//           motif:motif_id(nama)
-//         )
-//       )
-//     `)
-//     .eq('id', id)
-//     .single()
+  return hargaData ? Number(hargaData.harga_per_meter) : 0;
+}
 
-//   if (error || !data) return notFoundResponse('Pre-order tidak ditemukan')
+async function localRecalculateTotalPOR(poId) {
+  const { data: items } = await supabaseAdmin
+    .from('item_pre_order_reguler')
+    .select('subtotal')
+    .eq('pre_order_reguler_id', poId);
 
-//   return successResponse(data)
-// })
+  const sumItems = (items || []).reduce((acc, curr) => acc + Number(curr.subtotal || 0), 0);
 
-// // =====================================================
-// // PATCH - update field umum POR (CS only)
-// // Field yang bisa diubah: nama_customer, no_telpon, alamat,
-// //   tanggal_estimasi, nominal_dp, diskon, metode_pembayaran
-// // =====================================================
-// export const PATCH = withAuth(async ({ request, params, profile }) => {
-//   const { id } = await params
-//   if (!id) return errorResponse('ID wajib diisi', 400)
+  const { data: header } = await supabaseAdmin
+    .from('pre_order_reguler')
+    .select('diskon')
+    .eq('id', poId)
+    .single();
 
-//   if (profile?.role !== 'customer_service') {
-//     return forbiddenResponse('Hanya Customer Service yang bisa edit pre-order')
-//   }
+  const diskon = header ? Number(header.diskon || 0) : 0;
+  const totalHarga = Math.max(0, sumItems - (sumItems * (diskon / 100)));
 
-//   const body = await safeParseBody(request)
-//   if (!body) return errorResponse('Body harus JSON valid', 400)
+  await supabaseAdmin
+    .from('pre_order_reguler')
+    .update({ total_harga: totalHarga })
+    .eq('id', poId);
+}
 
-//   // Whitelist field yang boleh diupdate
-//   const allowed = [
-//     'nama_customer', 'no_telpon', 'alamat',
-//     'tanggal_estimasi', 'nominal_dp', 'diskon',
-//     'metode_pembayaran', 'total_harga',
-//   ]
+// =====================================================
+// GET - Ambil Detail Single Pre-Order Reguler Berdasarkan ID
+// =====================================================
+export async function GET(request, { params }) {
+  try {
+    const { id } = await params;
+    if (!id) return NextResponse.json({ message: 'ID wajib diisi' }, { status: 400 });
 
-//   const updateData = {}
-//   for (const key of allowed) {
-//     if (body[key] !== undefined) updateData[key] = body[key]
-//   }
+    const { data, error } = await supabaseAdmin
+      .from('pre_order_reguler')
+      .select(`
+        id, 
+        nama_customer, 
+        kontak_customer, 
+        alamat_customer, 
+        tanggal_selesai, 
+        status, 
+        metode_pembayaran, 
+        status_pembayaran, 
+        status_pengambilan,
+        total_dp, 
+        diskon, 
+        total_harga, 
+        catatan,
+        created_at,
+        updated_at,
+        items:item_pre_order_reguler(
+          id,
+          jumlah,
+          panjang,
+          lebar,
+          harga_per_meter,
+          subtotal,
+          jenis_pewarna,
+          produk_id,
+          produk:produk(
+            id,
+            gambar_url,
+            kode_produk
+          )
+        )
+      `)
+      .eq('id', id)
+      .single();
 
-//   if (Object.keys(updateData).length === 0) {
-//     return errorResponse('Tidak ada field yang diupdate', 400)
-//   }
+    if (error || !data) {
+      return NextResponse.json({ message: 'Data Pre-Order Reguler tidak ditemukan' }, { status: 404 });
+    }
 
-//   const { data, error } = await supabaseAdmin
-//     .from('pre_order_reguler')
-//     .update(updateData)
-//     .eq('id', id)
-//     .select('id, nama_customer, status_produksi, status_pembayaran')
-//     .single()
+    return NextResponse.json({ data }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ message: err.message }, { status: 500 });
+  }
+}
 
-//   if (error) return errorResponse('Gagal update: ' + error.message, 500)
-//   if (!data) return notFoundResponse('Pre-order tidak ditemukan')
+// =====================================================
+// PATCH - Update Field Umum & Sinkronisasi Items POR (Mengikuti Logika POC)
+// =====================================================
+export async function PATCH(request, { params }) {
+  try {
+    const { id } = await params;
+    if (!id) return NextResponse.json({ message: 'ID wajib diisi' }, { status: 400 });
 
-//   return successResponse(data, 'Pre-order berhasil diupdate')
-// })
+    const body = await request.json();
 
-// // =====================================================
-// // DELETE - hapus POR (CS only)
-// // =====================================================
-// export const DELETE = withAuth(async ({ params, profile }) => {
-//   const { id } = await params
-//   if (!id) return errorResponse('ID wajib diisi', 400)
+    // 1. Ekstrak data untuk tabel induk (Menghapus kontrol langsung status produksi agar tidak ter-overwrite)
+    const allowedFields = [
+      'nama_customer',
+      'kontak_customer',
+      'alamat_customer',
+      'tanggal_selesai',
+      'metode_pembayaran',
+      'status_pembayaran',
+      'status_pengambilan', // Digunakan untuk konfirmasi penerimaan barang oleh CS
+      'total_dp',
+      'diskon',
+      'catatan'
+    ];
 
-//   if (profile?.role !== 'customer_service') {
-//     return forbiddenResponse('Hanya Customer Service yang bisa hapus pre-order')
-//   }
+    const updateData = {};
 
-//   const { error } = await supabaseAdmin
-//     .from('pre_order_reguler')
-//     .delete()
-//     .eq('id', id)
+    for (const key of allowedFields) {
+      if (body[key] !== undefined) {
+        if (key === 'nama_customer' && typeof body[key] === 'string') {
+          updateData[key] = body[key].trim();
+        } else if (['metode_pembayaran', 'status_pembayaran', 'status_pengambilan'].includes(key) && body[key] !== null) {
+          updateData[key] = body[key].toString().toLowerCase();
+        } else if (['total_dp', 'diskon'].includes(key)) {
+          updateData[key] = Number(body[key] || 0);
+        } else {
+          updateData[key] = body[key];
+        }
+      }
+    }
 
-//   if (error) return errorResponse('Gagal hapus: ' + error.message, 500)
+    updateData.updated_at = new Date().toISOString();
 
-//   return successResponse(null, 'Pre-order berhasil dihapus')
-// })
+    // Jalankan update data induk pre_order_reguler
+    const { error: poError } = await supabaseAdmin
+      .from('pre_order_reguler')
+      .update(updateData)
+      .eq('id', id);
+
+    if (poError) throw poError;
+
+    // 2. PROSES SINKRONISASI ITEMS POR
+    if (body.items && Array.isArray(body.items)) {
+      // Ambil data item yang saat ini tersimpan di DB
+      const { data: currentDbItems, error: fetchItemsError } = await supabaseAdmin
+        .from('item_pre_order_reguler')
+        .select('id')
+        .eq('pre_order_reguler_id', id);
+
+      if (fetchItemsError) throw fetchItemsError;
+
+      // Filter item yang dihapus oleh user dari form/modal frontend
+      const incomingIds = body.items.filter(i => i.id).map(i => i.id);
+      const idsToDelete = currentDbItems
+        .filter(dbItem => !incomingIds.includes(dbItem.id))
+        .map(dbItem => dbItem.id);
+
+      if (idsToDelete.length > 0) {
+        const { error: deleteError } = await supabaseAdmin
+          .from('item_pre_order_reguler')
+          .delete()
+          .in('id', idsToDelete);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Pisahkan Data Baru (Insert) & Data Lama (Update) serta hitung ulang subtotal dan harga_per_meter secara dinamis
+      const itemsToInsert = [];
+      const itemsToUpdate = [];
+
+      for (const item of body.items) {
+        const { data: produk } = await supabaseAdmin
+          .from('produk')
+          .select('id, jenis_pewarna, motif_id')
+          .eq('id', item.produk_id)
+          .maybeSingle();
+
+        if (!produk) throw new Error(`Produk tidak ditemukan untuk ID: ${item.produk_id}`);
+
+        // Ambil harga per meter terbaru dari master daftar_harga
+        const hargaPerMeter = await localLookupHargaPerMeter(produk.jenis_pewarna, produk.motif_id, item.lebar);
+        if (hargaPerMeter === 0) throw new Error(`Harga untuk kain dengan lebar ${item.lebar} belum diset di master daftar harga.`);
+
+        const subtotalItem = localCalculateItemSubtotal(item.panjang, item.jumlah, hargaPerMeter);
+
+        const payload = {
+          pre_order_reguler_id: id,
+          produk_id: item.produk_id,
+          lebar: Number(item.lebar),
+          panjang: Number(item.panjang),
+          jumlah: Number(item.jumlah),
+          harga_per_meter: hargaPerMeter,
+          subtotal: subtotalItem,
+          jenis_pewarna: produk.jenis_pewarna
+        };
+
+        if (item.id) {
+          payload.id = item.id;
+          itemsToUpdate.push(payload);
+        } else {
+          itemsToInsert.push(payload);
+        }
+      }
+
+      // Eksekusi Insert item baru jika ada
+      if (itemsToInsert.length > 0) {
+        const { error: insertError } = await supabaseAdmin
+          .from('item_pre_order_reguler')
+          .insert(itemsToInsert);
+
+        if (insertError) throw insertError;
+      }
+
+      // Eksekusi Upsert item lama yang diedit jika ada
+      if (itemsToUpdate.length > 0) {
+        const { error: upsertError } = await supabaseAdmin
+          .from('item_pre_order_reguler')
+          .upsert(itemsToUpdate);
+
+        if (upsertError) throw upsertError;
+      }
+    }
+
+    // 3. Hitung ulang total_harga akhir setelah perubahan item/diskon selesai dilakukan
+    await localRecalculateTotalPOR(id);
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Pre-Order Reguler beserta item spesifikasinya berhasil diperbarui' 
+    }, { status: 200 });
+
+  } catch (err) {
+    return NextResponse.json({ message: 'Gagal update: ' + err.message }, { status: 500 });
+  }
+}
+
+// =====================================================
+// DELETE - Hapus Data Pre-Order Reguler Beserta Items-nya
+// =====================================================
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = await params;
+    if (!id) return NextResponse.json({ message: 'ID wajib diisi' }, { status: 400 });
+
+    // Hapus item-item terlebih dahulu demi konsistensi data sebelum menghapus record induk
+    const { error: itemsError } = await supabaseAdmin
+      .from('item_pre_order_reguler')
+      .delete()
+      .eq('pre_order_reguler_id', id);
+
+    if (itemsError) throw itemsError;
+
+    const { error: poError } = await supabaseAdmin
+      .from('pre_order_reguler')
+      .delete()
+      .eq('id', id);
+
+    if (poError) throw poError;
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Pre-Order Reguler beserta seluruh item spesifikasinya berhasil dihapus' 
+    }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ message: 'Gagal hapus: ' + err.message }, { status: 500 });
+  }
+}
