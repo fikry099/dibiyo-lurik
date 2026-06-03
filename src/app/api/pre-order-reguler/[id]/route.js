@@ -93,51 +93,33 @@ export async function GET(request, { params }) {
   } catch (err) {
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
-}
-
-// =====================================================
-// PATCH - Update Field Umum & Sinkronisasi Items POR (Mengikuti Logika POC)
-// =====================================================
-export async function PATCH(request, { params }) {
+}export async function PUT(request, { params }) {
   try {
     const { id } = await params;
     if (!id) return NextResponse.json({ message: 'ID wajib diisi' }, { status: 400 });
 
     const body = await request.json();
 
-    // 1. Ekstrak data untuk tabel induk (Menghapus kontrol langsung status produksi agar tidak ter-overwrite)
-    const allowedFields = [
-      'nama_customer',
-      'kontak_customer',
-      'alamat_customer',
-      'tanggal_selesai',
-      'metode_pembayaran',
-      'status_pembayaran',
-      'status_pengambilan', // Digunakan untuk konfirmasi penerimaan barang oleh CS
-      'total_dp',
-      'diskon',
-      'catatan'
-    ];
-
-    const updateData = {};
-
-    for (const key of allowedFields) {
-      if (body[key] !== undefined) {
-        if (key === 'nama_customer' && typeof body[key] === 'string') {
-          updateData[key] = body[key].trim();
-        } else if (['metode_pembayaran', 'status_pembayaran', 'status_pengambilan'].includes(key) && body[key] !== null) {
-          updateData[key] = body[key].toString().toLowerCase();
-        } else if (['total_dp', 'diskon'].includes(key)) {
-          updateData[key] = Number(body[key] || 0);
-        } else {
-          updateData[key] = body[key];
-        }
-      }
+    if (!body.customer) {
+      return NextResponse.json({ message: 'Data customer tidak ditemukan dalam payload' }, { status: 400 });
     }
 
-    updateData.updated_at = new Date().toISOString();
+    // 1. Update data induk Pre-Order Reguler (Termasuk Logika Finansial & DP Baru)
+    const updateData = {
+      nama_customer: body.customer.nama ? body.customer.nama.trim() : null,
+      kontak_customer: body.customer.telpon || null,
+      alamat_customer: body.customer.alamat ? body.customer.alamat.trim() : null,
+      status: body.status || 'dalam_proses',
+      status_pembayaran: body.status_pembayaran || 'dp',
+      metode_pembayaran: body.metode_pembayaran || 'cash',
+      diskon: Number(body.diskon || 0),
+      total_dp: Number(body.total_dp || 0),        // Menyimpan total_dp baru dari client
+      total_harga: Number(body.total_harga || 0),  // Menyimpan total_harga baru setelah diskon
+      tanggal_selesai: body.tanggal_selesai || null,
+      catatan: body.catatan || null,
+      updated_at: new Date().toISOString()
+    };
 
-    // Jalankan update data induk pre_order_reguler
     const { error: poError } = await supabaseAdmin
       .from('pre_order_reguler')
       .update(updateData)
@@ -145,9 +127,9 @@ export async function PATCH(request, { params }) {
 
     if (poError) throw poError;
 
-    // 2. PROSES SINKRONISASI ITEMS POR
+    // 2. PROSES SINKRONISASI ITEMS POR (Hanya Edit / Hapus)
     if (body.items && Array.isArray(body.items)) {
-      // Ambil data item yang saat ini tersimpan di DB
+      
       const { data: currentDbItems, error: fetchItemsError } = await supabaseAdmin
         .from('item_pre_order_reguler')
         .select('id')
@@ -155,8 +137,10 @@ export async function PATCH(request, { params }) {
 
       if (fetchItemsError) throw fetchItemsError;
 
-      // Filter item yang dihapus oleh user dari form/modal frontend
-      const incomingIds = body.items.filter(i => i.id).map(i => i.id);
+      const currentDbIds = currentDbItems.map(dbItem => dbItem.id);
+      const incomingIds = body.items.filter(i => i.id && currentDbIds.includes(i.id)).map(i => i.id);
+      
+      // Filter item yang sengaja dihapus lewat UI (jika ada)
       const idsToDelete = currentDbItems
         .filter(dbItem => !incomingIds.includes(dbItem.id))
         .map(dbItem => dbItem.id);
@@ -170,54 +154,38 @@ export async function PATCH(request, { params }) {
         if (deleteError) throw deleteError;
       }
 
-      // Pisahkan Data Baru (Insert) & Data Lama (Update) serta hitung ulang subtotal dan harga_per_meter secara dinamis
-      const itemsToInsert = [];
       const itemsToUpdate = [];
 
       for (const item of body.items) {
-        const { data: produk } = await supabaseAdmin
-          .from('produk')
-          .select('id, jenis_pewarna, motif_id')
-          .eq('id', item.produk_id)
-          .maybeSingle();
+        const currentProdukId = item.produk_id || item.produk?.id || item.id_produk;
 
-        if (!produk) throw new Error(`Produk tidak ditemukan untuk ID: ${item.produk_id}`);
+        if (!currentProdukId) {
+          throw new Error(`ID Produk tidak valid atau tidak ditemukan pada baris transaksi.`);
+        }
 
-        // Ambil harga per meter terbaru dari master daftar_harga
-        const hargaPerMeter = await localLookupHargaPerMeter(produk.jenis_pewarna, produk.motif_id, item.lebar);
-        if (hargaPerMeter === 0) throw new Error(`Harga untuk kain dengan lebar ${item.lebar} belum diset di master daftar harga.`);
-
-        const subtotalItem = localCalculateItemSubtotal(item.panjang, item.jumlah, hargaPerMeter);
+        const qty = Number(item.jumlah || item.qty || 1);
+        const panjang = Number(item.panjang || 0);
+        const hargaPerMeter = Number(item.harga_per_meter || item.harga || 0);
+        const subtotalItem = Number(item.subtotal || (panjang * qty * hargaPerMeter));
 
         const payload = {
+          id: item.id, // Pastikan ID baris lama ikut dikirim untuk memicu update
           pre_order_reguler_id: id,
-          produk_id: item.produk_id,
-          lebar: Number(item.lebar),
-          panjang: Number(item.panjang),
-          jumlah: Number(item.jumlah),
+          produk_id: currentProdukId,
+          lebar: item.lebar ? Number(item.lebar) : null,
+          panjang: panjang,
+          jumlah: qty,
           harga_per_meter: hargaPerMeter,
           subtotal: subtotalItem,
-          jenis_pewarna: produk.jenis_pewarna
+          jenis_pewarna: item.jenis_pewarna || null
         };
 
         if (item.id) {
-          payload.id = item.id;
           itemsToUpdate.push(payload);
-        } else {
-          itemsToInsert.push(payload);
         }
       }
 
-      // Eksekusi Insert item baru jika ada
-      if (itemsToInsert.length > 0) {
-        const { error: insertError } = await supabaseAdmin
-          .from('item_pre_order_reguler')
-          .insert(itemsToInsert);
-
-        if (insertError) throw insertError;
-      }
-
-      // Eksekusi Upsert item lama yang diedit jika ada
+      // Lakukan Upsert massal hanya untuk data item yang diperbarui harganya/panjangnya
       if (itemsToUpdate.length > 0) {
         const { error: upsertError } = await supabaseAdmin
           .from('item_pre_order_reguler')
@@ -227,12 +195,9 @@ export async function PATCH(request, { params }) {
       }
     }
 
-    // 3. Hitung ulang total_harga akhir setelah perubahan item/diskon selesai dilakukan
-    await localRecalculateTotalPOR(id);
-
     return NextResponse.json({ 
       success: true, 
-      message: 'Pre-Order Reguler beserta item spesifikasinya berhasil diperbarui' 
+      message: 'Pre-Order Reguler berhasil diperbarui' 
     }, { status: 200 });
 
   } catch (err) {
