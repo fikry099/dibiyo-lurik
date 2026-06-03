@@ -259,7 +259,7 @@ export default function KategoriList() {
             </button>
 
             {/* Konten */}
-            <div className="flex flex-col items-center pt-10 pb-7 px-6">
+            <div className="flex flex-col items-center px-6 pt-10 pb-7">
               {/* Ikon Trash */}
               <div className="text-[#1A335A] mb-4">
                 <Trash size={40} strokeWidth={1.8} />
@@ -271,7 +271,7 @@ export default function KategoriList() {
               </p>
 
               {/* Tombol Batal & Ya, Hapus */}
-              <div className="flex items-center gap-3 w-full">
+              <div className="flex items-center w-full gap-3">
                 <button
                   disabled={isDeleting}
                   onClick={() => {
@@ -314,7 +314,7 @@ export default function KategoriList() {
               <X size={18} strokeWidth={2.5} />
             </button>
 
-            <div className="flex flex-col items-center justify-center py-12 px-6">
+            <div className="flex flex-col items-center justify-center px-6 py-12">
               <ThumbsUp size={56} className="text-[#1A335A] mb-5" strokeWidth={1.5} />
               <p className="text-[#000000] text-[18px] font-bold text-center">
                 Kategori Berhasil Dihapus

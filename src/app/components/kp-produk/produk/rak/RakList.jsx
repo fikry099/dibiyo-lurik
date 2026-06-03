@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit3, Trash2, Loader2, Trash, X, ThumbsUp } from 'lucide-react'
+import { Plus, Edit3, Trash2, Trash, X, ThumbsUp, Loader2 } from 'lucide-react'
 import Swal from 'sweetalert2'
 import dynamic from 'next/dynamic'
 
@@ -29,7 +29,7 @@ export default function RakList() {
   const [rakToDelete, setRakToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // State untuk Modal Success setelah hapus (menggantikan Swal success)
+  // State untuk Modal Success setelah hapus
   const [isDeleteSuccessOpen, setIsDeleteSuccessOpen] = useState(false)
 
   const fetchRak = async () => {
@@ -84,7 +84,6 @@ export default function RakList() {
       setIsDeleteModalOpen(false)
       setRakToDelete(null)
 
-      // Tampilkan custom success modal sesuai Figma (auto-close 1.6s)
       setIsDeleteSuccessOpen(true)
       setTimeout(() => setIsDeleteSuccessOpen(false), 1600)
 
@@ -129,14 +128,26 @@ export default function RakList() {
             </thead>
             <tbody className="divide-y divide-[#1A335A]/10">
               {isLoading ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-10 text-center text-gray-400">
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="animate-spin text-[#1A335A]" size={20} />
-                      <span>Memuat data lokasi rak...</span>
-                    </div>
-                  </td>
-                </tr>
+                /* ── SKELETON LOADING MODE (5 baris shimmer presisi) ── */
+                [...Array(10)].map((_, index) => (
+                  <tr key={index} className="animate-pulse">
+                    <td className="px-6 py-3 text-center">
+                      <div className="w-6 h-4 mx-auto rounded bg-stone-200"></div>
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="w-40 h-4 rounded bg-stone-200"></div>
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="w-24 h-4 mx-auto rounded bg-stone-200"></div>
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="h-9 w-11 bg-stone-200 rounded-[8px]"></div>
+                        <div className="h-9 w-11 bg-stone-200 rounded-[8px]"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : error ? (
                 <tr>
                   <td colSpan="4" className="px-6 py-10 font-medium text-center text-red-500">
@@ -161,7 +172,6 @@ export default function RakList() {
                     </td>
                     <td className="px-6 py-2">
                       <div className="flex items-center justify-center gap-2 p-1">
-                        {/* Tombol Edit (#486A9F) */}
                         <button 
                           onClick={() => handleEditClick(rak)}
                           className="flex flex-col items-center justify-center gap-0.5 
@@ -173,7 +183,6 @@ export default function RakList() {
                           <span className="text-[10px] sm:text-[11px] font-semibold leading-none">Edit</span>
                         </button>
                         
-                        {/* Tombol Hapus (#FF695E) */}
                         <button 
                           onClick={() => openDeleteModal(rak.id, rak.nama)}
                           className="flex flex-col items-center justify-center gap-0.5 
@@ -203,15 +212,10 @@ export default function RakList() {
         </div>
       )}
 
-      {/* ── MODAL KONFIRMASI HAPUS — Tema Baru ── */}
+      {/* ── MODAL KONFIRMASI HAPUS ── */}
       {isDeleteModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={BACKDROP_STYLE}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={BACKDROP_STYLE}>
           <div className="bg-white rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] w-[372px] relative overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            
-            {/* Tombol X */}
             <button
               onClick={() => {
                 setIsDeleteModalOpen(false)
@@ -223,20 +227,16 @@ export default function RakList() {
               <X size={18} strokeWidth={2.5} />
             </button>
 
-            {/* Konten */}
-            <div className="flex flex-col items-center pt-10 pb-7 px-6">
-              {/* Ikon Trash bernuansa Hapus */}
+            <div className="flex flex-col items-center px-6 pt-10 pb-7">
               <div className="text-[#FF695E] mb-4">
                 <Trash size={40} strokeWidth={1.8} />
               </div>
 
-              {/* Teks Konfirmasi */}
               <p className="text-[#000000] text-[15px] font-bold text-center leading-snug mb-7">
                 Apakah Anda Yakin Ingin<br />Menghapus Rak ini
               </p>
 
-              {/* Tombol Batal & Ya, Hapus */}
-              <div className="flex items-center gap-3 w-full">
+              <div className="flex items-center w-full gap-3">
                 <button
                   disabled={isDeleting}
                   onClick={() => {
@@ -260,17 +260,13 @@ export default function RakList() {
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* ── MODAL SUCCESS setelah Hapus — Tema Baru ── */}
+      {/* ── MODAL SUCCESS setelah Hapus ── */}
       {isDeleteSuccessOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={BACKDROP_STYLE}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={BACKDROP_STYLE}>
           <div className="bg-white rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] w-[372px] relative animate-in fade-in zoom-in-95 duration-150">
             <button
               onClick={() => setIsDeleteSuccessOpen(false)}
@@ -279,7 +275,7 @@ export default function RakList() {
               <X size={18} strokeWidth={2.5} />
             </button>
 
-            <div className="flex flex-col items-center justify-center py-12 px-6">
+            <div className="flex flex-col items-center justify-center px-6 py-12">
               <ThumbsUp size={56} className="text-[#1A335A] mb-5" strokeWidth={1.5} />
               <p className="text-[#000000] text-[18px] font-bold tracking-[0.18px] text-center">
                 Rak Berhasil Dihapus

@@ -1,7 +1,7 @@
 export default function POTableSkeleton() {
   return (
     <>
-      {[...Array(5)].map((_, idx) => (
+      {[...Array(10)].map((_, idx) => (
         <tr key={idx} className="bg-white animate-pulse">
           <td className="p-4">
             <div className="w-4 h-4 rounded bg-stone-200"></div>

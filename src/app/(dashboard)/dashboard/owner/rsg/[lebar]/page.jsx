@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronRight, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 export default function RekapStokPage() {
   const params = useParams();
@@ -34,6 +35,89 @@ export default function RekapStokPage() {
       .catch((err) => { setError(err.message); setLoading(false); });
   }, [angkaLebar]);
 
+  // Fungsi Export PDF Menggunakan jsPDF secara manual & bersih
+  const exportToPDF = () => {
+    if (!data) return;
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    let currentY = 20;
+
+    // Title / Header PDF
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text(`REKAP STOK GULUNGAN - LEBAR ${angkaLebar} CM`, 14, currentY);
+    currentY += 10;
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text(`Total Keseluruhan: ${totalKeseluruhan} meter`, 14, currentY);
+    currentY += 10;
+
+    // Loop data rak untuk dicetak ke PDF
+    Object.entries(data).forEach(([rakNama, items]) => {
+      // Cek limit halaman agar tidak overflow ke bawah
+      if (currentY > 260) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(`RAK: ${rakNama} (${items.length} gulungan)`, 14, currentY);
+      currentY += 6;
+
+      // Table Header Ringkas
+      doc.setFontSize(10);
+      doc.setFillColor(26, 51, 90); // Warna Navy #1A335A
+      doc.rect(14, currentY, 182, 7, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text('No.', 16, currentY + 5);
+      doc.text('Kode Produk', 30, currentY + 5);
+      doc.text('Motif', 80, currentY + 5);
+      doc.text('Jenis Pewarna', 130, currentY + 5);
+      doc.text('Sisa (M)', 175, currentY + 5);
+      
+      currentY += 7;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('Helvetica', 'normal');
+
+      // Table Rows
+      items.forEach((item, idx) => {
+        if (currentY > 270) {
+          doc.addPage();
+          currentY = 20;
+        }
+        
+        doc.text(`${idx + 1}.`, 16, currentY + 5);
+        doc.text(item.produk?.kode_produk || '-', 30, currentY + 5);
+        doc.text(item.produk?.motif?.nama || '-', 80, currentY + 5);
+        doc.text(item.produk?.jenis_pewarna || '-', 130, currentY + 5);
+        doc.text(`${item.panjang_sisa || 0}`, 175, currentY + 5);
+        
+        // Garis pemisah baris tipis
+        doc.setDrawColor(230, 230, 230);
+        doc.line(14, currentY + 7, 196, currentY + 7);
+
+        currentY += 7;
+      });
+
+      // Total per rak
+      const totalPerRak = items.reduce((sum, item) => sum + (item.panjang_sisa || 0), 0);
+      doc.setFont('Helvetica', 'bold');
+      doc.text(`Total Rak ${rakNama}: ${totalPerRak} Meter`, 140, currentY + 5);
+      
+      currentY += 15; // Jarak antar rak
+    });
+
+    // Simpan dokumen PDF
+    doc.save(`rekap-stok-lebar-${angkaLebar}cm.pdf`);
+  };
+
   if (error) return <div className="p-10 text-red-500 font-inter">Error: {error}</div>;
 
   const rakEntries = data ? Object.entries(data) : [];
@@ -54,13 +138,11 @@ export default function RekapStokPage() {
       </h1>
 
       {loading ? (
-        /* ========================================================= */
-        /* TEMPLATE SKELETON LOADING MASTER                          */
-        /* ========================================================= */
         <div className="space-y-6 animate-pulse">
           {/* Skeleton Box Total Keseluruhan */}
-          <div className="p-4 border rounded-lg bg-amber-400/20 border-amber-200">
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-amber-400/20 border-amber-200">
             <div className="w-1/3 h-6 rounded bg-stone-200"></div>
+            <div className="w-24 rounded h-9 bg-stone-200"></div>
           </div>
 
           {/* Skeleton List Blok Rak */}
@@ -91,16 +173,23 @@ export default function RekapStokPage() {
           ))}
         </div>
       ) : (
-        /* ========================================================= */
-        /* RENDER DATA AKTIF SETELAH API SELESAI                     */
-        /* ========================================================= */
         <>
-          {/* Box Total Keseluruhan */}
-          <div className="bg-[#F2B600] p-4 rounded-lg mb-6 shadow-md border border-[#dfa800]">
-            <p className="text-base font-bold tracking-wide text-white">
+
+        <div className="flex flex-col justify-between gap-4 mb-6 sm:flex-row sm:items-center">
+          <div className="bg-[#1A335A14] border border-[#1A335A1F] p-3 rounded-lg flex-1">
+            <p className="text-base font-bold tracking-wide text-[#1A335A]">
               Total Keseluruhan : {totalKeseluruhan} meter
             </p>
           </div>
+
+          <button
+            onClick={exportToPDF}
+            className="flex items-center justify-center gap-2 bg-[#1A335A] hover:bg-[#122440] text-white px-5 h-[47px] rounded-lg text-xs font-bold transition-all shadow-sm min-w-max self-end sm:self-auto"
+          >
+            <Download size={14} />
+            <span>Export PDF</span>
+          </button>
+        </div>
 
           <div className="space-y-5 rak-container">
             {rakEntries.slice(0, limitRaks).map(([rakNama, items]) => {
@@ -114,7 +203,6 @@ export default function RekapStokPage() {
                   
                   {/* Kepala Rak (Header Dropdown) */}
                   <div className="flex items-center justify-between bg-[#FFECA7] px-5 py-3.5 font-bold text-[#1A335A] text-sm border-b border-gray-300">
-                    {/* Info Rak & Jumlah berdampingan langsung */}
                     <div className="flex items-center gap-2">
                       <span>Rak {rakNama}</span>
                       <span className="text-xs font-medium text-[#1A335A]/70">
@@ -122,7 +210,6 @@ export default function RekapStokPage() {
                       </span>
                     </div>
                     
-                    {/* Sisi Kanan Kepala Rak (Hanya Action Toggle) */}
                     <div>
                       {items.length > 1 ? (
                         <button 
@@ -172,7 +259,6 @@ export default function RekapStokPage() {
                       </tbody>
                     </table>
                     
-                    {/* Total Informasi bagian bawah per Rak */}
                     <div className="pr-4 mt-4 text-xs font-bold text-right text-[#1A335A] tracking-wide">
                       Total : {totalPerRak} Meter
                     </div>
@@ -181,7 +267,6 @@ export default function RekapStokPage() {
               );
             })}
 
-            {/* Tombol panah untuk load lebih banyak rak */}
             {rakEntries.length > limitRaks && (
               <button 
                 onClick={() => setLimitRaks(prev => prev + 4)}

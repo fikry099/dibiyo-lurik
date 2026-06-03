@@ -6,7 +6,7 @@ export const GET = async (request) => {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('start');
     const endDate = searchParams.get('end');
-    const search = searchParams.get('search'); // Tambahan filter pencarian motif/kategori
+    const search = searchParams.get('search'); 
 
     // 1. Tarik data order beserta item_order dan relasi kainnya secara mendalam
     let query = supabaseAdmin
@@ -49,11 +49,10 @@ export const GET = async (request) => {
         const namaMotif = item.gulungan?.produk?.motif?.nama || '-';
         const namaKategori = item.gulungan?.produk?.kategori?.nama || '-';
 
-        // Logika filter search manual jika user mengetik motif atau kategori
         if (search) {
           const term = search.toLowerCase();
           if (!namaMotif.toLowerCase().includes(term) && !namaKategori.toLowerCase().includes(term)) {
-            return; // skip item ini jika tidak cocok
+            return; 
           }
         }
 
@@ -62,9 +61,9 @@ export const GET = async (request) => {
           tanggal: order.tanggal_order,
           motif: namaMotif,
           kategori: namaKategori,
-          jumlah_order: 1, // mewakili 1 gulungan kain spesifik
+          jumlah_order: 1, 
           lebar: item.gulungan?.lebar || 0,
-          panjang: item.jumlah_order, // panjang meteran yang terpotong
+          panjang: item.jumlah_order, 
           total_harga: item.subtotal
         });
       });

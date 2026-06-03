@@ -1,19 +1,14 @@
-// D:\dibiyo-lurik\src\app\components\kp-produk\produk\stok-produk\ProdukList.jsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Search, SlidersHorizontal, Plus, Loader2 } from 'lucide-react'
+import { Search, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
 import Swal from 'sweetalert2'
-import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 
 // Import Komponen Lokal
 import ProdukCard from './ProdukCard'
 import ProdukFilter from './ProdukFilter'
-// import ModalTambahProduk from './ModalTambahProduk'
 import DetailModalKp from './DetailModalOwner'
-
-// const ModalEditProduk = dynamic(() => import('./ModalEditProduk'), { ssr: false })
 
 export default function ProdukList() {
   const router = useRouter()
@@ -24,9 +19,8 @@ export default function ProdukList() {
   const [prices, setPrices] = useState([])
 
   const [isLoading, setIsLoading] = useState(true)
+  const [isProdLoading, setIsProdLoading] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  // const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  // const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(null)
 
@@ -37,31 +31,64 @@ export default function ProdukList() {
     status: ''
   })
 
+  // State Pagination Baru
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total_items: 0,
+    total_pages: 1
+  })
+
+  // Load Data Master Pendukung (Hanya Sekali di Awal)
   const initLoadData = async () => {
     setIsLoading(true)
     try {
-      const [resProd, resKat, resMot, resRak, resHarga] = await Promise.all([
-        fetch('/api/produk?limit=500', { credentials: 'include' }),
+      const [resKat, resMot, resRak, resHarga] = await Promise.all([
         fetch('/api/kategori?limit=100', { credentials: 'include' }),
         fetch('/api/motif?limit=100', { credentials: 'include' }),
         fetch('/api/rak?limit=100', { credentials: 'include' }),
         fetch('/api/daftar-harga', { credentials: 'include' })
       ])
 
-      const [dProd, dKat, dMot, dRak, dHarga] = await Promise.all([
-        resProd.json(), resKat.json(), resMot.json(), resRak.json(), resHarga.json()
+      const [dKat, dMot, dRak, dHarga] = await Promise.all([
+        resKat.json(), resMot.json(), resRak.json(), resHarga.json()
       ])
 
-      setProduks(dProd.data || [])
       setCategories(dKat.data?.items || dKat.data || [])
       setMotifs(dMot.data?.items || dMot.data || [])
       setRaks(dRak.data?.items || dRak.data || [])
       setPrices(dHarga.data || [])
     } catch (err) {
       console.error(err)
-      Swal.fire({ title: 'Error', text: 'Gagal memuat data.', icon: 'error', confirmButtonColor: '#1A335A' })
+      Swal.fire({ title: 'Error', text: 'Gagal memuat data master.', icon: 'error', confirmButtonColor: '#1A335A' })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Fungsi Khusus Tarik Data Produk Terpaginasi dari Backend
+  const fetchProduks = async (showLoadingBar = false) => {
+    if (showLoadingBar) setIsProdLoading(true)
+    try {
+      let url = `/api/produk?page=${page}&limit=15`
+      
+      if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`
+      if (filters.kategori_id) url += `&kategori_id=${filters.kategori_id}`
+      if (filters.jenis_pewarna) url += `&jenis_pewarna=${filters.jenis_pewarna}`
+      if (filters.status) url += `&status=${filters.status}`
+
+      const res = await fetch(url, { credentials: 'include' })
+      const resJson = await res.json()
+
+      setProduks(resJson.data || [])
+      if (resJson.pagination) {
+        setPagination(resJson.pagination)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsProdLoading(false)
     }
   }
 
@@ -69,32 +96,32 @@ export default function ProdukList() {
     initLoadData()
   }, [])
 
-  const normalizeStatus = (statusStr) => {
-    const s = statusStr?.toLowerCase()
-    if (s === 'ready' || s === 'tersedia') return 'tersedia'
-    if (s === 'sold' || s === 'habis') return 'habis'
-    return s
-  }
+  // Reset Halaman ke 1 jika Filter atau Query Pencarian Berubah
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery, filters])
 
-const filteredProduks = produks.filter((produk) => {
-    const query = searchQuery.toLowerCase()
-    const matchSearch = query === '' || 
-                        produk.kode_produk?.toLowerCase().includes(query) || 
-                        produk.motif?.nama?.toLowerCase().includes(query)
+  // Fetch ulang produk jika page, pencarian, atau filter berubah (Debounce 400ms)
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchProduks(true)
+    }, 400)
 
-    const matchKategori = filters.kategori_id === '' || produk.kategori?.id === filters.kategori_id
-
-    const matchPewarna = filters.jenis_pewarna === '' || produk.jenis_pewarna === filters.jenis_pewarna
-    
-    const matchStatus = filters.status === '' || normalizeStatus(produk.status) === normalizeStatus(filters.status)
-
-    return matchSearch && matchKategori && matchPewarna && matchStatus
-  })
+    return () => clearTimeout(delayDebounce)
+  }, [page, searchQuery, filters])
 
   const hasActiveFilter = filters.kategori_id || filters.jenis_pewarna || filters.status
 
+  const handlePrevPage = () => {
+    if (page > 1) setPage((prev) => prev - 1)
+  }
+
+  const handleNextPage = () => {
+    if (page < pagination.total_pages) setPage((prev) => prev + 1)
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-inter">
       {/* Toolbar */}
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
         {/* Search Input Box */}
@@ -102,7 +129,7 @@ const filteredProduks = produks.filter((produk) => {
           <Search className="absolute font-bold text-black -translate-y-1/2 left-4 top-1/2" size={20} />
           <input
             type="text"
-            placeholder="nama motif/kode produk"
+            placeholder="Cari nama motif / kode produk..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-4 h-[48px] rounded-[8px] border border-gray-300 bg-[#EBF5FA] text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1A335A] focus:border-[#1A335A] text-sm"
@@ -120,7 +147,7 @@ const filteredProduks = produks.filter((produk) => {
             <SlidersHorizontal size={18} /> Filter
           </button>
 
-          {/* Render Dropdown Tepat Di Bawah Tombol */}
+          {/* Render Dropdown Dropdown Filter */}
           {isFilterOpen && (
             <ProdukFilter
               categories={categories}
@@ -130,18 +157,10 @@ const filteredProduks = produks.filter((produk) => {
             />
           )}
         </div>
-        
-        {/* Tombol Tambah Produk */}
-        {/* <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center justify-center gap-2 h-[48px] bg-[#1A335A] hover:bg-[#11223d] text-white px-10 rounded-[8px] text-sm font-semibold transition-transform active:scale-[0.98] lg:ml-auto shadow-sm"
-        >
-          <Plus size={18} /> Tambah Produk
-        </button> */}
       </div>
 
-      {/* Grid Produk */}
-      {isLoading ? (
+      {/* Grid Produk & Skeleton Loader */}
+      {isLoading || isProdLoading ? (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, index) => (
             <div key={index} className="p-5 space-y-4 overflow-hidden bg-white border shadow-xs border-stone-200/60 rounded-xl animate-pulse">
@@ -163,43 +182,58 @@ const filteredProduks = produks.filter((produk) => {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProduks.map((produk) => (
-            <ProdukCard
-              key={produk.id}
-              produk={produk}
-              onRefresh={initLoadData}
-              onEditClick={(id) => { setSelectedProductId(id); setIsEditModalOpen(true); }}
-              onDetailClick={(id) => { setSelectedProductId(id); setIsDetailModalOpen(true); }}
-            />
-          ))}
-        </div>
+        <>
+          {produks.length === 0 ? (
+            <div className="py-12 text-sm font-medium text-center text-gray-500 border border-dashed rounded-lg bg-stone-50">
+              Tidak ada produk yang ditemukan.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {produks.map((produk) => (
+                <ProdukCard
+                  key={produk.id}
+                  produk={produk}
+                  onRefresh={() => fetchProduks(false)}
+                  onEditClick={(id) => { setSelectedProductId(id); }}
+                  onDetailClick={(id) => { setSelectedProductId(id); setIsDetailModalOpen(true); }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* ================= CONTROLLER UI PAGINATION BAR ================= */}
+          {pagination.total_pages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-white border rounded-lg shadow-sm border-stone-200">
+              <p className="text-xs font-medium text-stone-500">
+                Menampilkan <span className="font-bold text-stone-800">{produks.length}</span> dari{' '}
+                <span className="font-bold text-stone-800">{pagination.total_items}</span> produk
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={page === 1}
+                  className="flex items-center justify-center w-8 h-8 transition-colors bg-white border rounded-md border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                
+                <span className="px-2 text-xs font-bold text-stone-800">
+                  Halaman {page} dari {pagination.total_pages}
+                </span>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={page === pagination.total_pages}
+                  className="flex items-center justify-center w-8 h-8 transition-colors bg-white border rounded-md border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
-
-      {/* Modal Tambah Produk */}
-      {/* <ModalTambahProduk
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={initLoadData}
-        categories={categories}
-        motifs={motifs}
-        raks={raks}
-        prices={prices}
-      /> */}
-
-      {/* Modal Edit Produk */}
-      {/* {isEditModalOpen && selectedProductId && (
-        <ModalEditProduk
-          isOpen={isEditModalOpen}
-          productId={selectedProductId}
-          onClose={() => { setIsEditModalOpen(false); setSelectedProductId(null); }}
-          onSuccess={initLoadData}
-          categories={categories}
-          motifs={motifs}
-          raks={raks}
-          prices={prices}
-        />
-      )} */}
 
       {/* Modal Detail Produk */}
       <DetailModalKp

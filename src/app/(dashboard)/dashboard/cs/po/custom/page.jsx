@@ -1,13 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { Search, Filter } from 'lucide-react'
+import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react'
 import NotificationBell from '../../../../../components/NotificationBell'
 
 const POCustomTable = dynamic(() => import('../../../../../components/cs/po/poc/POCustomTable'), { ssr: false })
 
 // Komponen Skeleton Loader untuk Tabel PO Custom
-function TableSkeleton() {
+function TableSkeleton({ limit = 10 }) {
   return (
     <div className="w-full overflow-x-auto border rounded-sm border-stone-100 animate-pulse">
       {/* Header Skeleton */}
@@ -21,9 +21,9 @@ function TableSkeleton() {
         <div className="w-16 h-4 rounded bg-stone-300/30"></div>
       </div>
       
-      {/* Rows Skeleton (5 Baris) */}
+      {/* Rows Skeleton */}
       <div className="bg-white divide-y divide-stone-100">
-        {[...Array(5)].map((_, index) => (
+        {[...Array(limit)].map((_, index) => (
           <div key={index} className="flex items-center justify-between h-16 gap-4 px-4 py-4">
             <div className="w-8 h-4 rounded bg-stone-200"></div>
             <div className="flex-1 w-32 h-4 rounded bg-stone-200"></div>
@@ -47,45 +47,54 @@ export default function PreOrderCustomPage() {
   const [statusProduksi, setStatusProduksi] = useState('')
   const [statusPembayaran, setStatusPembayaran] = useState('')
 
+  // State baru untuk kontrol pagination dari server-side
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const itemsPerPage = 10
+
+  // Setiap kali halaman berubah, ambil data baru dari API
   useEffect(() => {
     fetchData(true) 
-  }, [])
+  }, [currentPage])
 
- const fetchData = async (isInitial = false) => {
-  if (isInitial) setLoading(true)
-  try {
-    const res = await fetch('/api/pre-order-custom') 
-    const json = await res.json()
-    
-    // ========================================================
-    // LOG UNTUK PASKA-DEBUGGING MULTI-ITEM
-    // ========================================================
-    console.group("🔍 [DEBUG] FETCH PRE-ORDER CUSTOM");
-    console.log("Raw JSON Response:", json);
-    if (json.data && json.data.length > 0) {
-      console.log("Contoh Struktur Item Pertama:", json.data[0]);
-      console.log("Apakah ada array produk di dalam item[0]?:", {
-        detail_produk: json.data[0].detail_produk,
-        items: json.data[0].items
-      });
-    } else {
-      console.warn("Response sukses tapi 'json.data' kosong atau tidak ditemukan.");
+  const fetchData = async (isInitial = false) => {
+    if (isInitial) setLoading(true)
+    try {
+      // Mengirimkan parameter page dan limit ke API route
+      const res = await fetch(`/api/pre-order-custom?page=${currentPage}&limit=${itemsPerPage}`) 
+      const json = await res.json()
+      
+      // ========================================================
+      // LOG UNTUK PASKA-DEBUGGING MULTI-ITEM
+      // ========================================================
+      console.group("🔍 [DEBUG] FETCH PRE-ORDER CUSTOM");
+      console.log("Raw JSON Response:", json);
+      if (json.data && json.data.length > 0) {
+        console.log("Contoh Struktur Item Pertama:", json.data[0]);
+        console.log("Apakah ada array produk di dalam item[0]?:", {
+          detail_produk: json.data[0].detail_produk,
+          items: json.data[0].items
+        });
+      } else {
+        console.warn("Response sukses tapi 'json.data' kosong atau tidak ditemukan.");
+      }
+      console.groupEnd();
+      // ========================================================
+
+      setData(Array.isArray(json.data) ? json.data : [])
+      // Mengunci jumlah total item berdasarkan metadata dari backend
+      setTotalItems(json.meta?.total || json.data?.length || 0)
+    } catch (err) {
+      console.error("❌ [FETCH-ERROR] Gagal mengambil data PO Custom:", err)
+      setData([])
+      setTotalItems(0)
+    } finally {
+      if (isInitial) setLoading(false)
     }
-    console.groupEnd();
-    // ========================================================
-
-    setData(Array.isArray(json.data) ? json.data : [])
-  } catch (err) {
-    console.error("❌ [FETCH-ERROR] Gagal mengambil data PO Custom:", err)
-    setData([])
-  } finally {
-    if (isInitial) setLoading(false)
   }
-}
 
   const handleConfirmReceiptSuccess = (confirmedId) => {
     setData((prevData) => prevData.filter((item) => item.id !== confirmedId))
-    
     fetchData(false)
   }
 
@@ -104,6 +113,16 @@ export default function PreOrderCustomPage() {
 
     return matchesSearch && matchesProduksi && matchesPembayaran
   })
+
+  // Menghitung total jumlah halaman halaman
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1
+
+  const handlePageChange = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
 
   return (
     <div className="w-full mx-auto space-y-4 text-black font-inter">
@@ -170,13 +189,73 @@ export default function PreOrderCustomPage() {
         </div>
 
         {loading ? (
-          <TableSkeleton />
+          <TableSkeleton limit={itemsPerPage} />
         ) : (
-          <POCustomTable 
-            data={filteredData} 
-            onConfirmReceipt={handleConfirmReceiptSuccess} 
-            onSuccess={() => fetchData(false)}
-          />
+          <>
+            {filteredData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 border border-dashed rounded-sm border-stone-200 bg-stone-50/50">
+                <p className="text-xs font-medium text-stone-400">Tidak ada antrean pre-order custom ditemukan.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <POCustomTable 
+                  data={filteredData} 
+                  onConfirmReceipt={handleConfirmReceiptSuccess} 
+                  onSuccess={() => fetchData(false)}
+                />
+              </div>
+            )}
+
+            {/* ================= BAR KONTROL PAGINATION PO CUSTOM ================= */}
+            {totalPages > 1 && (
+              <div className="flex flex-col items-center justify-between gap-4 pt-4 mt-4 border-t border-stone-100 sm:flex-row">
+                <div className="text-xs font-medium text-stone-500">
+                  Menampilkan <span className="text-[#1A335A] font-bold">{Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}</span>–{Math.min(currentPage * itemsPerPage, totalItems)} dari <span className="text-[#1A335A] font-bold">{totalItems}</span> Total Pesanan Custom
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  {/* Tombol Sebelumnya */}
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center justify-center w-8 h-8 transition-all bg-white border rounded shadow-sm cursor-pointer border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:hover:bg-white"
+                  >
+                    <ChevronLeft size={14} strokeWidth={2.5} />
+                  </button>
+
+                  {/* Daftar Angka Halaman */}
+                  {[...Array(totalPages)].map((_, idx) => {
+                    const pageNum = idx + 1;
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-8 h-8 flex items-center justify-center text-xs font-bold rounded transition-all cursor-pointer ${
+                          currentPage === pageNum
+                            ? 'bg-[#1A335A] text-white shadow-md shadow-[#1A335A]/10'
+                            : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 shadow-sm'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  {/* Tombol Selanjutnya */}
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center justify-center w-8 h-8 transition-all bg-white border rounded shadow-sm cursor-pointer border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:hover:bg-white"
+                  >
+                    <ChevronRight size={14} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
