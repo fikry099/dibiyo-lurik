@@ -25,6 +25,9 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
   // 1. Hitung total jumlah PO secara dinamis dari array items jika ada
   const totalJumlahPO = item.item_pre_order_custom?.reduce((acc, curr) => acc + (curr.jumlah || 0), 0) || item.jumlah_po || 1;
 
+  // Cek apakah status pembayaran saat ini lunas
+  const isLunas = item.status_pembayaran?.toLowerCase() === 'lunas';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A335A7A] font-inter backdrop-blur-xs animate-fade-in">
       {/* Container Modal */}
@@ -87,12 +90,21 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
                   <span>💳</span> Detail Pembayaran
                 </div>
                 
-                <div className="grid grid-cols-2 pt-2 pb-2 border-t border-b border-black">
+                {/* Diubah menjadi grid-cols-3 agar memuat kolom Nominal DP */}
+                <div className="grid grid-cols-3 pt-2 pb-2 border-t border-b border-black">
                   <div className="pr-3 border-r border-black">
                     <p className="font-medium text-gray-500">Status Pembayaran</p>
                     <span className={`inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-md text-white ${
-                      item.status_pembayaran?.toLowerCase() === 'lunas' ? 'bg-[#1DB793]' : 'bg-[#F0A864]'
+                      isLunas ? 'bg-[#1DB793]' : 'bg-[#F0A864]'
                     }`}>{item.status_pembayaran?.toUpperCase() || 'DP'}</span>
+                  </div>
+                  
+                  {/* KOLOM NOMINAL DP (Menampilkan '-' jika sudah Lunas) */}
+                  <div className="px-3 border-r border-black">
+                    <p className="font-medium text-gray-500">Nominal DP</p>
+                    <p className="mt-1 font-bold">
+                      {isLunas ? '-' : `Rp. ${item.total_dp?.toLocaleString('id-ID') || '0'}`}
+                    </p>
                   </div>
                   
                   <div className="pl-3">
@@ -112,7 +124,7 @@ export default function PODustomDetailModal({ isOpen, onClose, item }) {
 
           </div>
 
-          {/* BARIS 2: Data Produk (Sekarang Dinamis Looping Array) */}
+          {/* BARIS 2: Data Produk */}
           <div className="p-4 space-y-3 bg-white border border-gray-100 rounded-lg">
             <div className="flex items-center gap-2 font-bold text-[#1A335A] text-xs">
               <span>📦</span> Data Produk ({item.item_pre_order_custom?.length || 1} Jenis)
