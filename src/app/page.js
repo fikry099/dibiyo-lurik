@@ -1,8 +1,20 @@
-// app/page.jsx
+// src/app/page.jsx
+import Navbar from './components/home/Navbar'
+import Hero from './components/home/Hero'
+import Features from './components/home/Features'
+import CTA from './components/home/CTA'
+import Catalog from './components/home/Catalog'
+import Footer from './components/home/Footer'
+
 export default function RootPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#FDF9F5]">
-      <div className="animate-spin h-8 w-8 border-4 border-[#8B5E3C] border-t-transparent rounded-full" />
+    <div className="min-h-screen bg-[#0A1715] text-[#F9F6F0] antialiased overflow-x-hidden selection:bg-[#E5BA73] selection:text-[#12110F]">
+      <Navbar />
+      <Hero />
+      <Features />
+      <CTA />
+      <Catalog />
+      <Footer />
     </div>
   )
 }
