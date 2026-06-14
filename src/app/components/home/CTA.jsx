@@ -16,7 +16,7 @@ export default function CTA() {
         </div>
 
         <div className="z-10 shrink-0">
-          <Link href="#customizer-tool" className="px-6 py-3.5 bg-[#12110F] text-[#E5BA73] hover:bg-[#1A1917] font-bold rounded-xl text-sm tracking-wider shadow-lg transition-all duration-300 block text-center">
+          <Link href="/customizer" className="px-6 py-3.5 bg-[#12110F] text-[#E5BA73] hover:bg-[#1A1917] font-bold rounded-xl text-sm tracking-wider shadow-lg transition-all duration-300 block text-center">
             Launch Customizer
           </Link>
         </div>

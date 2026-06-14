@@ -172,7 +172,7 @@ export default function CartPage() {
             {/* SEGMENTASI HALAMAN BERDASARKAN PROSESNYA */}
             {!isCheckout ? (
               // STEP 1: REVIEW DAFTAR PRODUK YANG INGIN DIBELI
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 
                 {/* Bagian Kiri: List Item Kain */}
                 <div className="space-y-4 lg:col-span-2">
@@ -192,12 +192,12 @@ export default function CartPage() {
                 {/* Bagian Kanan: Kalkulator Total & Tombol Lanjut */}
                 <div className="h-fit space-y-4 p-5 bg-[#12110F] border border-[#E5BA73]/10 rounded-2xl shadow-xl">
                   <h3 className="text-xs font-bold text-[#E5BA73] tracking-wide uppercase">Ringkasan Pesanan</h3>
-                  <div className="pt-2 border-t border-white/5 space-y-3">
+                  <div className="pt-2 space-y-3 border-t border-white/5">
                     <div className="flex justify-between text-xs text-[#A3A19E]">
                       <span>Total Gulungan</span>
                       <span className="font-semibold text-white">{cartItems.length} Item</span>
                     </div>
-                    <div className="flex justify-between items-baseline pt-2 border-t border-white/5">
+                    <div className="flex items-baseline justify-between pt-2 border-t border-white/5">
                       <span className="text-xs text-[#A3A19E]">Subtotal</span>
                       <span className="text-xl font-black text-[#E5BA73]">Rp {subTotalSementara.toLocaleString('id-ID')}</span>
                     </div>

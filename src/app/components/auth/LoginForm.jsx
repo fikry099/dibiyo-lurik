@@ -4,13 +4,22 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import NProgress from 'nprogress' 
-import { User, Eye, EyeOff } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { User, Eye, EyeOff, Mail, Fingerprint } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function LoginForm() {
   const router = useRouter()
+  
+  // State manajemen mode Auth
+  const [isLogin, setIsLogin] = useState(true)
+  
+  // State penampung data formulir
   const [username, setUsername] = useState('')
+  const [nama, setNama] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  
+  // State kendali UI/UX
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -23,22 +32,46 @@ export default function LoginForm() {
     setLoading(true)
     NProgress.start()
 
+    // Menentukan target endpoint berdasarkan state sistem saat ini
+    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
+    const payload = isLogin 
+      ? { username, password } 
+      : { username, nama, email, password }
+
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.message || 'Username atau password salah')
+        throw new Error(data.message || (isLogin ? 'Username atau password salah' : 'Gagal melakukan registrasi'))
       }
       
-      setSuccess('Login berhasil! Mengalihkan...')
-      NProgress.done() 
-      router.replace('/dashboard')
+      if (isLogin) {
+        setSuccess('Login berhasil! Mengalihkan...')
+        NProgress.done()
+        
+        // Pengecekan hak akses (Role-Based Redirect)
+        const userRole = data.data?.profile?.role
+        if (userRole === 'customer') {
+          router.replace('/') // Pengalihan ke halaman utama katalog/landing page
+        } else {
+          router.replace('/dashboard') // Pengalihan ke ekosistem internal (owner/admin/produksi)
+        }
+      } else {
+        setSuccess('Registrasi berhasil! Silahkan masuk menggunakan akun Anda.')
+        NProgress.done()
+        setLoading(false)
+        
+        // Reset formulir & lempar pengguna kembali ke komponen login
+        setIsLogin(true)
+        setNama('')
+        setEmail('')
+      }
       
     } catch (err) {
       setError(err.message)
@@ -47,25 +80,23 @@ export default function LoginForm() {
     }
   }
 
-  // Variasi animasi untuk container form (mengatur delay anak-anak elemennya)
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1, // Jeda antar elemen masuk (0.1 detik)
-        delayChildren: 0.2
+        staggerChildren: 0.08,
+        delayChildren: 0.1
       }
     }
   }
 
-  // Animasi seragam untuk memunculkan input field & tombol di form
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 15 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { type: 'spring', stiffness: 100, damping: 15 }
+      transition: { type: 'spring', stiffness: 110, damping: 16 }
     }
   }
 
@@ -75,10 +106,7 @@ export default function LoginForm() {
       {/* ================= SISI KIRI: BANNER INFORMASI (BIRU) ================= */}
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-[#1A335A] to-[#376DC0] p-16 flex-col justify-between relative overflow-hidden h-full">
         
-        {/* Kontainer atas yang membungkus Logo + Deskripsi */}
         <div className="z-20 pt-16 space-y-10">
-          
-          {/* Top Header Brand (Animasi slide-in dari kiri) */}
           <motion.div 
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -102,7 +130,6 @@ export default function LoginForm() {
             </div>
           </motion.div>
 
-          {/* Tagline & Deskripsi Tengah (Animasi slide-in dari kiri dengan delay sedikit lebih lambat) */}
           <motion.div 
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
@@ -117,10 +144,8 @@ export default function LoginForm() {
               Sistem manajemen produk kain lurik untuk mengelola stok, pesanan, penjualan, dan laporan secara efisien.
             </p>
           </motion.div>
-
         </div>
 
-        {/* BACKGROUND GAMBAR KAIN (Animasi muncul mendatar dari pojok kiri bawah) */}
         <motion.div 
           initial={{ opacity: 0, x: -100, y: 50 }}
           animate={{ opacity: 0.95, x: 0, y: 0 }}
@@ -135,7 +160,6 @@ export default function LoginForm() {
           />
         </motion.div>
 
-        {/* 3 Grid Fitur Utama Kotak-Kotak Bawah (Animasi staggered dari bawah ke atas) */}
         <motion.div 
           initial="hidden"
           animate="visible"
@@ -164,7 +188,7 @@ export default function LoginForm() {
         </motion.div>
       </div>
 
-      {/* ================= SISI KANAN: FORM LOGIN (PUTIH) ================= */}
+      {/* ================= SISI KANAN: FORM AUTH HYBRID (PUTIH) ================= */}
       <div className="relative flex flex-col items-center justify-center w-full h-full px-8 overflow-y-auto bg-white lg:w-1/2 sm:px-16 lg:px-24">
         
         <motion.div 
@@ -181,26 +205,30 @@ export default function LoginForm() {
             </div>
           )}
 
-          {/* Avatar Ikon Profil (Animasi Pop-up mengembang dari tengah) */}
+          {/* Avatar Ikon Profil Dinamis */}
           <motion.div 
             variants={{
               hidden: { opacity: 0, scale: 0.6 },
               visible: { opacity: 1, scale: 1, transition: { type: 'spring', bounce: 0.4, duration: 0.6 } }
             }}
-            className="flex flex-col items-center mb-8"
+            className="flex flex-col items-center mb-6"
           >
-            <div className="w-28 h-28 bg-[#1E4373] text-white rounded-full flex items-center justify-center shadow-xs mb-4">
-              <svg width="52" height="52" viewBox="0 0 24 24" fill="none">
+            <div className="w-24 h-24 bg-[#1E4373] text-white rounded-full flex items-center justify-center shadow-xs mb-3">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="8" r="4" fill="currentColor" />
                 <path d="M5.338 18.32C5.994 15.528 8.776 13.5 12 13.5c3.224 0 6.006 2.028 6.662 4.82.132.56-.32 1.18-.898 1.18H6.236c-.578 0-1.03-.62-.898-1.18Z" fill="currentColor" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold tracking-wide text-gray-900">Selamat Datang Kembali!</h3>
-            <p className="mt-1 text-xs font-medium text-gray-400">Silahkan masuk untuk melanjutkan</p>
+            <h3 className="text-xl font-bold tracking-wide text-gray-900">
+              {isLogin ? 'Selamat Datang Kembali!' : 'Buat Akun Pelanggan'}
+            </h3>
+            <p className="mt-1 text-xs font-medium text-gray-400">
+              {isLogin ? 'Silahkan masuk untuk melanjutkan' : 'Daftarkan diri Anda untuk kemudahan bertransaksi'}
+            </p>
           </motion.div>
 
-          {/* Form Utama (Elemen di dalamnya masuk berurutan satu per satu) */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Form Utama */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             
             {error && (
               <div className="px-4 py-3 text-sm font-medium text-red-700 border border-red-200 rounded-xl bg-red-50">
@@ -208,8 +236,33 @@ export default function LoginForm() {
               </div>
             )}
 
+            {/* Input Tambahan 1: Nama Lengkap (Hanya Muncul Saat Register) */}
+            <AnimatePresence>
+              {!isLogin && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -10 }}
+                  className="space-y-1.5"
+                >
+                  <label className="block text-sm font-semibold text-gray-700">Nama Lengkap</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={nama}
+                      onChange={(e) => setNama(e.target.value)}
+                      placeholder="Masukkan nama lengkap Anda"
+                      className="w-full h-12 px-5 text-gray-900 border border-gray-300 rounded-md bg-[#EDF7FC]/50 focus:bg-white transition-all outline-none focus:ring-2 focus:ring-[#2A5C9A]/20 focus:border-[#2A5C9A] font-medium text-sm placeholder:text-gray-400"
+                      required={!isLogin}
+                    />
+                    <Fingerprint size={16} className="absolute text-gray-500 -translate-y-1/2 right-5 top-1/2" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Input Field: Username */}
-            <motion.div variants={itemVariants} className="space-y-2">
+            <motion.div variants={itemVariants} className="space-y-1.5">
               <label className="block text-sm font-semibold text-gray-700">Username</label>
               <div className="relative">
                 <input
@@ -217,17 +270,42 @@ export default function LoginForm() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Masukkan username Anda"
-                  className="w-full h-14 px-5 text-gray-900 border border-gray-300 rounded-md bg-[#EDF7FC]/50 focus:bg-white transition-all outline-none focus:ring-2 focus:ring-[#2A5C9A]/20 focus:border-[#2A5C9A] font-medium placeholder:text-gray-400"
+                  className="w-full h-12 px-5 text-gray-900 border border-gray-300 rounded-md bg-[#EDF7FC]/50 focus:bg-white transition-all outline-none focus:ring-2 focus:ring-[#2A5C9A]/20 focus:border-[#2A5C9A] font-medium text-sm placeholder:text-gray-400"
                   autoComplete="username"
                   required
-                  autoFocus
                 />
-                <User size={18} className="absolute text-gray-500 -translate-y-1/2 right-5 top-1/2" />
+                <User size={16} className="absolute text-gray-500 -translate-y-1/2 right-5 top-1/2" />
               </div>
             </motion.div>
 
+            {/* Input Tambahan 2: Email (Hanya Muncul Saat Register) */}
+            <AnimatePresence>
+              {!isLogin && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -10 }}
+                  className="space-y-1.5"
+                >
+                  <label className="block text-sm font-semibold text-gray-700">Email</label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="contoh@domain.com"
+                      className="w-full h-12 px-5 text-gray-900 border border-gray-300 rounded-md bg-[#EDF7FC]/50 focus:bg-white transition-all outline-none focus:ring-2 focus:ring-[#2A5C9A]/20 focus:border-[#2A5C9A] font-medium text-sm placeholder:text-gray-400"
+                      autoComplete="email"
+                      required={!isLogin}
+                    />
+                    <Mail size={16} className="absolute text-gray-500 -translate-y-1/2 right-5 top-1/2" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Input Field: Password */}
-            <motion.div variants={itemVariants} className="space-y-2">
+            <motion.div variants={itemVariants} className="space-y-1.5">
               <label className="block text-sm font-semibold text-gray-700">Password</label>
               <div className="relative">
                 <input
@@ -235,7 +313,7 @@ export default function LoginForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan password Anda"
-                  className="w-full h-14 px-5 pr-12 text-gray-900 border border-gray-300 rounded-md bg-[#EDF7FC]/50 focus:bg-white transition-all outline-none focus:ring-2 focus:ring-[#2A5C9A]/20 focus:border-[#2A5C9A] font-medium placeholder:text-gray-400"
+                  className="w-full h-12 px-5 pr-12 text-gray-900 border border-gray-300 rounded-md bg-[#EDF7FC]/50 focus:bg-white transition-all outline-none focus:ring-2 focus:ring-[#2A5C9A]/20 focus:border-[#2A5C9A] font-medium text-sm placeholder:text-gray-400"
                   autoComplete="current-password"
                   required
                 />
@@ -245,20 +323,22 @@ export default function LoginForm() {
                   className="absolute text-gray-500 -translate-y-1/2 right-5 top-1/2 hover:text-gray-700 focus:outline-none"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </motion.div>
 
-            {/* Lupa Password */}
-            <motion.div variants={itemVariants} className="flex justify-end pt-1">
-              <Link 
-                href="/auth/forgot-password" 
-                className="text-xs font-bold text-gray-600 transition-colors hover:text-black"
-              >
-                Lupa Password?
-              </Link>
-            </motion.div>
+            {/* Fitur Aksesbilitas Lupa Password (Hanya Muncul Saat Login) */}
+            {isLogin && (
+              <motion.div variants={itemVariants} className="flex justify-end pt-0.5">
+                <Link 
+                  href="/auth/forgot-password" 
+                  className="text-xs font-bold text-gray-600 transition-colors hover:text-black"
+                >
+                  Lupa Password?
+                </Link>
+              </motion.div>
+            )}
 
             {/* Tombol Submit Utama */}
             <motion.button
@@ -267,25 +347,50 @@ export default function LoginForm() {
               whileTap={{ scale: 0.99 }}
               type="submit"
               disabled={loading}
-              className="w-full h-14 bg-[#F2B600] hover:bg-[#D9A300] text-white font-bold text-base rounded-md transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed mt-4 flex items-center justify-center"
+              className="w-full h-12 bg-[#F2B600] hover:bg-[#D9A300] text-white font-bold text-sm rounded-md transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed mt-2 flex items-center justify-center"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-white animate-spin" viewBox="0 0 24 24" fill="none">
+                  <svg className="w-4 h-4 text-white animate-spin" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                   Memproses...
                 </span>
               ) : (
-                'Masuk Sekarang'
+                isLogin ? 'Masuk Sekarang' : 'Daftar Akun Baru'
               )}
             </motion.button>
           </form>
 
+          {/* Toggle Form Action Switcher */}
+<motion.div variants={itemVariants} className="mt-6 text-center">
+  <p className="text-xs font-medium text-gray-500">
+    {isLogin ? 'Belum mempunyai akun pelanggan?' : 'Sudah terdaftar sebagai pelanggan?'}
+    <button
+      type="button"
+      onClick={() => {
+        const nextState = !isLogin;
+        setIsLogin(nextState);
+        setError('');
+        setSuccess('');
+        
+        // KUNCI UTAMA: Mengubah URL di browser tanpa reload halaman
+        if (nextState) {
+          window.history.pushState(null, '', '/auth/login');
+        } else {
+          window.history.pushState(null, '', '/auth/register');
+        }
+      }}
+      className="ml-1 font-bold text-[#1A335A] hover:text-[#376DC0] hover:underline bg-transparent border-none outline-none cursor-pointer"
+    >
+      {isLogin ? 'Daftar Di Sini' : 'Masuk Di Sini'}
+    </button>
+  </p>
+</motion.div>
+
         </motion.div>
 
-        {/* Hak Cipta */}
         <p className="absolute text-xs font-medium text-center text-gray-400 bottom-6">
           &copy; 2026 Dibyo Lurik. All rights reserved.
         </p>
