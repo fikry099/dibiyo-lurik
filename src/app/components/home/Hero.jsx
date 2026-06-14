@@ -12,7 +12,7 @@ export default function Hero() {
       badge: "Digital Innovation for Sustainable Future",
       title: <>Melestarikan <br />Tradisi Melalui <br /><span className="italic text-transparent bg-clip-text bg-gradient-to-r from-[#E5BA73] to-[#C29B53] font-serif font-normal">Kreativitas Digital</span></>,
       desc: "Kami mengintegrasikan warisan budaya kain lurik jawa dengan teknologi modern, memberdayakan perajin lokal melalui platform kustomisasi digital yang menghidupkan setiap helai benang dalam visi modern Anda.",
-      ctaPrimary: { text: "Mulai Mix & Match →", href: "#customizer" },
+      ctaPrimary: { text: "Mulai Mix & Match →", href: "/customizer" },
       ctaSecondary: { text: "Lihat Katalog", href: "#produk" },
       type: "customizer"
     },
