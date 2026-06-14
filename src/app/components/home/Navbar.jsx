@@ -2,14 +2,82 @@
 "use client"
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { usePathname } from 'next/navigation' 
+import { useState, useEffect } from 'react'
+import { usePathname, useRouter } from 'next/navigation' 
+import Swal from 'sweetalert2' 
 
 export default function Navbar() {
+  const router = useRouter()
+  const pathname = usePathname() 
+  
   const [isOpen, setIsOpen] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showUserDropdown, setShowUserDropdown] = useState(false)
   
-  const pathname = usePathname() 
+  const [user, setUser] = useState(null)
+  const [loadingUser, setLoadingUser] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+   useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await fetch('/api/auth/profile', { cache: 'no-store' })
+        if (res.ok) {
+          const json = await res.json()
+          setUser(json.data)
+        } else {
+          setUser(null)
+        }
+      } catch (err) {
+        console.error("Gagal memuat sesi navbar:", err)
+        setUser(null)
+      } finally {
+        setLoadingUser(false)
+      }
+    }
+    fetchProfile()
+  }, [pathname])
+
+  const handleLogout = async () => {
+    setShowUserDropdown(false)
+    setIsOpen(false)
+    Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: "Anda akan keluar dari sesi aktif saat ini!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#1A335A',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, Keluar!',
+      cancelButtonText: 'Batal',
+      background: '#1A1917', 
+      color: '#F9F6F0'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        setIsLoggingOut(true)
+        
+        try {
+          const res = await fetch('/api/auth/logout', { method: 'POST' })
+          
+          if (res.ok) {
+            setUser(null)
+            window.location.href = '/auth/login'
+          } else {
+            throw new Error("Gagal menghapus sesi di server")
+          }
+        } catch (error) {
+          console.error("Gagal melakukan proses keluar:", error)
+          Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Gagal melakukan logout, coba lagi!',
+          })
+        } finally {
+          setIsLoggingOut(false)
+        }
+      }
+    })
+  }
 
   if (
     pathname.startsWith('/dashboard') || 
@@ -19,15 +87,11 @@ export default function Navbar() {
     return null
   }
 
-  // Fungsi helper untuk mengecek status link aktif
   const isActive = (url) => {
-    if (url === '/') {
-      return pathname === '/'
-    }
+    if (url === '/') return pathname === '/'
     return pathname.startsWith(url)
   }
 
-  // Cek apakah menu dropdown "About" sedang aktif (jika salah satu sub-menunya aktif)
   const isAboutActive = isActive('/artikel') || isActive('/produksi')
 
   return (
@@ -119,7 +183,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Right Menu (Cart & Sign In) */}
+          {/* Right Menu */}
           <div className="items-center hidden space-x-6 md:flex">
             <Link 
               href="/cart" 
@@ -130,12 +194,56 @@ export default function Navbar() {
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
               <span className="absolute top-1 right-1 bg-[#E5BA73] text-[#12110F] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
             </Link>
-            <Link href="/auth/login" className="px-5 py-2.5 bg-transparent border border-[#E5BA73] text-[#E5BA73] hover:bg-[#E5BA73] hover:text-[#12110F] rounded-lg text-xs font-semibold tracking-wider transition-all duration-300">
-              MASUK
-            </Link>
+            
+            {loadingUser ? (
+              <div className="w-20 h-8 rounded-lg bg-gray-700/50 animate-pulse"></div>
+            ) : user ? (
+              /* DESKTOP DROPDOWN PROFILE USER */
+              <div 
+                className="relative py-2"
+                onMouseEnter={() => setShowUserDropdown(true)}
+                onMouseLeave={() => setShowUserDropdown(false)}
+              >
+                <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#E5BA73]/30 hover:border-[#E5BA73] transition-all bg-transparent text-[#F9F6F0]">
+                  <div className="w-6 h-6 rounded-full bg-[#E5BA73] text-[#12110F] flex items-center justify-center font-bold text-xs">
+                    {user.username?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide truncate max-w-[100px]">
+                    {user.username}
+                  </span>
+                  <svg className={`w-3 h-3 text-[#A3A19E] transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+
+                {showUserDropdown && (
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-[#1A1917] border border-[#E5BA73]/20 rounded-xl shadow-xl overflow-hidden py-1 z-50">
+                    <div className="px-4 py-2 border-b border-[#E5BA73]/10">
+                      <p className="text-sm font-semibold text-[#E5BA73] truncate">{user.nama}</p>
+                    </div>
+                    {user.role !== 'customer' && (
+                      <Link href="/dashboard" className="block px-4 py-2.5 text-xs text-[#A3A19E] hover:bg-[#E5BA73]/10 hover:text-[#E5BA73] transition-colors">
+                        Dashboard Sistem
+                      </Link>
+                    )}
+                    <button 
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      className="w-full text-left block px-4 py-2.5 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors disabled:opacity-50"
+                    >
+                      {isLoggingOut ? 'Mengeluarkan...' : 'Keluar / Logout'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/auth/login" className="px-5 py-2.5 bg-transparent border border-[#E5BA73] text-[#E5BA73] hover:bg-[#E5BA73] hover:text-[#12110F] rounded-lg text-xs font-semibold tracking-wider transition-all duration-300">
+                MASUK
+              </Link>
+            )}
           </div>
 
-          {/* Mobile Button */}
+          {/* Mobile Menu Button */}
           <div className="flex items-center md:hidden">
             <button onClick={() => setIsOpen(!isOpen)} className="text-[#E5BA73] p-2">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,44 +258,57 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden bg-[#1A1917] border-b border-[#E5BA73]/10 px-4 pt-2 pb-4 space-y-2">
-          <Link 
-            href="/" 
-            className={`block py-2 font-medium ${isActive('/') ? 'text-[#E5BA73]' : 'text-[#A3A19E]'}`} 
-            onClick={() => setIsOpen(false)}
-          >
+          <Link href="/" className={`block py-2 font-medium ${isActive('/') ? 'text-[#E5BA73]' : 'text-[#A3A19E]'}`} onClick={() => setIsOpen(false)}>
             Home
           </Link>
-          <Link 
-            href="/customizer" 
-            className={`block py-2 font-medium ${isActive('/customizer') ? 'text-[#E5BA73]' : 'text-[#A3A19E]'}`} 
-            onClick={() => setIsOpen(false)}
-          >
+          <Link href="/customizer" className={`block py-2 font-medium ${isActive('/customizer') ? 'text-[#E5BA73]' : 'text-[#A3A19E]'}`} onClick={() => setIsOpen(false)}>
             Lurik Customizer
           </Link>
-          <Link 
-            href="/produk" 
-            className={`block py-2 font-medium ${isActive('/produk') ? 'text-[#E5BA73]' : 'text-[#A3A19E]'}`} 
-            onClick={() => setIsOpen(false)}
-          >
+          <Link href="/produk" className={`block py-2 font-medium ${isActive('/produk') ? 'text-[#E5BA73]' : 'text-[#A3A19E]'}`} onClick={() => setIsOpen(false)}>
             Produk
           </Link>
           <div className="border-t border-[#E5BA73]/10 my-2 pt-2">
-            <Link 
-              href="/artikel" 
-              className={`block py-1.5 text-sm pl-4 ${isActive('/artikel') ? 'text-[#E5BA73] font-medium' : 'text-[#A3A19E]'}`} 
-              onClick={() => setIsOpen(false)}
-            >
+            <Link href="/artikel" className={`block py-1.5 text-sm pl-4 ${isActive('/artikel') ? 'text-[#E5BA73] font-medium' : 'text-[#A3A19E]'}`} onClick={() => setIsOpen(false)}>
               Artikel & Edukasi
             </Link>
-            <Link 
-              href="/produksi" 
-              className={`block py-1.5 text-sm pl-4 ${isActive('/produksi') ? 'text-[#E5BA73] font-medium' : 'text-[#A3A19E]'}`} 
-              onClick={() => setIsOpen(false)}
-            >
+            <Link href="/produksi" className={`block py-1.5 text-sm pl-4 ${isActive('/produksi') ? 'text-[#E5BA73] font-medium' : 'text-[#A3A19E]'}`} onClick={() => setIsOpen(false)}>
               Proses Produksi
             </Link>
           </div>
-          <Link href="/auth/login" className="block w-full text-center py-2.5 bg-[#E5BA73] text-[#12110F] font-bold rounded-lg text-sm" onClick={() => setIsOpen(false)}>Masuk Sistem</Link>
+          
+          <div className="pt-2 border-t border-[#E5BA73]/10">
+            {loadingUser ? (
+              <div className="w-full h-10 bg-gray-800 rounded-lg animate-pulse"></div>
+            ) : user ? (
+              <div className="space-y-2">
+                <div className="px-4 py-2 bg-[#12110F] rounded-lg border border-[#E5BA73]/10 flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-[#E5BA73] text-[#12110F] flex items-center justify-center font-bold text-sm">
+                    {user.username?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Hai, @{user.username}</p>
+                    <p className="text-sm font-bold text-[#E5BA73]">{user.nama}</p>
+                  </div>
+                </div>
+                {user.role !== 'customer' && (
+                  <Link href="/dashboard" className="block w-full text-center py-2 bg-transparent border border-[#E5BA73]/30 text-[#E5BA73] font-medium rounded-lg text-sm" onClick={() => setIsOpen(false)}>
+                    Dashboard Sistem
+                  </Link>
+                )}
+                <button 
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="block w-full text-center py-2.5 bg-red-600/20 text-red-400 font-bold rounded-lg text-sm transition-colors border border-red-500/20 disabled:opacity-50"
+                >
+                  {isLoggingOut ? 'Mengeluarkan...' : 'Keluar / Logout'}
+                </button>
+              </div>
+            ) : (
+              <Link href="/auth/login" className="block w-full text-center py-2.5 bg-[#E5BA73] text-[#12110F] font-bold rounded-lg text-sm" onClick={() => setIsOpen(false)}>
+                Masuk Sistem
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </nav>
