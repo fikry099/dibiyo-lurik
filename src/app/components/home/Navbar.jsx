@@ -17,26 +17,56 @@ export default function Navbar() {
   const [user, setUser] = useState(null)
   const [loadingUser, setLoadingUser] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  
+  // STATE JUMLAH ITEM KERANJANG (Bukan total panjang/qty)
+  const [cartCount, setCartCount] = useState(0)
 
-   useEffect(() => {
-    async function fetchProfile() {
+  // 1. Ambil Profile & Hitung Jumlah Baris/Item Keranjang Awal
+  useEffect(() => {
+    async function fetchInitialData() {
       try {
-        const res = await fetch('/api/auth/profile', { cache: 'no-store' })
-        if (res.ok) {
-          const json = await res.json()
-          setUser(json.data)
+        const resProfile = await fetch('/api/auth/profile', { cache: 'no-store' })
+        if (resProfile.ok) {
+          const jsonProfile = await resProfile.json()
+          setUser(jsonProfile.data)
+
+          // Jika user login, ambil data keranjang
+          const resCart = await fetch('/api/keranjang', { cache: 'no-store' })
+          if (resCart.ok) {
+            const jsonCart = await resCart.json()
+            
+            // 🔥 PERBAIKAN: Menghitung jumlah item/baris unik, bukan total meter
+            const totalItems = jsonCart.data?.length ?? 0
+            setCartCount(totalItems)
+          }
         } else {
           setUser(null)
+          setCartCount(0)
         }
       } catch (err) {
-        console.error("Gagal memuat sesi navbar:", err)
+        console.error("Gagal memuat data awal navbar:", err)
         setUser(null)
       } finally {
         setLoadingUser(false)
       }
     }
-    fetchProfile()
+    fetchInitialData()
   }, [pathname])
+
+  // 2. Pasang Event Listener saat Ada Item Baru Ditambahkan
+  useEffect(() => {
+    const handleCartUpdate = (event) => {
+      // 🔥 PERBAIKAN: Jika item baru ditambahkan, jumlah item di navbar cukup bertambah 1 
+      // (Bisa juga disesuaikan jika item yang sama ditambahkan lagi, tergantung perilaku backend kamu)
+      const addedItemCount = event.detail?.itemCount || 1
+      setCartCount((prevCount) => prevCount + addedItemCount)
+    }
+
+    window.addEventListener("updateCartCount", handleCartUpdate)
+    return () => {
+      window.removeEventListener("updateCartCount", handleCartUpdate)
+    }
+  }, [])
 
   const handleLogout = async () => {
     setShowUserDropdown(false)
@@ -61,6 +91,7 @@ export default function Navbar() {
           
           if (res.ok) {
             setUser(null)
+            setCartCount(0) // Reset keranjang
             window.location.href = '/auth/login'
           } else {
             throw new Error("Gagal menghapus sesi di server")
@@ -192,13 +223,17 @@ export default function Navbar() {
               }`}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-              <span className="absolute top-1 right-1 bg-[#E5BA73] text-[#12110F] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+              
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 bg-[#E5BA73] text-[#12110F] text-[9px] font-black min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center animate-scale-up">
+                  {cartCount}
+                </span>
+              )}
             </Link>
             
             {loadingUser ? (
               <div className="w-20 h-8 rounded-lg bg-gray-700/50 animate-pulse"></div>
             ) : user ? (
-              /* DESKTOP DROPDOWN PROFILE USER */
               <div 
                 className="relative py-2"
                 onMouseEnter={() => setShowUserDropdown(true)}
