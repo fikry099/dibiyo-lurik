@@ -12,28 +12,6 @@ export default function Catalog() {
   // <-- 2. STATE UNTUK KONTROL MODAL
   const [selectedProduct, setSelectedProduct] = useState(null)
 
-  // useEffect(() => {
-  //   async function fetchProducts() {
-  //     try {
-  //       setLoading(true)
-  //       const res = await fetch('/api/produk?page=1&limit=9')
-        
-  //       if (!res.ok) {
-  //         throw new Error('Gagal mengambil data dari server')
-  //       }
-        
-  //       const result = await res.json()
-  //       setProducts(result.data || [])
-  //     } catch (err) {
-  //       console.error("Fetch Error:", err)
-  //       setError(err.message)
-  //     } finally {
-  //       setLoading(false)
-  //     }
-  //   }
-
-  //   fetchProducts()
-  // }, [])
 
 
   useEffect(() => {
@@ -69,7 +47,30 @@ export default function Catalog() {
   fetchProducts()
 }, [])
 
-  
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        setLoading(true)
+        const res = await fetch('/api/produk?page=1&limit=9')
+        
+        if (!res.ok) {
+          throw new Error('Gagal mengambil data dari server')
+        }
+        
+        const result = await res.json()
+        setProducts(result.data || [])
+      } catch (err) {
+        console.error("Fetch Error:", err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [])
+
 
   const formatRupiah = (number) => {
     if (!number) return 'Rp 0'
@@ -112,8 +113,10 @@ export default function Catalog() {
 
       {/* --- KONDISI DATA KOSONG --- */}
       {products.length === 0 && !loading && !error && (
-        <div className="py-12 text-center border boBelum ada produk yrder-white/5 bg-white/5 rounded-2xl">
-          <p className="text-sm text-[#A3A19E]">ang tersedia saat ini.</p>
+
+        <div className="py-12 text-center border border-white/5 bg-white/5 rounded-2xl">
+          <p className="text-sm text-[#A3A19E]">Belum ada produk yang tersedia saat ini.</p>
+
         </div>
       )}
 
@@ -138,7 +141,8 @@ export default function Catalog() {
                   
                   {prod.gambar_url ? (
                     <img 
-                      src={prod.gambar_url}
+
+                      src={prod.gambar_url} 
                       alt={productTitle}
                       className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"

@@ -4,11 +4,20 @@ import { useState, useEffect } from "react"
 import { useCart } from "@/app/context/CartContext" 
 import { useRouter } from "next/navigation" 
 
+// Fungsi pembantu untuk format Rupiah
+const formatRupiah = (angka) => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0
+  }).format(angka)
+}
+
 export default function ModalDetail({ isOpen, onClose, product }) {
   const [qty, setQty] = useState(1)
   const [gulunganDipilih, setGulunganDipilih] = useState(null)
-  const { addToCart } = useCart()    // ← tambahkan
-  const router = useRouter()          // ← tambahkan
+  const { addToCart } = useCart() 
+  const router = useRouter() 
 
   // Reset state setiap modal dibuka
   useEffect(() => {
@@ -20,45 +29,54 @@ export default function ModalDetail({ isOpen, onClose, product }) {
     setGulunganDipilih(gulunganAktif ?? product.gulungan?.[0] ?? null)
   }, [isOpen, product])
 
+  // Jangan render apapun jika modal ditutup atau data produk kosong
   if (!isOpen || !product) return null
 
-  const productTitle = product.motif?.nama && product.kategori?.nama
-    ? `${product.motif.nama} ${product.kategori.nama}`
-    : product.kode_produk || "Kain Lurik Premium"
-
-  const handleTambahKeranjang = () => {
-    addToCart(product, gulunganDipilih, qty)  
-    onClose() 
-    router.push("/cart")
-  }
-
-  const stok = product.stok ?? 0
-  const stokPersen = Math.min((stok / 10) * 100, 100)
+  // ─── DEKLARASI VARIABEL TURUNAN (Agar tidak undefined) ───
+  const productTitle = product.nama ?? "Lurik Premium"
   const gulunganList = product.gulungan ?? []
-
-  // Data dari gulungan yang dipilih
-  const harga = gulunganDipilih?.harga ?? 0
-  const lebar = gulunganDipilih?.lebar ?? 0
+  
+  // Menghitung stok berdasarkan jumlah gulungan yang panjang sisanya > 0
+  const stok = gulunganList.filter(g => g.panjang_sisa > 0).length
+  const stokPersen = gulunganList.length > 0 ? (stok / gulunganList.length) * 100 : 0
+  
+  const lebar = gulunganDipilih?.lebar ?? product.lebar ?? "—"
   const panjangSisa = gulunganDipilih?.panjang_sisa ?? 0
+  const harga = product.harga ?? 0
   const total = harga * qty
 
-  const formatRupiah = (n) => "Rp " + Number(n).toLocaleString("id-ID")
+  // Handler aksi tambah keranjang
+  const handleTambahKeranjang = () => {
+    if (!gulunganDipilih) return
+    
+    addToCart({
+      id: `${product.id}-${gulunganDipilih.id}`, // ID unik gabungan produk + gulungan
+      productId: product.id,
+      nama: productTitle,
+      harga: harga,
+      qty: qty,
+      gulungan: gulunganDipilih,
+      gambar_url: product.gambar_url
+    })
+
+    onClose() // Tutup modal setelah berhasil ditambahkan
+  }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-      onClick={onClose}
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+      onClick={onClose} 
     >
-      <div
-        className="bg-[#1A1917] border border-[#E5BA73]/25 w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl relative"
-        onClick={(e) => e.stopPropagation()}
+      <div 
+        className="bg-[#1A1917] border border-[#E5BA73]/25 w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl relative p-6 space-y-6 animate-scale-up"
+        onClick={(e) => e.stopPropagation()} 
       >
-        {/* Tombol Close */}
-        <button
+        {/* Tombol Close Pojok Kanan Atas */}
+        <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#A3A19E] hover:text-[#E5BA73] transition-colors p-1 z-10"
+          className="absolute top-4 right-4 text-[#A3A19E] hover:text-[#E5BA73] transition-colors p-1"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
@@ -83,7 +101,6 @@ export default function ModalDetail({ isOpen, onClose, product }) {
         </div>
 
         <div className="p-5 space-y-5">
-
           {/* ─── SPESIFIKASI ─── */}
           <div>
             <p className="text-[11px] font-medium tracking-widest uppercase text-[#706E6B] mb-2">
@@ -204,7 +221,6 @@ export default function ModalDetail({ isOpen, onClose, product }) {
               </span>
             )}
           </div>
-
         </div>
 
         {/* ─── FOOTER ─── */}
@@ -220,6 +236,7 @@ export default function ModalDetail({ isOpen, onClose, product }) {
           >
             WhatsApp
           </button>
+          
           <button
             disabled={!gulunganDipilih || stok === 0}
             onClick={handleTambahKeranjang}
@@ -232,7 +249,6 @@ export default function ModalDetail({ isOpen, onClose, product }) {
             {stok === 0 ? "Stok Habis" : "Tambah ke Keranjang"}
           </button>
         </div>
-
       </div>
     </div>
   )

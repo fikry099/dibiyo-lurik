@@ -1,5 +1,7 @@
 // app/layout.jsx
+
 import { CartProvider } from "@/app/context/CartContext"
+
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ProgressBar from "@/app/components/ProgressBar";
@@ -26,6 +28,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning className="bg-[#0A1715] text-[#F9F6F0] min-h-screen antialiased">
+
         <Suspense fallback={null}>
           <ProgressBar />
         </Suspense>
@@ -36,4 +39,5 @@ export default function RootLayout({ children }) {
       </body>
     </html>
   )
+
 }

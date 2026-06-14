@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useCart } from "@/app/context/CartContext"
@@ -135,6 +136,7 @@ export default function CartPage() {
         </div>
 
       </div>
+
     </div>
   )
 }
