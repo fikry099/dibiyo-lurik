@@ -66,14 +66,14 @@ const handleAddToCartConfirm = (specs) => {
     // 🔥 Panggil dengan 3 parameter: (product, gulungan, qty)
     addToCart(productData, gulunganData, qty);
     
-    Swal.fire({
-      title: 'Berhasil!',
-      text: 'Kain tenun kustom Anda sukses dimasukkan ke dalam keranjang.',
-      icon: 'success',
-      background: '#1A1917',
-      color: '#F9F6F0',
-      confirmButtonColor: '#E5BA73'
-    });
+    // Swal.fire({
+    //   title: 'Berhasil!',
+    //   text: 'Kain tenun kustom Anda sukses dimasukkan ke dalam keranjang.',
+    //   icon: 'success',
+    //   background: '#1A1917',
+    //   color: '#F9F6F0',
+    //   confirmButtonColor: '#E5BA73'
+    // });
   }
 }
 

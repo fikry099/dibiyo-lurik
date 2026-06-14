@@ -115,7 +115,6 @@ export default function CartPage() {
                 
                 {/* Bagian Kiri */}
                 <div className="space-y-4 lg:col-span-2">
-                  <h2 className="text-xl font-bold tracking-tight text-[#E5BA73]">Keranjang Kain Lurik</h2>
                   <div className="space-y-3 bg-[#12110F] p-4 rounded-2xl border border-white/5 shadow-xl">
                     {cartItems.map((item) => (
                       <CartItem 
