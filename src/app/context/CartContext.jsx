@@ -27,7 +27,7 @@ export function CartProvider({ children }) {
       return [...prev, {
         itemId,
         product,       // seluruh data produk
-        gulungan,      // gulungan yang dipilih (berisi harga, lebar, dll)
+        gulungan,      // gulungan yang dipilih
         qty,
       }]
     })
@@ -46,8 +46,9 @@ export function CartProvider({ children }) {
 
   const totalItem = cartItems.reduce((acc, item) => acc + item.qty, 0)
 
+  // ─── PERBAIKAN: TOTAL HARGA MENGGUNAKAN HARGA PRODUK ───
   const totalHarga = cartItems.reduce(
-    (acc, item) => acc + item.gulungan.harga * item.qty, 0
+    (acc, item) => acc + (item.product.harga ?? 0) * item.qty, 0
   )
 
   return (

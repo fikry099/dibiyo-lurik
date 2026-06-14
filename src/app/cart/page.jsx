@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useCart } from "@/app/context/CartContext"
@@ -30,14 +29,17 @@ export default function CartPage() {
     <div className="min-h-screen pt-24 pb-12 px-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold text-[#E5BA73] mb-6">Keranjang Belanja</h1>
 
-      <div className="flex gap-6 items-start">
+      <div className="flex flex-col md:flex-row gap-6 items-start">
 
         {/* ─── DAFTAR ITEM ─── */}
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 w-full space-y-3">
           {cartItems.map(({ itemId, product, gulungan, qty }) => {
             const nama = product.motif?.nama && product.kategori?.nama
               ? `${product.motif.nama} ${product.kategori.nama}`
-              : product.kode_produk
+              : product.nama ?? product.kode_produk
+
+            // ─── PERBAIKAN: MENGGUNAKAN HARGA PRODUK SEBAGAI UTAMA ───
+            const itemHarga = product.harga ?? gulungan.harga ?? 0
 
             return (
               <div key={itemId} className="bg-[#1A1917] border border-[#E5BA73]/20 rounded-xl p-4 flex gap-4">
@@ -85,10 +87,10 @@ export default function CartPage() {
                 <div className="flex flex-col items-end justify-between">
                   <div className="text-right">
                     <p className="text-sm font-semibold text-[#E5BA73]">
-                      {formatRupiah(gulungan.harga * qty)}
+                      {formatRupiah(itemHarga * qty)}
                     </p>
                     <p className="text-xs text-[#706E6B]">
-                      {formatRupiah(gulungan.harga)} × {qty}
+                      {formatRupiah(itemHarga)} × {qty}
                     </p>
                   </div>
                   <button
@@ -105,18 +107,22 @@ export default function CartPage() {
         </div>
 
         {/* ─── RINGKASAN ─── */}
-        <div className="w-72 bg-[#1A1917] border border-[#E5BA73]/20 rounded-xl p-4 sticky top-24">
+        <div className="w-full md:w-72 bg-[#1A1917] border border-[#E5BA73]/20 rounded-xl p-4 sticky top-24">
           <p className="text-[11px] font-medium tracking-widest uppercase text-[#706E6B] mb-3">
             Ringkasan Pesanan
           </p>
 
           <div className="space-y-1.5 mb-3">
-            {cartItems.map(({ itemId, product, gulungan, qty }) => (
-              <div key={itemId} className="flex justify-between text-xs text-[#A3A19E]">
-                <span className="truncate mr-2">{product.motif?.nama} × {qty}</span>
-                <span className="flex-shrink-0">{formatRupiah(gulungan.harga * qty)}</span>
-              </div>
-            ))}
+            {cartItems.map(({ itemId, product, gulungan, qty }) => {
+              // ─── PERBAIKAN DI SINI JUGA ───
+              const itemHarga = product.harga ?? gulungan.harga ?? 0
+              return (
+                <div key={itemId} className="flex justify-between text-xs text-[#A3A19E]">
+                  <span className="truncate mr-2">{product.motif?.nama ?? product.nama ?? "Lurik"} × {qty}</span>
+                  <span className="flex-shrink-0">{formatRupiah(itemHarga * qty)}</span>
+                </div>
+              )
+            })}
           </div>
 
           <div className="border-t border-[#E5BA73]/15 pt-3 flex justify-between items-baseline">
@@ -136,7 +142,6 @@ export default function CartPage() {
         </div>
 
       </div>
-
     </div>
   )
 }

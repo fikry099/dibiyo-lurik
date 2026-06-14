@@ -32,32 +32,24 @@ export default function ModalDetail({ isOpen, onClose, product }) {
   // Jangan render apapun jika modal ditutup atau data produk kosong
   if (!isOpen || !product) return null
 
-  // ─── DEKLARASI VARIABEL TURUNAN (Agar tidak undefined) ───
+  // ─── DEKLARASI VARIABEL TURUNAN ───
   const productTitle = product.nama ?? "Lurik Premium"
   const gulunganList = product.gulungan ?? []
   
-  // Menghitung stok berdasarkan jumlah gulungan yang panjang sisanya > 0
   const stok = gulunganList.filter(g => g.panjang_sisa > 0).length
   const stokPersen = gulunganList.length > 0 ? (stok / gulunganList.length) * 100 : 0
   
   const lebar = gulunganDipilih?.lebar ?? product.lebar ?? "—"
   const panjangSisa = gulunganDipilih?.panjang_sisa ?? 0
-  const harga = product.harga ?? 0
+  const harga = gulunganDipilih?.harga ?? 0
   const total = harga * qty
 
-  // Handler aksi tambah keranjang
+  // ─── PERBAIKAN: MENGIRIM 3 ARGUMEN TERPISAH ───
   const handleTambahKeranjang = () => {
     if (!gulunganDipilih) return
     
-    addToCart({
-      id: `${product.id}-${gulunganDipilih.id}`, // ID unik gabungan produk + gulungan
-      productId: product.id,
-      nama: productTitle,
-      harga: harga,
-      qty: qty,
-      gulungan: gulunganDipilih,
-      gambar_url: product.gambar_url
-    })
+    // Dipanggil sesuai spesifikasi fungsi di CartContext.js
+    addToCart(product, gulunganDipilih, qty)
 
     onClose() // Tutup modal setelah berhasil ditambahkan
   }
@@ -131,7 +123,7 @@ export default function ModalDetail({ isOpen, onClose, product }) {
             </div>
           </div>
 
-          {/* ─── PILIH GULUNGAN (kalau lebih dari 1) ─── */}
+          {/* ─── PILIH GULUNGAN ─── */}
           {gulunganList.length > 1 && (
             <div>
               <p className="text-[11px] font-medium tracking-widest uppercase text-[#706E6B] mb-2">
