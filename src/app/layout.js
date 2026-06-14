@@ -1,4 +1,7 @@
 // app/layout.jsx
+
+import { CartProvider } from "@/app/context/CartContext"
+
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ProgressBar from "@/app/components/ProgressBar";
@@ -20,21 +23,21 @@ export const metadata = {
   description: "Sistem Manajemen Internal Dibyo Lurik",
 };
 
+
 export default function RootLayout({ children }) {
   return (
     <html lang="id" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning className="bg-[#0A1715] text-[#F9F6F0] min-h-screen antialiased">
-        {/* 2. Bungkus ProgressBar dengan Suspense boundary */}
+
         <Suspense fallback={null}>
           <ProgressBar />
         </Suspense>
-        
         <Navbar />
-        
-        <main>
-          {children}
-        </main>
+        <CartProvider>      {/* ← buka */}
+          {children}        {/* ← drchilen di dalam */}
+        </CartProvider>     {/* ← tutup */}
       </body>
     </html>
-  );
+  )
+
 }
