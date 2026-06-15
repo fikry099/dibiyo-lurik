@@ -2,15 +2,23 @@ import { NextResponse } from 'next/server';
 import supabaseAdmin from '@/lib/supabase-admin';
 
 // =====================================================
-// GET: Ambil isi keranjang (Semua data)
+// GET: Mengambil daftar isi keranjang belanja
 // =====================================================
-export const GET = async () => {
+export const GET = async (request) => {
   try {
+    // AMBIL USER ID dari Header atau Sesi Cookie Anda
+    // const userId = ... 
+
+    // 🌟 KOMENTAR DI DALAM .SELECT() SUDAH DIHAPUS AGAR TIDAK SYNTAX ERROR 🌟
     const { data, error } = await supabaseAdmin
       .from('cart')
       .select(`
         id,
         jumlah_order,
+        user_id,
+        is_custom,          
+        konfigurasi,        
+        custom_metadata,    
         gulungan:gulungan_id (
           id, 
           nomor_gulungan, 
@@ -27,13 +35,10 @@ export const GET = async () => {
           )
         )
       `)
+      // .eq('user_id', userId) // <--- Aktifkan ini jika sistem auth sudah siap
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error("=== SUPABASE ERROR IN GET CART ===", error);
-      throw error;
-    }
-
+    if (error) throw error;
     return NextResponse.json({ data: data || [] }, { status: 200 });
   } catch (err) {
     console.error("=== SERVER CRASH IN GET CART ===", err);
@@ -42,21 +47,33 @@ export const GET = async () => {
 };
 
 // =====================================================
-// POST: Tambah item ke keranjang
+// POST: Memasukkan item regular atau kustom ke keranjang
 // =====================================================
 export const POST = async (request) => {
   try {
-    const { gulungan_id, jumlah_order } = await request.json();
+    const body = await request.json();
+    const { 
+      gulungan_id, 
+      jumlah_order, 
+      user_id, 
+      is_custom,       
+      konfigurasi,     
+      custom_metadata  
+    } = body;
 
-    if (!gulungan_id) {
-      return NextResponse.json({ message: 'Gulungan ID wajib diisi' }, { status: 400 });
+    if (!is_custom && !gulungan_id) {
+      return NextResponse.json({ message: 'Gulungan ID wajib diisi untuk produk regular toko.' }, { status: 400 });
     }
 
     const { data, error } = await supabaseAdmin
       .from('cart')
       .insert({
-        gulungan_id,
+        gulungan_id: is_custom ? null : gulungan_id, 
         jumlah_order: jumlah_order || 1,
+        user_id: user_id, 
+        is_custom: is_custom || false,               
+        konfigurasi: is_custom ? konfigurasi : null, 
+        custom_metadata: is_custom ? custom_metadata : null, 
         created_at: new Date().toISOString()
       })
       .select();
@@ -66,28 +83,20 @@ export const POST = async (request) => {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      message: 'Berhasil menambahkan item ke keranjang',
-      data: data 
-    }, { status: 201 });
-
+    return NextResponse.json({ message: 'Berhasil', data }, { status: 201 });
   } catch (err) {
-    console.error("=== SERVER CRASH IN POST CART ===", err);
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
 };
 
 // =====================================================
-// DELETE: Hapus item dari keranjang (Fungsi Baru)
+// DELETE: Hapus item dari keranjang 
 // =====================================================
 export const DELETE = async (request) => {
   try {
-    // 1. Coba ambil ID dari URL parameter (?id=xxx)
     const { searchParams } = new URL(request.url);
     let itemId = searchParams.get("id");
 
-    // 2. Jika tidak ada di URL, coba ambil dari Body JSON ({ id: xxx })
-    // Strategi ganda ini dipasang agar otomatis cocok dengan metode apa pun yang dipakai frontend Anda
     if (!itemId) {
       try {
         const body = await request.json();
@@ -100,14 +109,13 @@ export const DELETE = async (request) => {
     if (!itemId) {
       console.error("[DELETE CART ERROR] Frontend tidak mengirimkan ID item yang akan dihapus.");
       return NextResponse.json(
-        { message: "ID item wajib dikirim (bisa via query ?id= atau body JSON)" }, 
-        { status: 400 }
+        { message: "ID item wajib dikirim (bisa via query ?id= atau body JSON)" },
+        { status: 400 } 
       );
     }
 
     console.log(`=== MENCOBA HAPUS ITEM CART DENGAN ID: ${itemId} ===`);
 
-    // 3. Eksekusi penghapusan di tabel 'cart' menggunakan supabaseAdmin
     const { error } = await supabaseAdmin
       .from('cart')
       .delete()

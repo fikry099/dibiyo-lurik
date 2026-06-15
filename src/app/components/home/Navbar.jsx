@@ -1,11 +1,9 @@
-// src/app/components/home/Navbar.jsx
 "use client"
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation' 
 import Swal from 'sweetalert2' 
-import { motion } from 'framer-motion' // Ditambahkan untuk efek membal premium
 
 export default function Navbar() {
   const router = useRouter()
@@ -18,71 +16,63 @@ export default function Navbar() {
   const [user, setUser] = useState(null)
   const [loadingUser, setLoadingUser] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-
-  // SINKRONISASI STATE KERANJANG
+  
+  // STATE JUMLAH ITEM KERANJANG (Bukan total panjang/qty)
   const [cartCount, setCartCount] = useState(0)
-  const [isCartBouncing, setIsCartBouncing] = useState(false)
 
-  // 1. Memuat Data Sesi Profil Pengguna
+  // 1. Ambil Profile & Hitung Jumlah Baris/Item Keranjang Awal (Mendukung Guest & Login)
   useEffect(() => {
-    async function fetchProfile() {
+    async function fetchInitialData() {
       try {
-        const res = await fetch('/api/auth/profile', { cache: 'no-store' })
-        if (res.ok) {
-          const json = await res.json()
-          setUser(json.data)
+        const resProfile = await fetch('/api/auth/profile', { cache: 'no-store' })
+        
+        if (resProfile.ok) {
+          const jsonProfile = await resProfile.json()
+          setUser(jsonProfile.data)
+
+          // Jika user login, ambil data keranjang dari database
+          const resCart = await fetch('/api/keranjang', { cache: 'no-store' })
+          if (resCart.ok) {
+            const jsonCart = await resCart.json()
+            
+            // Menghitung jumlah item/baris unik, bukan total meter
+            const totalItems = jsonCart.data?.length ?? 0
+            setCartCount(totalItems)
+          }
         } else {
+          // ====================================================================
+          // JALUR GUEST: Jika tidak login, hitung item unik dari Local Storage
+          // ====================================================================
           setUser(null)
-        }
-      } catch (err) {
-        console.error("Gagal memuat sesi navbar:", err)
-        setUser(null)
-      } finally {
-        // PERBAIKAN: Sintaks 'box-loader' yang merusak runtime telah dihapus bersih
-        setLoadingUser(false)
-      }
-    }
-    fetchProfile()
-  }, [pathname])
-
-  // 2. Sinkronisasi Data Real-time & Efek Animasi dari ModalBeliKain
-  useEffect(() => {
-    // Fungsi mengambil jumlah item awal di keranjang database
-    const fetchInitialCartCount = async () => {
-      try {
-        const res = await fetch('/api/keranjang')
-        if (res.ok) {
-          const json = await res.json()
-          if (Array.isArray(json.data)) {
-            setCartCount(json.data.length)
-          } else if (json.count !== undefined) {
-            setCartCount(json.count)
+          const localData = localStorage.getItem("biyo_guest_cart")
+          if (localData) {
+            const parsedCart = JSON.parse(localData) || []
+            setCartCount(parsedCart.length)
+          } else {
+            setCartCount(0)
           }
         }
       } catch (err) {
-        console.error("Gagal sinkronisasi data awal keranjang:", err)
+        console.error("Gagal memuat data awal navbar:", err)
+        setUser(null)
+      } finally {
+        setLoadingUser(false)
       }
     }
+    fetchInitialData()
+  }, [pathname]) // Memicu pengecekan ulang setiap kali rute halaman (pathname) berubah
 
-    fetchInitialCartCount()
-
-    // Event handler penambahan kuantitas angka badge
-    const handleUpdateCount = (e) => {
-      setCartCount((prev) => prev + (e.detail?.count || 1))
+  // 2. Pasang Event Listener saat Ada Item Baru Ditambahkan
+  useEffect(() => {
+    const handleCartUpdate = (event) => {
+      // Event listener kustom untuk memanipulasi badge counter secara fleksibel jika diperlukan
+      const addedItemCount = event.detail?.itemCount || 1
+      setCartCount((prevCount) => prevCount + addedItemCount)
     }
 
-    // Event handler pemicu efek membal (bounce)
-    const handleCartBounce = () => {
-      setIsCartBouncing(true)
-      setTimeout(() => setIsCartBouncing(false), 500)
-    }
-
-    window.addEventListener("updateCartCount", handleUpdateCount)
-    window.addEventListener("sync-cart-bounce", handleCartBounce)
-
+    window.addEventListener("updateCartCount", handleCartUpdate)
     return () => {
-      window.removeEventListener("updateCartCount", handleUpdateCount)
-      window.removeEventListener("sync-cart-bounce", handleCartBounce)
+      window.removeEventListener("updateCartCount", handleCartUpdate)
     }
   }, [])
 
@@ -108,7 +98,10 @@ export default function Navbar() {
           const res = await fetch('/api/auth/logout', { method: 'POST' })
           
           if (res.ok) {
+            localStorage.removeItem("biyo_guest_cart");
+
             setUser(null)
+            setCartCount(0) 
             window.location.href = '/auth/login'
           } else {
             throw new Error("Gagal menghapus sesi di server")
@@ -144,7 +137,8 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0A1715]/80 backdrop-blur-lg border-b border-[#E5BA73]/10">
-      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+      {/* KUNCI PERBAIKAN LEBAR: Mengganti px-2 ke px-4 agar lurus simetris dengan halaman utama */}
+      <div className="px-2 mx-auto max-w-7xl sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-20">
           
           {/* Logo */}
@@ -233,30 +227,24 @@ export default function Navbar() {
 
           {/* Right Menu */}
           <div className="items-center hidden space-x-6 md:flex">
-            {/* Animasi Pembungkus Icon Keranjang Belanja */}
-            <motion.div
-              animate={isCartBouncing ? { scale: [1, 1.4, 0.85, 1.15, 1] } : { scale: 1 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
+            <Link 
+              href="/cart" 
+              className={`relative p-2 transition-colors ${
+                isActive('/cart') ? 'text-[#E5BA73]' : 'text-[#A3A19E] hover:text-[#E5BA73]'
+              }`}
             >
-              <Link 
-                href="/cart" 
-                className={`relative p-2 block transition-colors ${
-                  isActive('/cart') ? 'text-[#E5BA73]' : 'text-[#A3A19E] hover:text-[#E5BA73]'
-                }`}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                </svg>
-                <span className="absolute top-1 right-1 bg-[#E5BA73] text-[#12110F] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+              
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 bg-[#E5BA73] text-[#12110F] text-[9px] font-black min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center animate-scale-up">
                   {cartCount}
                 </span>
-              </Link>
-            </motion.div>
+              )}
+            </Link>
             
             {loadingUser ? (
               <div className="w-20 h-8 rounded-lg bg-gray-700/50 animate-pulse"></div>
             ) : user ? (
-              /* DESKTOP DROPDOWN PROFILE USER */
               <div 
                 className="relative py-2"
                 onMouseEnter={() => setShowUserDropdown(true)}

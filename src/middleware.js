@@ -141,8 +141,6 @@
 // }
 
 
-
-
 import { NextResponse } from 'next/server'
 import supabasePublic from '@/lib/supabase-public'
 
@@ -171,6 +169,9 @@ export async function middleware(request) {
     pathname.startsWith('/owner')
 
   // --- LOGIKA ROLLING SESSION & AUTO REFRESH ---
+  // Hanya jalankan refresh jika user mengakses dashboard atau route API terproteksi
+  const shouldRefresh = isDashboardPage || pathname.startsWith('/api/')
+
   if (hasToken) {
     const currentAccessToken = request.cookies.get('sb-access-token').value
     response.cookies.set('sb-access-token', currentAccessToken, {
@@ -180,7 +181,7 @@ export async function middleware(request) {
       path: '/',
       maxAge: 300, 
     })
-  } else if (!hasToken && refreshToken) {
+  } else if (!hasToken && refreshToken && shouldRefresh) {
     try {
       const { data, error } = await supabasePublic.auth.setSession({
         access_token: '',
@@ -214,9 +215,13 @@ export async function middleware(request) {
     return response;
   }
 
-  // KONDISI 1: User sudah login dipaksa ke login -> Lempar ke dashboard internal mereka
+  // --- PERUBAHAN DI SINI ---
+  // KONDISI 1: User sudah login dipaksa ke login -> Lempar berdasarkan Role
   if (hasToken && isAuthPage) {
-    const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
+    // Jika customer, lempar ke Home (/). Jika role lain (staf), lempar ke /dashboard
+    const redirectUrl = userRole === 'customer' ? '/' : '/dashboard'
+    
+    const redirectResponse = NextResponse.redirect(new URL(redirectUrl, request.url))
     response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie.name, cookie.value))
     return redirectResponse
   }
@@ -230,7 +235,7 @@ export async function middleware(request) {
     return loginRedirect
   }
 
-  // KONDISI 3: Role-Based Access Control
+  // KONDISI 3: Role-Based Access Control untuk halaman Dashboard internal
   if (hasToken) {
     let targetURL = null
     if (userRole === 'customer_service') {
@@ -248,6 +253,10 @@ export async function middleware(request) {
         targetURL = '/dashboard'
       }
     }
+    // Proteksi tambahan: jika customer nekat mengetik manual URL dashboard/kp/cs/owner, kunci ke Home (/)
+    if (userRole === 'customer' && isDashboardPage) {
+      targetURL = '/'
+    }
 
     if (targetURL) {
       const roleRedirect = NextResponse.redirect(new URL(targetURL, request.url))
@@ -255,9 +264,6 @@ export async function middleware(request) {
       return roleRedirect
     }
   }
-
-  // --- PERUBAHAN DI SINI (KONDISI 4 DIHAPUS) ---
-  // Halaman murni '/' tidak di-redirect lagi agar Next.js merender src/app/page.js sebagai Home publik.
 
   return response;
 }
