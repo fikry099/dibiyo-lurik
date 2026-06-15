@@ -1,150 +1,173 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import Swal from "sweetalert2"
+import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { ShoppingBag, ArrowRight } from 'lucide-react';
+import { useCart } from '../context/CartContext'; 
+import CartItem from '@/app/components/produk/keranjang/CartItem';
+import CheckoutSection from '@/app/components/produk/keranjang/CheckoutSection';
 
 export default function CartPage() {
-  const router = useRouter()
-  const [cartItems, setCartItems] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const router = useRouter();
+  const [isCheckout, setIsCheckout] = useState(false);
+  
+  // Menggunakan global state dari Provider yang menghandle otomatis Guest vs Login
+  const { cartItems, updateQty, removeFromCart, loading, totalHarga } = useCart();
 
-  const fetchKeranjang = async () => {
-    try {
-      const res = await fetch('/api/keranjang')
-      const json = await res.json()
-      setCartItems(json.data || [])
-      
-      const cekUser = json.data?.some(item => item.user_id !== null)
-      setIsLoggedIn(cekUser)
-    } catch (err) {
-      console.error("Gagal memuat keranjang", err)
-    } finally {
-      setLoading(false)
+  // Handle Perubahan kuantitas meteran kain
+  const handleQtyChange = (itemId, field, value) => {
+    if (field === 'input_panjang') {
+      updateQty(itemId, Number(value));
     }
-  }
+  };
 
-  useEffect(() => {
-    fetchKeranjang()
-  }, [])
+  // Hitung total panjang meter kain real-time
+  const totalPanjangMeter = useMemo(() => {
+    return cartItems.reduce((acc, item) => acc + (item.input_panjang || 0), 0);
+  }, [cartItems]);
 
-  const handleHapusItem = async (id) => {
-    const result = await Swal.fire({
-      title: 'Hapus Kain?',
-      text: 'Apakah Anda yakin ingin mengeluarkan kain ini dari keranjang?',
-      icon: 'question',
-      showCancelButton: true,
-      background: '#1A1917', color: '#F9F6F0',
-      confirmButtonColor: '#E5BA73', cancelButtonColor: '#444',
-      confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal'
-    })
-
-    if (result.isConfirmed) {
-      try {
-        const res = await fetch(`/api/keranjang?id=${id}`, { method: 'DELETE' })
-        if (res.ok) {
-          Swal.fire({ title: 'Terhapus', icon: 'success', timer: 1000, showConfirmButton: false, background: '#1A1917', color: '#F9F6F0' })
-          fetchKeranjang()
-        }
-      } catch (err) {
-        console.error(err)
-      }
-    }
-  }
-
-  const handleCheckout = async () => {
-    if (cartItems.length === 0) {
-      Swal.fire({
-        title: 'Keranjang Kosong',
-        text: 'Silakan pilih kain lurik pilihan Anda terlebih dahulu.',
-        icon: 'warning',
-        background: '#1A1917', color: '#F9F6F0', confirmButtonColor: '#E5BA73'
-      })
-      return
-    }
-
-    if (!isLoggedIn) {
-      await Swal.fire({
-        title: 'Perlu Akun Member',
-        text: 'Untuk melanjutkan checkout aman, silakan masuk ke akun Anda terlebih dahulu.',
-        icon: 'info',
-        background: '#1A1917', color: '#F9F6F0',
-        confirmButtonColor: '#E5BA73', confirmButtonText: 'Login Sekarang',
-        showCancelButton: true, // Berfungsi normal
-        cancelButtonText: 'Kembali', cancelButtonColor: '#444'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          router.push('/auth/login?redirectTo=/cart')
-        }
-      })
-      return
-    }
-
-    router.push('/checkout')
-  }
-
+  // ====================================================================
+  // SKELETON LOADING UI (Disetarakan dengan Layout Halaman Utama)
+  // ====================================================================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1A1917] flex items-center justify-center text-[#E5BA73]">
-        Membuka Ruang Keranjang Biyo Lurik...
-      </div>
-    )
+      <main className="min-h-screen bg-[#0A1715] text-[#F9F6F0] pt-28 pb-16 px-2 sm:px-4 lg:px-6">
+        <div className="mx-auto space-y-8 max-w-7xl animate-pulse">
+          {/* Breadcrumb Skeleton */}
+          <div className="w-40 h-3 rounded bg-white/10"></div>
+          
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            {/* Bagian Kiri: List Item Skeleton */}
+            <div className="space-y-4 lg:col-span-2">
+              <div className="w-48 h-6 mb-4 rounded bg-white/10"></div>
+              <div className="space-y-3 bg-[#12110F] p-4 rounded-2xl border border-white/5">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-[#0A1715]/60 p-3 rounded-xl flex flex-col sm:flex-row items-center gap-4 border border-white/5">
+                    {/* Kotak Gambar */}
+                    <div className="w-full h-24 rounded-lg sm:w-28 bg-white/5 shrink-0"></div>
+                    {/* Baris data dummy */}
+                    <div className="grid flex-1 w-full grid-cols-2 gap-4 md:grid-cols-6">
+                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="w-16 h-4 rounded bg-white/10"></div></div>
+                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="h-4 rounded bg-white/10 w-14"></div></div>
+                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="w-10 h-4 rounded bg-white/10"></div></div>
+                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="w-20 h-4 rounded bg-white/10"></div></div>
+                      <div className="space-y-2"><div className="w-20 rounded h-7 bg-white/5"></div></div>
+                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="w-24 h-4 rounded bg-white/10"></div></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bagian Kanan: Summary Card Skeleton */}
+            <div className="h-fit space-y-5 p-5 bg-[#12110F] border border-white/5 rounded-2xl">
+              <div className="h-4 rounded bg-white/10 w-28"></div>
+              <div className="pt-4 space-y-4 border-t border-white/5">
+                <div className="flex justify-between"><div className="w-16 h-3 rounded bg-white/5"></div><div className="w-12 h-3 rounded bg-white/10"></div></div>
+                <div className="flex justify-between"><div className="w-20 h-3 rounded bg-white/5"></div><div className="w-10 h-3 rounded bg-white/10"></div></div>
+                <div className="flex justify-between pt-4 border-t border-white/5"><div className="h-4 rounded bg-white/5 w-14"></div><div className="h-5 rounded bg-white/10 w-28"></div></div>
+              </div>
+              <div className="w-full h-10 mt-4 bg-white/5 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
+  // ====================================================================
+  // HALAMAN KETIKA DATA SUDAH SIAP LOAD
+  // ====================================================================
   return (
-    <div className="min-h-screen bg-[#1A1917] p-8 text-[#F9F6F0]">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-serif font-bold mb-8 text-[#E5BA73] tracking-wide border-b border-[#333230] pb-4">
-          Keranjang Belanja
-        </h1>
+    <main className="min-h-screen bg-[#0A1715] text-[#F9F6F0] antialiased pt-28 pb-16 px-2 sm:px-4 lg:px-6">
+      <div className="p-6 mx-auto max-w-7xl">
         
         {cartItems.length === 0 ? (
-          <div className="text-center py-12 bg-[#232220] rounded-2xl border border-[#333230]">
-            <p className="text-gray-400 mb-4">Belum ada gulungan kain di keranjang Anda.</p>
-            <button onClick={() => router.push('/produk')} className="border border-[#E5BA73] text-[#E5BA73] px-6 py-2 rounded-lg text-sm hover:bg-[#E5BA73] hover:text-[#1A1917] transition-all">
-              Lihat Koleksi Produk
+          <div className="max-w-xl mx-auto text-center py-16 space-y-6 border border-white/5 bg-[#12110F] rounded-2xl shadow-xl">
+            <div className="flex justify-center">
+              <div className="p-4 rounded-full bg-[#E5BA73]/10 text-[#E5BA73]">
+                <ShoppingBag size={40} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-[#E5BA73]">Keranjang Belanja Kosong</h3>
+              <p className="text-xs text-[#A3A19E] px-6 font-light leading-relaxed">
+                Anda belum memilih kain lurik apa pun dari katalog. Silakan jelajahi koleksi premium ATBM kami.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/produk')}
+              className="px-6 py-2.5 text-xs font-bold rounded-xl text-[#12110F] bg-[#E5BA73] hover:bg-[#f3cb85] transition-all shadow-md"
+            >
+              Lihat Katalog Kain
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {cartItems.map((item) => (
-              <div key={item.id} className="p-5 bg-[#232220] rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center border border-[#333230] hover:border-[#444340] transition-all gap-4">
-                <div className="flex items-center gap-4">
-                  {item.gulungan?.produk?.gambar_url && (
-                    <img src={item.gulungan.produk.gambar_url} alt="Kain" className="w-16 h-16 object-cover rounded-lg border border-[#444]" />
-                  )}
-                  <div>
-                    <h3 className="font-bold text-lg text-[#E5BA73]">{item.gulungan?.produk?.kode_produk || "Kain Premium Biyo"}</h3>
-                    <p className="text-xs text-gray-400">No. Gulungan: {item.gulungan?.nomor_gulungan} | Lebar: {item.gulungan?.lebar}m</p>
-                    <p className="text-sm mt-1 text-gray-300 font-medium">{item.jumlah_order} Meter</p>
+          <div className="space-y-8">
+            <div className="flex items-center gap-2 text-[10px] font-bold tracking-wider uppercase text-[#A3A19E]">
+              <span className={!isCheckout ? "text-[#E5BA73]" : ""}>1. Daftar Belanja</span>
+              <span className="text-white/20">/</span>
+              <span className={isCheckout ? "text-[#E5BA73]" : ""}>2. Gerbang Pembayaran</span>
+            </div>
+
+            {!isCheckout ? (
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                
+                {/* Bagian Kiri */}
+                <div className="space-y-4 lg:col-span-2">
+                  <div className="space-y-3 bg-[#12110F] p-4 rounded-2xl border border-white/5 shadow-xl">
+                    {cartItems.map((item) => (
+                      <CartItem 
+                        key={item.id}
+                        item={item}
+                        onChange={(field, value) => handleQtyChange(item.id, field, value)}
+                        onRemove={() => removeFromCart(item.id)}
+                      />
+                    ))}
                   </div>
                 </div>
-                <div className="flex sm:flex-col items-end justify-between w-full sm:w-auto gap-2">
-                  <p className="font-semibold text-xl text-[#F9F6F0]">
-                    Rp {(item.gulungan?.harga_per_meter * item.jumlah_order).toLocaleString('id-ID')}
-                  </p>
-                  <button onClick={() => handleHapusItem(item.id)} className="text-red-400 text-xs hover:underline bg-transparent border-none cursor-pointer">
-                    Hapus Kain
+
+                {/* Bagian Rangkuman Kanan */}
+                <div className="h-fit space-y-4 p-5 bg-[#12110F] border border-[#E5BA73]/10 rounded-2xl shadow-xl">
+                  <h3 className="text-xs font-bold text-[#E5BA73] tracking-wide uppercase">Ringkasan Pesanan</h3>
+                  <div className="pt-2 space-y-3 border-t border-white/5">
+                    <div className="flex justify-between text-xs text-[#A3A19E]">
+                      <span>Total Panjang</span>
+                      <span className="font-semibold text-white">{totalPanjangMeter} Meter</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-[#A3A19E]">
+                      <span>Jumlah Jenis Kain</span>
+                      <span className="font-semibold text-white">{cartItems.length} Item</span>
+                    </div>
+                    <div className="flex items-baseline justify-between pt-2 border-t border-white/5">
+                      <span className="text-xs text-[#A3A19E]">Subtotal</span>
+                      <span className="text-xl font-black text-[#E5BA73]">Rp {totalHarga.toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setIsCheckout(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 mt-4 text-xs font-bold tracking-wide rounded-xl text-[#12110F] bg-[#E5BA73] hover:bg-[#f3cb85] transition-all shadow-md"
+                  >
+                    Lanjut ke Check-out <ArrowRight size={14} />
                   </button>
                 </div>
-              </div>
-            ))}
 
-            <div className="pt-6 border-t border-[#333230] mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div>
-                <p className="text-sm text-gray-400">Total Pembayaran Estimasi:</p>
-                <p className="text-2xl font-bold text-[#E5BA73]">
-                  Rp {cartItems.reduce((acc, item) => acc + (item.gulungan?.harga_per_meter * item.jumlah_order), 0).toLocaleString('id-ID')}
-                </p>
               </div>
-              <button onClick={handleCheckout} className="w-full sm:w-auto bg-[#E5BA73] text-[#1A1917] px-10 py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-xl tracking-wider">
-                Lanjutkan ke Checkout
-              </button>
-            </div>
+            ) : (
+              <div className="bg-[#12110F] p-6 rounded-2xl border border-white/5 shadow-2xl">
+                <CheckoutSection 
+                  items={cartItems}
+                  onBack={() => setIsCheckout(false)}
+                  onOrderSuccess={() => {
+                    setIsCheckout(false);
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
-    </div>
-  )
+    </main>
+  );
 }
