@@ -1,3 +1,4 @@
+// D:\dibiyo-lurik\src\app\produk\page.jsx
 "use client"
 
 import { useState, useEffect } from 'react'
@@ -93,7 +94,7 @@ export default function ProdukPage() {
           {products.map((prod) => (
             <CardProdukKatalog 
               key={prod.id}
-              prod={prod}
+              product={prod}
               formatRupiah={formatRupiah}
               onBuyClick={openBuyModal}
               onKombinasiClick={handleKombinasi}
@@ -111,7 +112,6 @@ export default function ProdukPage() {
         onClose={() => setSelectedProductForBuy(null)}
         onConfirm={(totalItem) => {
           console.log(`${totalItem} gulungan berhasil ditambahkan.`);
-          // Tempatkan fungsi tambahan di sini jika butuh refresh counter navbar dll.
         }}
       />
 

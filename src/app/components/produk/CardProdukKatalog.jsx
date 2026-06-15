@@ -1,123 +1,113 @@
-import React, { useState } from 'react'
+// D:\dibiyo-lurik\src\app\components\produk\CardProdukKatalog.jsx
+"use client";
 
-export default function CardProdukKatalog({
-  prod,
-  formatRupiah,
-  onBuyClick,
-  onKombinasiClick,
-  isActivePo,
-  onTogglePoDropdown,
-}) {
-  const [imageError, setImageError] = useState(false)
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Layers, ShoppingBag } from "lucide-react";
+import ModalBeliKain from "./ModalBeliKain";
 
-  // Mengambil harga dari gulungan pertama (jika ada) sebagai display
-  const hargaDisplay = prod.gulungan?.[0]?.harga || 0
-  const productTitle = prod.motif?.nama && prod.kategori?.nama
-    ? `${prod.motif.nama} ${prod.kategori.nama}`
-    : prod.kode_produk
+export default function CardProdukKatalog({ product }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // SAFE GUARD: Jika product kosong dari parent, hentikan proses agar tidak crash
+  if (!product) return null;
+
+  // Menghitung total stok sisa dari seluruh gulungan yang tersedia
+  const totalStokSisa = product?.gulungan?.reduce((acc, curr) => acc + (curr.panjang_sisa || 0), 0) || 0;
+  
+  // Ambil rentang harga termurah untuk display awal
+  const daftarHarga = product?.gulungan?.map(g => g.harga).filter(Boolean) || [];
+  const hargaTermurah = daftarHarga.length > 0 ? Math.min(...daftarHarga) : 0;
+
+  // Normalisasi data teks/objek untuk menghindari string kosong atau 'undefined' di UI
+  const namaKategori = typeof product?.kategori === 'object' ? product?.kategori?.nama : (product?.kategori || "Kain");
+  const kodeProduk = typeof product?.kode_produk === 'object' ? product?.kode_produk?.nama : (product?.kode_produk || "-");
+  const namaMotif = typeof product?.motif === 'object' ? product?.motif?.nama : (product?.motif || "Polos");
 
   return (
-    <div className="bg-[#1A1917] border border-[#E5BA73]/10 rounded-2xl overflow-hidden flex flex-col h-full shadow-xl hover:border-[#E5BA73]/30 transition-all duration-300 group">
-      
-      {/* Image Area */}
-      <div className="w-full aspect-[4/3] bg-[#12110F] relative flex items-center justify-center overflow-hidden">
-        <span className="absolute top-3 left-3 text-[10px] font-bold tracking-wider bg-[#0A1715]/90 text-[#E5BA73] px-2.5 py-1 rounded border border-[#E5BA73]/20 uppercase z-10 select-none">
-          {prod.jenis_pewarna || 'Sintetis'}
-        </span>
-        
-        {prod.gambar_url && !imageError ? (
-          <img 
-            src={prod.gambar_url} 
-            alt={productTitle}
-            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-            onError={() => setImageError(true)}
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.4 }}
+        className="group relative flex flex-col w-full bg-[#1A1917] border border-[#E5BA73]/10 rounded-2xl overflow-hidden shadow-xl hover:border-[#E5BA73]/30 transition-all duration-300"
+      >
+        {/* Badge Sisa Kain Terakumulasi */}
+        <div className="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/5 text-[10px] font-bold text-[#E5BA73] tracking-wide">
+          {totalStokSisa > 0 ? `Tersedia: ${totalStokSisa} m` : "Stok Habis"}
+        </div>
+
+        {/* Area Gambar Utama dengan Hover Overlay */}
+        <div className="relative aspect-square w-full bg-[#12110F] overflow-hidden">
+          <img
+            src={product?.gambar_url || "/placeholder-kain.jpg"}
+            alt={`Lurik ${namaMotif}`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-white/5 to-transparent p-6 select-none">
-            <span className="text-3xl opacity-40">🧵</span>
-            <span className="text-[11px] text-[#A3A19E] mt-2 font-mono">{prod.kode_produk}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Content Area */}
-      <div className="p-6 flex flex-col flex-1 justify-between space-y-4">
-        <div>
-          <span className="text-[11px] uppercase tracking-widest text-[#E5BA73]/60 font-medium">
-            {prod.kategori?.nama || "Uncategorized"}
-          </span>
-          <h3 className="font-bold text-lg text-[#F9F6F0] mt-0.5 line-clamp-1">
-            {productTitle}
-          </h3>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1A1917] via-transparent to-transparent opacity-60" />
           
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
-            <div>
-              <p className="text-xs text-[#A3A19E]">Harga Per Meter</p>
-              <p className="text-sm text-[#E5BA73] font-bold mt-0.5">
-                {formatRupiah(hargaDisplay)}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-[#A3A19E]">Total Stok</p>
-              <p className="text-xs font-semibold text-[#F9F6F0] bg-white/5 px-2 py-1 rounded mt-0.5 inline-block">
-                {prod.stok || 0} m
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions Area */}
-        <div className="space-y-2 pt-2">
-          <div className="grid grid-cols-2 gap-2">
-            {/* Tombol Beli */}
+          {/* Quick Action Overlay on Hover */}
+          <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 bg-black/40 backdrop-blur-xs transition-opacity duration-300">
             <button
-              onClick={() => onBuyClick(prod)}
-              disabled={!prod.stok || prod.stok <= 0}
-              className="py-2.5 bg-[#E5BA73] text-[#12110F] text-xs font-bold rounded-lg hover:bg-[#f3cb85] disabled:bg-white/10 disabled:text-white/40 transition-colors duration-200"
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="p-3 bg-[#E5BA73] text-[#12110F] rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 hover:scale-110"
+              title="Pilih Gulungan Kain"
             >
-              {!prod.stok || prod.stok <= 0 ? 'Habis' : 'Beli Langsung'}
+              <ShoppingBag size={18} strokeWidth={2.5} />
             </button>
-
-            {/* Dropdown Pre Order */}
-            <div className="relative">
-              <button
-                onClick={onTogglePoDropdown}
-                className="w-full h-full py-2.5 bg-transparent border border-[#E5BA73]/20 text-[#E5BA73] text-xs font-semibold rounded-lg hover:bg-[#E5BA73]/5 flex items-center justify-center gap-1 transition-colors duration-200"
-              >
-                Pre-Order
-                <span className="text-[9px]">▼</span>
-              </button>
-
-              {isActivePo && (
-                <div className="absolute right-0 bottom-full mb-1 w-40 bg-[#1A1917] border border-[#E5BA73]/20 rounded-lg shadow-2xl z-20 overflow-hidden">
-                  <button
-                    onClick={() => { alert('Membuka form Pre-Order Reguler...'); onTogglePoDropdown(); }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#F9F6F0] hover:bg-[#E5BA73] hover:text-[#12110F] transition-colors"
-                  >
-                    PO Reguler
-                  </button>
-                  <button
-                    onClick={() => { alert('Membuka form Pre-Order Custom...'); onTogglePoDropdown(); }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#F9F6F0] hover:bg-[#E5BA73] hover:text-[#12110F] transition-colors"
-                  >
-                    PO Custom
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
-
-          {/* Tombol Kombinasi (Mix & Match) */}
-          <button
-            onClick={() => onKombinasiClick(prod)}
-            className="w-full py-2 bg-[#0A1715] border border-[#A3A19E]/30 text-[#A3A19E] text-xs font-medium rounded-lg hover:border-[#E5BA73] hover:text-[#E5BA73] flex items-center justify-center gap-1.5 transition-all duration-200"
-          >
-            <span>👚</span> Mix & Match Kombinasi
-          </button>
         </div>
 
-      </div>
-    </div>
-  )
+        {/* Konten Detail Kain */}
+        <div className="p-4 flex flex-col flex-1 justify-between gap-3 text-[#F9F6F0]">
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3A19E]">
+                {namaKategori}
+              </span>
+              <span className="text-[10px] font-mono text-[#E5BA73]/70">
+                {kodeProduk}
+              </span>
+            </div>
+            
+            <h4 className="text-sm font-bold tracking-wide line-clamp-1 group-hover:text-[#E5BA73] transition-colors">
+              Lurik {namaMotif}
+            </h4>
+            
+            <p className="text-[11px] text-[#A3A19E] line-clamp-2 leading-relaxed">
+              {product?.deskripsi || "Kain tenun lurik tradisional premium dengan benang katun murni berkualitas tinggi."}
+            </p>
+          </div>
+
+          {/* Bagian Harga & Action Utama */}
+          <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[9px] text-[#A3A19E] uppercase tracking-wider">Mulai Dari</p>
+              <p className="text-xs font-black text-[#E5BA73]">
+                Rp {hargaTermurah.toLocaleString("id-ID")}<span className="text-[10px] font-normal text-[#A3A19E]">/m</span>
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-[#E5BA73] text-[#F9F6F0] hover:text-[#12110F] text-[10px] font-bold rounded-lg border border-white/10 hover:border-[#E5BA73] transition-all"
+            >
+              <Layers size={12} />
+              Pilih Kain
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Portal Modal Pemilihan Roll */}
+      <ModalBeliKain
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        product={product}
+      />
+    </>
+  );
 }
