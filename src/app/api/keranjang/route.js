@@ -1,16 +1,65 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 import supabaseAdmin from '@/lib/supabase-admin';
+import crypto from 'crypto';
 
-// =====================================================
-// GET: Ambil isi keranjang (Semua data)
-// =====================================================
+// Helper internal untuk memeriksa identitas (Member vs Guest)
+async function dapatkanIdentitasUser(cookieStore) {
+  const accessToken = cookieStore.get('sb-access-token')?.value;
+  const refreshToken = cookieStore.get('sb-refresh-token')?.value;
+  let guestSessionId = cookieStore.get('guest_session_id')?.value;
+
+  const supabaseAuth = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) },
+      },
+    }
+  );
+
+  if (accessToken) {
+    await supabaseAuth.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || '',
+    });
+  }
+
+  const { data: { session } } = await supabaseAuth.auth.getSession();
+  
+  if (session?.user) {
+    return { userId: session.user.id, sessionId: null };
+  }
+
+  if (!guestSessionId) {
+    guestSessionId = crypto.randomUUID();
+    cookieStore.set('guest_session_id', guestSessionId, {
+      maxAge: 60 * 60 * 24 * 7, // Aktif 7 hari
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    });
+  }
+
+  return { userId: null, sessionId: guestSessionId };
+}
+
+// GET: Ambil isi keranjang (Semua data terfilter)
 export const GET = async () => {
   try {
-    const { data, error } = await supabaseAdmin
+    const cookieStore = await cookies();
+    const { userId, sessionId } = await dapatkanIdentitasUser(cookieStore);
+
+    let query = supabaseAdmin
       .from('cart')
       .select(`
         id,
         jumlah_order,
+        user_id,
+        session_id,
         gulungan:gulungan_id (
           id, 
           nomor_gulungan, 
@@ -26,8 +75,15 @@ export const GET = async () => {
             kategori:kategori_id(nama)
           )
         )
-      `)
-      .order('created_at', { ascending: false });
+      `);
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    } else {
+      query = query.eq('session_id', sessionId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error("=== SUPABASE ERROR IN GET CART ===", error);
@@ -41,34 +97,58 @@ export const GET = async () => {
   }
 };
 
-// =====================================================
-// POST: Tambah item ke keranjang
-// =====================================================
+// POST: Tambah item ke keranjang (Akumulasi otomatis)
 export const POST = async (request) => {
   try {
+    const cookieStore = await cookies();
+    const { userId, sessionId } = await dapatkanIdentitasUser(cookieStore);
     const { gulungan_id, jumlah_order } = await request.json();
 
     if (!gulungan_id) {
       return NextResponse.json({ message: 'Gulungan ID wajib diisi' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('cart')
-      .insert({
-        gulungan_id,
-        jumlah_order: jumlah_order || 1,
-        created_at: new Date().toISOString()
-      })
-      .select();
+    let checkQuery = supabaseAdmin.from('cart').select('id, jumlah_order');
+    if (userId) {
+      checkQuery = checkQuery.eq('user_id', userId).eq('gulungan_id', gulungan_id);
+    } else {
+      checkQuery = checkQuery.eq('session_id', sessionId).eq('gulungan_id', gulungan_id);
+    }
 
-    if (error) {
-      console.error("=== SUPABASE ERROR IN POST CART ===", error);
-      return NextResponse.json({ message: error.message }, { status: 400 });
+    const { data: itemLama, error: errorCek } = await checkQuery.maybeSingle();
+    if (errorCek) throw errorCek;
+
+    let hasil;
+
+    if (itemLama) {
+      const totalMeterBaru = itemLama.jumlah_order + (jumlah_order || 1);
+      const { data: dataUpdate, error: errorUpdate } = await supabaseAdmin
+        .from('cart')
+        .update({ jumlah_order: totalMeterBaru })
+        .eq('id', itemLama.id)
+        .select();
+      
+      if (errorUpdate) throw errorUpdate;
+      hasil = dataUpdate;
+    } else {
+      const { data: dataInsert, error: errorInsert } = await supabaseAdmin
+        .from('cart')
+        .insert({
+          gulungan_id,
+          jumlah_order: jumlah_order || 1,
+          user_id: userId,
+          session_id: sessionId,
+          created_at: new Date().toISOString()
+        })
+        .select();
+
+      if (errorInsert) throw errorInsert;
+      hasil = dataInsert;
     }
 
     return NextResponse.json({ 
       message: 'Berhasil menambahkan item ke keranjang',
-      data: data 
+      data: hasil 
     }, { status: 201 });
 
   } catch (err) {
@@ -77,41 +157,34 @@ export const POST = async (request) => {
   }
 };
 
-// =====================================================
-// DELETE: Hapus item dari keranjang (Fungsi Baru)
-// =====================================================
+// DELETE: Hapus item dari keranjang
 export const DELETE = async (request) => {
   try {
-    // 1. Coba ambil ID dari URL parameter (?id=xxx)
+    const cookieStore = await cookies();
+    const { userId, sessionId } = await dapatkanIdentitasUser(cookieStore);
+
     const { searchParams } = new URL(request.url);
     let itemId = searchParams.get("id");
 
-    // 2. Jika tidak ada di URL, coba ambil dari Body JSON ({ id: xxx })
-    // Strategi ganda ini dipasang agar otomatis cocok dengan metode apa pun yang dipakai frontend Anda
     if (!itemId) {
       try {
         const body = await request.json();
         itemId = body.id || body.cartId || body.gulungan_id;
-      } catch (e) {
-        // Abaikan jika request tidak membawa body JSON
-      }
+      } catch (e) {}
     }
 
     if (!itemId) {
-      console.error("[DELETE CART ERROR] Frontend tidak mengirimkan ID item yang akan dihapus.");
-      return NextResponse.json(
-        { message: "ID item wajib dikirim (bisa via query ?id= atau body JSON)" }, 
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "ID item wajib dikirim" }, { status: 400 });
     }
 
-    console.log(`=== MENCOBA HAPUS ITEM CART DENGAN ID: ${itemId} ===`);
+    let deleteQuery = supabaseAdmin.from('cart').delete().eq('id', itemId);
+    if (userId) {
+      deleteQuery = deleteQuery.eq('user_id', userId);
+    } else {
+      deleteQuery = deleteQuery.eq('session_id', sessionId);
+    }
 
-    // 3. Eksekusi penghapusan di tabel 'cart' menggunakan supabaseAdmin
-    const { error } = await supabaseAdmin
-      .from('cart')
-      .delete()
-      .eq('id', itemId);
+    const { error } = await deleteQuery;
 
     if (error) {
       console.error("=== SUPABASE ERROR IN DELETE CART ===", error);
