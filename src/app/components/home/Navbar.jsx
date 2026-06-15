@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation' 
 import Swal from 'sweetalert2' 
+import { motion } from 'framer-motion' // Ditambahkan untuk efek membal premium
 
 export default function Navbar() {
   const router = useRouter()
@@ -18,7 +19,12 @@ export default function Navbar() {
   const [loadingUser, setLoadingUser] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-   useEffect(() => {
+  // SINKRONISASI STATE KERANJANG
+  const [cartCount, setCartCount] = useState(0)
+  const [isCartBouncing, setIsCartBouncing] = useState(false)
+
+  // 1. Memuat Data Sesi Profil Pengguna
+  useEffect(() => {
     async function fetchProfile() {
       try {
         const res = await fetch('/api/auth/profile', { cache: 'no-store' })
@@ -32,11 +38,53 @@ export default function Navbar() {
         console.error("Gagal memuat sesi navbar:", err)
         setUser(null)
       } finally {
+        // PERBAIKAN: Sintaks 'box-loader' yang merusak runtime telah dihapus bersih
         setLoadingUser(false)
       }
     }
     fetchProfile()
   }, [pathname])
+
+  // 2. Sinkronisasi Data Real-time & Efek Animasi dari ModalBeliKain
+  useEffect(() => {
+    // Fungsi mengambil jumlah item awal di keranjang database
+    const fetchInitialCartCount = async () => {
+      try {
+        const res = await fetch('/api/keranjang')
+        if (res.ok) {
+          const json = await res.json()
+          if (Array.isArray(json.data)) {
+            setCartCount(json.data.length)
+          } else if (json.count !== undefined) {
+            setCartCount(json.count)
+          }
+        }
+      } catch (err) {
+        console.error("Gagal sinkronisasi data awal keranjang:", err)
+      }
+    }
+
+    fetchInitialCartCount()
+
+    // Event handler penambahan kuantitas angka badge
+    const handleUpdateCount = (e) => {
+      setCartCount((prev) => prev + (e.detail?.count || 1))
+    }
+
+    // Event handler pemicu efek membal (bounce)
+    const handleCartBounce = () => {
+      setIsCartBouncing(true)
+      setTimeout(() => setIsCartBouncing(false), 500)
+    }
+
+    window.addEventListener("updateCartCount", handleUpdateCount)
+    window.addEventListener("sync-cart-bounce", handleCartBounce)
+
+    return () => {
+      window.removeEventListener("updateCartCount", handleUpdateCount)
+      window.removeEventListener("sync-cart-bounce", handleCartBounce)
+    }
+  }, [])
 
   const handleLogout = async () => {
     setShowUserDropdown(false)
@@ -185,15 +233,25 @@ export default function Navbar() {
 
           {/* Right Menu */}
           <div className="items-center hidden space-x-6 md:flex">
-            <Link 
-              href="/cart" 
-              className={`relative p-2 transition-colors ${
-                isActive('/cart') ? 'text-[#E5BA73]' : 'text-[#A3A19E] hover:text-[#E5BA73]'
-              }`}
+            {/* Animasi Pembungkus Icon Keranjang Belanja */}
+            <motion.div
+              animate={isCartBouncing ? { scale: [1, 1.4, 0.85, 1.15, 1] } : { scale: 1 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-              <span className="absolute top-1 right-1 bg-[#E5BA73] text-[#12110F] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
-            </Link>
+              <Link 
+                href="/cart" 
+                className={`relative p-2 block transition-colors ${
+                  isActive('/cart') ? 'text-[#E5BA73]' : 'text-[#A3A19E] hover:text-[#E5BA73]'
+                }`}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+                <span className="absolute top-1 right-1 bg-[#E5BA73] text-[#12110F] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              </Link>
+            </motion.div>
             
             {loadingUser ? (
               <div className="w-20 h-8 rounded-lg bg-gray-700/50 animate-pulse"></div>

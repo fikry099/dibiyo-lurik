@@ -40,33 +40,48 @@ export default function CartPage() {
     fetchKeranjang();
   }, []);
 
-  // 2. Mengubah Kuantitas Meteran Real-time & Sinkronisasi ke Database (PUT)
+  // 2. Mengubah Kuantitas Meteran Real-time (Optimistic UI + Debounced Sync ke DB)
   const handleQtyChange = async (itemId, field, value) => {
+    let safeValue = value;
+    
     const updatedItems = cartItems.map(item => {
       if (item.id === itemId) {
         const maxSisa = item.gulungan?.panjang_sisa || 100;
         // Kunci input agar minimal 1 meter dan tidak melebihi sisa kain di gulungan
-        const safeValue = Math.min(maxSisa, Math.max(1, value));
+        safeValue = Math.min(maxSisa, Math.max(1, value));
         return { ...item, [field]: safeValue };
       }
       return item;
     });
+    
+    // Update UI secara instan agar terasa responsif tanpa menunggu jaringan server
     setCartItems(updatedItems);
 
-    const targetItem = updatedItems.find(item => item.id === itemId);
-    try {
-      await fetch(`/api/keranjang`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: itemId,
-          jumlah_order: targetItem.input_panjang // Kirim data panjang meter baru ke server
-        })
-      });
-    } catch (err) {
-      console.error("Gagal sinkronisasi kuantitas ke database:", err);
-    }
+    // Mekanisme Debounce: Batalkan sinkronisasi lama jika user masih intens menekan tombol
+    if (window.qtyTimeoutId) clearTimeout(window.qtyTimeoutId);
+
+    window.qtyTimeoutId = setTimeout(async () => {
+      try {
+        await fetch(`/api/keranjang`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: itemId,
+            jumlah_order: safeValue // Kirim data panjang meter baru yang aman ke server
+          })
+        });
+      } catch (err) {
+        console.error("Gagal sinkronisasi kuantitas ke database:", err);
+      }
+    }, 500); // Tunggu hingga user berhenti klik selama 500 milidetik
   };
+
+  // Bersihkan sisa timeout jika komponen dibongkar (unmount)
+  useEffect(() => {
+    return () => {
+      if (window.qtyTimeoutId) clearTimeout(window.qtyTimeoutId);
+    };
+  }, []);
 
   // 3. Menghapus Item dari Keranjang
   const handleRemoveItem = async (itemId) => {
@@ -96,7 +111,7 @@ export default function CartPage() {
 
         setCartItems(prev => prev.filter(item => item.id !== itemId));
 
-        // Mengurangi counter badge global
+        // Mengurangi counter badge global di Navbar
         window.dispatchEvent(new CustomEvent("updateCartCount", { detail: { count: -1 } }));
 
         Swal.fire({
@@ -189,8 +204,6 @@ export default function CartPage() {
                 <div className="h-fit space-y-4 p-5 bg-[#12110F] border border-[#E5BA73]/10 rounded-2xl shadow-xl">
                   <h3 className="text-xs font-bold text-[#E5BA73] tracking-wide uppercase">Ringkasan Pesanan</h3>
                   <div className="pt-2 space-y-3 border-t border-white/5">
-                    
-                    {/* SINKRONISASI: Mengganti teks "Total Gulungan" menjadi data Meteran */}
                     <div className="flex justify-between text-xs text-[#A3A19E]">
                       <span>Total Panjang</span>
                       <span className="font-semibold text-white">{totalPanjangMeter} Meter</span>
