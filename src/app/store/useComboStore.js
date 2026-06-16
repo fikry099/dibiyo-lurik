@@ -37,7 +37,7 @@ export const useComboStore = create((set, get) => ({
       }
     };
   }),
-
+  
   // 4. Actions: Menghapus item dari slot spesifik
   clearSlot: (slot) => set((state) => ({
     combination: {
