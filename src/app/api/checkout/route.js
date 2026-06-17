@@ -40,13 +40,13 @@ export async function POST(request) {
 
       return {
         id: item.gulungan?.id || item.id,
-        price: Math.round(hargaKain * panjang), // Pembulatan harga item satuan ke Integer
+        price: Math.round(hargaKain * panjang), 
         quantity: 1, 
-        name: `${namaProduk} (G-${noGulung})`.substring(0, 50), // Batasan maksimal 50 karakter dari Midtrans
+        name: `${namaProduk} (G-${noGulung})`.substring(0, 50), 
       };
     });
 
-    // 4. Hitung TOTAL BERSIH langsung dari itemDetails untuk menghindari selisih desimal dengan frontend
+    // 4. Hitung TOTAL BERSIH langsung dari itemDetails
     const totalGrossAmount = itemDetails.reduce((sum, item) => sum + item.price, 0);
 
     // 5. Struktur Payload Transaksi Midtrans Snap
@@ -61,8 +61,11 @@ export async function POST(request) {
       },
     };
 
-    // 6. Tembak ke API Midtrans Snap Sandbox
-    const response = await fetch("https://app.sandbox.midtrans.com/snap/v1/transactions", {
+    // 🔒 KUNCI LANGSUNG KE URL SANDBOX (Menghindari salah deteksi 401)
+    const midtransApiUrl = "https://app.sandbox.midtrans.com/snap/v1/transactions";
+
+    // 6. Tembak ke API Midtrans Sandbox
+    const response = await fetch(midtransApiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -75,16 +78,14 @@ export async function POST(request) {
     const data = await response.json();
 
     if (!response.ok) {
-      // LOG TAMBAHAN: Cetak objek eror mentah dari Midtrans ke terminal Anda jika otentikasi gagal
       console.error("=== [MIDTRANS REJECTED TRANSMISSION] ===");
       console.error("Status Code Response:", response.status);
       console.error("Detail Error dari Midtrans:", data);
       console.error("========================================");
       
-      throw new Error(data.error_messages?.[0] || data.status_message || "Akses ditolak oleh Midtrans. Periksa keselarasan Server Key Anda.");
+      throw new Error(data.error_messages?.[0] || data.status_message || "Akses ditolak oleh Midtrans.");
     }
 
-    // Kembalikan token snap ke frontend CheckoutSection.jsx
     return NextResponse.json({ 
       token: data.token, 
       redirect_url: data.redirect_url,

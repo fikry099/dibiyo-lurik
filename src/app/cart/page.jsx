@@ -4,8 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext'; 
-import CartItem from '@/app/components/produk/keranjang/CartItem';
-import CheckoutSection from '@/app/components/produk/keranjang/CheckoutSection';
+import CartItem from '../components/produk/keranjang/CartItem';
+import CheckoutSection from '../components/produk/keranjang/CheckoutSection'; // Menggunakan jalur relatif yang aman bagi Turbopack
 
 export default function CartPage() {
   const router = useRouter();
