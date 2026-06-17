@@ -12,14 +12,14 @@ export default function CustomizerSidebar({
   onOpenCartModal 
 }) {
 
-  // Palet Warna Referensi untuk jalan pintas (Shortcut Click)
+  // 🎨 PALET WARNA LUXURY ETNIK (Disesuaikan berdasarkan UI Light Mode Biyo Lurik)
   const colorPalette = [
-    { hex: '#2B4C7E', name: 'Deep Indigo (Nila Tua)' },
+    { hex: '#1D2B24', name: 'Hijau Botol / Deep Forest' },
+    { hex: '#53593B', name: 'Hijau Zaitun / Olive Green' },
     { hex: '#8B5A2B', name: 'Sogan Earth (Cokelat Sogan)' },
+    { hex: '#C49A6C', name: 'Warm Gold / Bronze' },
     { hex: '#E5BA73', name: 'Golden Khaki (Emas Khaki)' },
-    { hex: '#F9F6F0', name: 'Off White (Putih Tulang)' },
-    { hex: '#1A2926', name: 'Teal Shadow (Hijau Gelap)' },
-    { hex: '#12110F', name: 'Deep Charcoal (Arang Hitam)' }
+    { hex: '#FAF7F2', name: 'Linen White (Putih Kain)' }
   ];
 
   const handleStripeColorChange = (id, newColor) => {
@@ -34,6 +34,7 @@ export default function CustomizerSidebar({
   const addStripe = () => {
     const newId = stripes.length > 0 ? Math.max(...stripes.map(s => s.id)) + 1 : 1;
     setStripes([...stripes, { id: newId, thickness: 8, color: '#E5BA73' }]);
+
   };
 
   const removeStripe = (id) => {
@@ -42,15 +43,17 @@ export default function CustomizerSidebar({
   };
 
   return (
-    <div className="w-full lg:w-[45%] bg-[#0A1715] flex flex-col justify-between p-2 lg:p-6 lg:h-[750px] overflow-y-auto custom-scrollbar">
-      
+
+    <div className="w-full lg:w-[45%] bg-[#FDFCFA] border border-[#EBE7E0] flex flex-col justify-between p-4 lg:p-6 overflow-y-auto lg:h-[780px] rounded-2xl shadow-sm custom-scrollbar">
+
       <div className="space-y-6">
         {/* HEADER */}
         <div>
-          <h2 className="text-2xl lg:text-3xl font-bold tracking-wide text-[#E5BA73]">
-            Studio Lurik Customizer
+          {/* Judul menggunakan warna Cokelat Gelap Etnik Premium */}
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-wide text-[#3E3431]">
+            Kustomisasi Studio Lurik v3
           </h2>
-          <p className="text-sm text-[#A3A19E] font-light mt-1 leading-relaxed">
+          <p className="text-sm text-[#706965] font-light mt-1 leading-relaxed">
             Kontrol penenunan tingkat lanjut. Sesuaikan warna dasar kain dan konfigurasikan dimensi anyaman tiap helai benang lungsin Anda secara presisi.
           </p>
         </div>
@@ -111,15 +114,20 @@ export default function CustomizerSidebar({
                 className="w-full accent-[#E5BA73] bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer"
               />
             </div>
+
           </div>
         </div>
 
         {/* ================= BAGIAN B: EDIT PER HELAI BENANG (STRIPES) ================= */}
         <div className="bg-[#12110F] border border-white/5 rounded-2xl p-4 space-y-4">
           <div className="flex items-center justify-between">
+
             <span className="text-xs font-bold tracking-widest text-[#E5BA73] flex items-center gap-1.5">
               <Palette size={14} /> STRUKTUR BENANG KUSTOM
             </span>
+
+            <span className="text-xs font-bold tracking-widest text-[#4A3F3B]">PENGATURAN HELAI BENANG</span>
+
             <button 
               type="button"
               onClick={addStripe}
@@ -157,6 +165,7 @@ export default function CustomizerSidebar({
                     className="w-full h-1 rounded-lg appearance-none cursor-pointer accent-zinc-400 bg-zinc-800"
                   />
                   <span className="text-[10px] font-mono font-bold text-zinc-400 w-7 text-right">{stripe.thickness}px</span>
+
                 </div>
 
                 {/* Tombol Hapus Terkondisi */}
@@ -189,13 +198,12 @@ export default function CustomizerSidebar({
           </p>
         </div>
       </div>
-
-      {/* FOOTER ACTION BUTTON */}
       <div className="pt-4 mt-4 border-t border-white/5">
         <button 
           type="button"
           onClick={onOpenCartModal}
           className="w-full py-4 bg-gradient-to-r from-[#E5BA73] to-[#cfa35c] text-[#0A1715] hover:from-[#F9F6F0] hover:to-[#F9F6F0] transition-all duration-300 rounded-xl font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-2 shadow-lg shadow-[#E5BA73]/5"
+
         >
           Masukkan Kain Kustom Ke Keranjang
           <ChevronRight size={14} strokeWidth={2.5} />

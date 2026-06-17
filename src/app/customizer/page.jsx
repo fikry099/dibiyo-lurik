@@ -31,12 +31,14 @@ export default function CustomizerPage() {
   const [previewMode, setPreviewMode] = useState('fabric')
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const DEFAULT_BG_COLOR = '#132237'
-  const DEFAULT_DENSITY = 80
+  // 🎨 PENYESUAIAN STATE DEFAULT SESUAI GAMBAR UI (Light Mode & Palet Tenun)
+  // Berdasarkan gambar: latar belakang kain dominan hijau zaitun/lumut dengan garis emas & cokelat
+  const DEFAULT_BG_COLOR = '#53593B' // Hijau Zaitun/Lumut Tua (Olive Green)
+  const DEFAULT_DENSITY = 86        // Sesuai nilai slider di gambar: 86%
   const DEFAULT_STRIPES = [
-    { id: 1, thickness: 4, color: '#E5BA73' }, 
-    { id: 2, thickness: 2, color: '#2B4C7E' }, 
-    { id: 3, thickness: 6, color: '#F9F6F0' }, 
+    { id: 1, thickness: 4, color: '#E5BA73' }, // Denang Garis Slang #1 (Emas/Gold)
+    { id: 2, thickness: 2, color: '#4A3429' }, // Renang Garis Slang #2 (Cokelat Tua)
+    { id: 3, thickness: 6, color: '#2C3E50' }, // Denang Garis Slang #3 (Navy/Gelap)
   ]
 
   // ==========================================
@@ -143,6 +145,7 @@ export default function CustomizerPage() {
              Studio Lurik Combain ({referenceItems.length})
           </button>
         </div>
+
       </div>
 
       {/* Rincian Kain Referensi Pasangan Padu Padan dengan Slot Tetap Berjumlah 3 */}
@@ -257,6 +260,7 @@ export default function CustomizerPage() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onConfirm={handleAddToCartConfirm} 
+
       />
     </main>
   )
