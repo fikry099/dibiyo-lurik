@@ -42,6 +42,7 @@ const DATA_PRODUKSI = [
 
 export default function ProduksiPage() {
   return (
+    <>
     <div className="bg-[#0b1311] text-[#f3f4f6] min-h-screen py-40 px-4 sm:px-6 lg:px-8">
       {/* 1. Header Section */}
       <div className="max-w-4xl mx-auto text-center mb-24">
@@ -105,7 +106,8 @@ export default function ProduksiPage() {
           );
         })}
       </div>
-      <Footer />
     </div>
+      <Footer />
+    </>
   );
 }

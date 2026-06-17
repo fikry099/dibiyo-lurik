@@ -3,6 +3,7 @@ import Footer from '../components/home/Footer.jsx'
 
 export default function SejarahPage() {
   return (
+    <>
     <div className="bg-[#0b1311] text-[#f3f4f6] min-h-screen py-40 px-4 sm:px-6 lg:px-8">
 
       {/* SECTION 1: HERO HEADER */}
@@ -128,7 +129,8 @@ export default function SejarahPage() {
           Kini tugas kita sebagai generasi penerus untuk menjaga detak jantung ATBM ini tetap berdenyut.
         </p>
       </div>
-    <Footer />
     </div>
+    <Footer />
+    </>
   );
 }
