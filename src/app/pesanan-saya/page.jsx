@@ -3,16 +3,19 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Footer from "../components/home/Footer.jsx"
+import SkeletonPesananSaya from "../components/home/pesanan/SkeletonPesananSaya.jsx" 
+import ListPesananSaya from "../components/home/pesanan/ListPesananSaya.jsx" 
+import Swal from "sweetalert2" // Ditambahkan untuk alert real-time yang interaktif
 
 export default function PesananSayaPage() {
   const [pesanan, setPesanan] = useState([])
   const [loading, setLoading] = useState(true)
   const [unauthorized, setUnauthorized] = useState(false)
 
+  // 1. Fetching Data Utama saat Mount
   useEffect(() => {
     async function fetchPesananUser() {
       try {
-        // 1. Cek sesi profil user yang sedang aktif login
         const resProfile = await fetch('/api/auth/profile', { cache: 'no-store' })
         
         if (!resProfile.ok) {
@@ -25,7 +28,6 @@ export default function PesananSayaPage() {
         const user = jsonProfile.data
 
         if (user && user.id) {
-          // 2. Ambil data dari tabel transaksi berdasarkan user_id
           const resTransaksi = await fetch(`/api/transaksi?user_id=${user.id}`, { cache: 'no-store' })
           if (resTransaksi.ok) {
             const jsonTx = await resTransaksi.json()
@@ -44,44 +46,61 @@ export default function PesananSayaPage() {
     fetchPesananUser()
   }, [])
 
-  // 🔥 PERBAIKAN 1: Fungsi pembantu format rupiah yang anti-crash (jika angka bernilai undefined/null)
-  const formatRupiah = (angka) => {
-    const nominal = Number(angka) || 0
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(nominal)
-  }
+  // 2. INTEGRASI LIVE REAL-TIME CLIENT (Upstash Realtime)
+  useEffect(() => {
+    if (pesanan.length === 0) return;
 
-  // Fungsi format tanggal lokal Indonesia
-  const formatTanggal = (isoString) => {
-    if (!isoString) return "-"
-    return new Date(isoString).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })
-  }
+    // Konek ke endpoint SSE Upstash Realtime
+    const eventSource = new EventSource('/api/realtime')
 
-  // Fungsi penentu badge status transaksi
-  const getStatusBadge = (status) => {
-    const s = status?.toLowerCase()
-    if (s === "settlement" || s === "success" || s === "capture") {
-      return <span className="bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Berhasil</span>
+    eventSource.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data)
+        
+        // Memastikan event berasal dari skema 'notification.status_changed'
+        if (message.event === 'notification.status_changed') {
+          const { id_order, status_baru, pesan: pesanNotif } = message.data
+
+          // Cek apakah ID order yang berubah ada dalam daftar pesanan milik user ini
+          const apakahPesananSaya = pesanan.some(p => p.id === id_order)
+
+          if (apakahPesananSaya) {
+            // Update state pesanan secara instant tanpa reload page
+            setPesanan(prevPesanan => 
+              prevPesanan.map(p => 
+                p.id === id_order ? { ...p, status_pengerjaan: status_baru } : p
+              )
+            )
+
+            // Tampilkan Toast Notification premium ke layar pelanggan
+            Swal.fire({
+              title: 'Update Pesanan!',
+              text: pesanNotif,
+              icon: 'info',
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 5000,
+              timerProgressBar: true
+            })
+          }
+        }
+      } catch (error) {
+        console.error("Gagal memproses data real-time:", error)
+      }
     }
-    if (s === "pending") {
-      return <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Menunggu Pembayaran</span>
+
+    return () => {
+      eventSource.close() // Bersihkan koneksi saat unmount
     }
-    return <span className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">{status || 'Batal'}</span>
-  }
+  }, [pesanan])
 
   return (
     <>
       <div className="bg-[#ffffff] text-[#000000] min-h-screen pt-40 pb-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           
-          {/* SECTION 1: HERO HEADER HERO */}
+          {/* SECTION 1: HERO HEADER */}
           <div className="text-center mb-16">
             <span className="text-xs font-bold tracking-widest text-[#d9a05b] uppercase bg-[#d9a05b]/10 px-4 py-1.5 rounded-full">
               Sistem Transaksi Pelanggan
@@ -97,15 +116,7 @@ export default function PesananSayaPage() {
 
           {/* STATE 1: SEDANG LOADING */}
           {loading ? (
-            <div className="space-y-6">
-              {[1, 2].map((i) => (
-                <div key={i} className="bg-gray-50 border border-gray-100 rounded-2xl p-6 animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-                  <div className="h-6 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                </div>
-              ))}
-            </div>
+            <SkeletonPesananSaya />
           ) : unauthorized ? (
             
             /* STATE 2: JIKA USER BELUM LOGIN */
@@ -135,70 +146,8 @@ export default function PesananSayaPage() {
             </div>
           ) : (
             
-            /* STATE 4: DATA BERHASIL DITEMUKAN (LIST RENDER) */
-            <div className="space-y-6">
-              {pesanan.map((tx) => (
-                <div 
-                  key={tx.order_id} 
-                  className="bg-[#ffffff] border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                >
-                  {/* Top Bar Card */}
-                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs text-[#6a5848]">ID Transaksi / Order ID</p>
-                      <p className="text-sm font-mono font-bold text-black">{tx.order_id}</p>
-                    </div>
-                    <div className="text-left sm:text-right">
-                      <p className="text-xs text-[#6a5848]">Tanggal Pembelian</p>
-                      <p className="text-sm font-semibold text-black">{formatTanggal(tx.created_at)}</p>
-                    </div>
-                  </div>
-
-                  {/* Body Isi Item Transaksi */}
-                  <div className="p-6 space-y-4">
-                    {Array.isArray(tx.items_transaksi) && tx.items_transaksi.length > 0 ? (
-                      tx.items_transaksi.map((item, idx) => {
-                        // 🔥 PERBAIKAN 2: Normalisasi properti secara cerdas (mendukung multi-format data keranjang)
-                        const namaProduk = item.name || item.nama || item.produk?.kode_produk || "Kain Lurik Eksklusif";
-                        const kuantitas = item.quantity || item.jumlah_order || 1;
-                        const hargaItem = item.price || item.harga || 0;
-
-                        return (
-                          <div key={idx} className="flex items-start justify-between border-b border-gray-50 pb-3 last:border-b-0 last:pb-0">
-                            <div>
-                              <h4 className="text-sm font-bold text-black">{namaProduk}</h4>
-                              <p className="text-xs text-[#6a5848] mt-0.5">Jumlah kuantitas: {kuantitas} Pcs / Gulung</p>
-                            </div>
-                            <p className="text-sm font-medium text-black">{formatRupiah(hargaItem)}</p>
-                          </div>
-                        )
-                      })
-                    ) : (
-                      // Fallback visual jika kolom items_transaksi di DB kosong atau null
-                      <p className="text-xs text-gray-400 italic">Detail produk tidak terlampir</p>
-                    )}
-                  </div>
-
-                  {/* Footer Card Ringkasan Total */}
-                  <div className="bg-[#917c4b]/5 px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-medium text-black">Status:</span>
-                      {getStatusBadge(tx.status_transaksi)}
-                    </div>
-                    
-                    <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                      <div className="text-right">
-                        <span className="text-xs text-[#6a5848] block">Total Pembayaran</span>
-                        <span className="text-base font-serif font-black text-[#d9a05b]">
-                          {formatRupiah(tx.total_nominal)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              ))}
-            </div>
+            /* STATE 4: DATA BERHASIL DITEMUKAN */
+            <ListPesananSaya pesanan={pesanan} />
           )}
 
         </div>
