@@ -6,7 +6,7 @@ export default function Footer() {
       - text-[#5C534A] -> text-[#A3A19E] (Teks abu-abu lembut agar nyaman dibaca di latar gelap)
       - Border atas menggunakan warna keemasan redup tipis
     */
-    <footer className="bg-[#231E1B] text-[#A3A19E] text-xs font-light relative pt-20 pb-0 overflow-hidden">
+    <footer className="bg-[#F5F2EB] text-[#A3A19E] text-xs font-light relative pt-20 pb-0 overflow-hidden shadow-[0_-20px_25px_-5px_rgba(0,0,0,0.1)]">
       
       {/* Efek Garis Halus Tekstur Kain Premium (Opsional, memperkuat kesan tekstur seperti gambar) */}
       <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#fff_1px,transparent_1px)] bg-[size:8px] pointer-events-none"></div>

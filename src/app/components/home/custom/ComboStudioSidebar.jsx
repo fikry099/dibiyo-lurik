@@ -33,30 +33,30 @@ export default function ComboStudioSidebar({
   };
 
   return (
-    <div className="w-full lg:w-[45%] bg-[#0A1715] flex flex-col justify-between p-2 lg:p-6 lg:h-[750px] overflow-y-auto custom-scrollbar">
+    <div className="w-full lg:w-[45%] bg-[#F5F2EB] flex flex-col justify-between p-2 lg:p-6 lg:h-[750px] overflow-y-auto custom-scrollbar">
       
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h2 className="text-2xl lg:text-3xl font-bold tracking-wide text-[#E5BA73]">
-            Studio Lurik Combain
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-wide text-[#000000]">
+            STUDIO LURIK COMBAIN
           </h2>
-          <p className="text-sm text-[#A3A19E] font-light mt-1 leading-relaxed">
+          <p className="text-sm text-[#414141] font-light mt-1 leading-relaxed">
             Eksperimen kombinasi struktur pakaian sekaligus modifikasi kerapatan benang kain secara langsung (*real-time*).
           </p>
         </div>
 
         {/* PANEL 2: KONTROL WARNA DASAR & KERAPATAN TENUN */}
-        <div className="bg-[#12110F] border border-white/5 rounded-2xl p-4 space-y-4">
+        <div className="bg-[#ffffff] border border-white/5 rounded-2xl p-4 space-y-4">
           <span className="text-xs font-bold tracking-widest text-[#E5BA73] flex items-center gap-1.5">
             <Sliders size={14} /> KONTROL DENSITY & BASE
           </span>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between bg-black/20 p-2.5 rounded-xl border border-white/5">
+            <div className="flex items-center justify-between bg-[#bdb7ac] p-2.5 rounded-xl border border-white/5">
               <label className="text-xs text-[#F9F6F0]/80 font-medium">Warna Dasar Kanvas</label>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-zinc-400 uppercase font-mono">{bgColor}</span>
+                <span className="text-[11px] text-black uppercase font-mono">{bgColor}</span>
                 <input 
                   type="color" 
                   value={bgColor} 
@@ -66,10 +66,10 @@ export default function ComboStudioSidebar({
               </div>
             </div>
 
-            <div className="p-3 space-y-2 border bg-black/20 rounded-xl border-white/5">
+            <div className="p-3 space-y-2 border bg-[#bdb7ac] rounded-xl border-white/5">
               <div className="flex justify-between text-xs">
                 <span className="text-[#F9F6F0]/80 font-medium">Skala Kerapatan Tenun</span>
-                <span className="text-[#E5BA73] font-bold">{patternDensity}%</span>
+                <span className="text-[#000000] font-bold">{patternDensity}%</span>
               </div>
               <input 
                 type="range" 
@@ -84,7 +84,7 @@ export default function ComboStudioSidebar({
         </div>
 
         {/* PANEL 3: EDITOR HELAI BENANG (STRIPES) */}
-        <div className="bg-[#12110F] border border-white/5 rounded-2xl p-4 space-y-4">
+        <div className="bg-[#ffffff] border border-white/5 rounded-2xl p-4 space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold tracking-widest text-[#E5BA73] flex items-center gap-1.5">
               <Palette size={14} /> STRUKTUR BENANG EKSTRAKSI

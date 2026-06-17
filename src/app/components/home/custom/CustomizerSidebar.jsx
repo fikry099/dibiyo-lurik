@@ -51,7 +51,7 @@ export default function CustomizerSidebar({
         <div>
           {/* Judul menggunakan warna Cokelat Gelap Etnik Premium */}
           <h2 className="text-2xl lg:text-3xl font-bold tracking-wide text-[#3E3431]">
-            Kustomisasi Studio Lurik v3
+            STUDIO LURIK CUSTOM
           </h2>
           <p className="text-sm text-[#706965] font-light mt-1 leading-relaxed">
             Kontrol penenunan tingkat lanjut. Sesuaikan warna dasar kain dan konfigurasikan dimensi anyaman tiap helai benang lungsin Anda secara presisi.
@@ -59,7 +59,7 @@ export default function CustomizerSidebar({
         </div>
 
         {/* ================= BAGIAN A: KONTROL KAIN UTAMA ================= */}
-        <div className="bg-[#12110F] border border-white/5 rounded-2xl p-4 space-y-4">
+        <div className="bg-[#F5F2EB] border border-white/5 rounded-2xl p-4 space-y-4">
           <span className="text-xs font-bold tracking-widest text-[#E5BA73] flex items-center gap-1.5">
             <Sliders size={14} /> KONTROL DENSITY & BASE
           </span>
@@ -119,7 +119,7 @@ export default function CustomizerSidebar({
         </div>
 
         {/* ================= BAGIAN B: EDIT PER HELAI BENANG (STRIPES) ================= */}
-        <div className="bg-[#12110F] border border-white/5 rounded-2xl p-4 space-y-4">
+        <div className="bg-[#STRUKTUR BENANG KUSTOM] border border-white/5 rounded-2xl p-4 space-y-4">
           <div className="flex items-center justify-between">
 
             <span className="text-xs font-bold tracking-widest text-[#E5BA73] flex items-center gap-1.5">

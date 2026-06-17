@@ -153,7 +153,7 @@ export default function Catalog() {
                   */}
                   <button 
                     onClick={() => setSelectedProduct(prod)}
-                    className="w-full py-2.5 bg-[#362E26] hover:bg-[#1A1510] text-white text-xs font-bold tracking-wider rounded-xl shadow-sm transition-all duration-300 mt-auto text-center"
+                    className="w-full py-2.5 bg-[#9e6d3c79] hover:bg-[#C59B5F] text-white text-xs font-bold tracking-wider rounded-xl shadow-sm transition-all duration-300 mt-auto text-center"
                   >
                     Beli
                   </button>
