@@ -116,33 +116,33 @@ export default function CustomizerPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0A1715] text-[#F9F6F0] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#ffffff] text-[#000000] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
       
       {/* FITUR PEMILIH MODE STUDIO STUDIO v2 */}
       <div className="flex justify-center mx-auto mb-8 max-w-7xl">
-        <div className="bg-[#12110F] border border-white/5 rounded-xl p-1.5 flex gap-2">
+        <div className="bg-[#dcbb85] border border-white/5 rounded-xl p-1.5 flex gap-2">
           <button
             onClick={() => setStudioMode('custom')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
               studioMode === 'custom' 
-                ? 'bg-[#E5BA73] text-[#0A1715] shadow-lg shadow-[#E5BA73]/10' 
-                : 'text-[#A3A19E] hover:text-[#F9F6F0]'
+                ? 'bg-[#F5F2EB] text-[#0A1715] shadow-lg shadow-[#E5BA73]/10' 
+                : 'text-[#ffffff] hover:text-[#000000]'
             }`}
           >
             <Wand2 size={13} />
-            Studio Lurik Kustom
+            STUDIO LURIK CUSTOM
           </button>
           
           <button
             onClick={() => setStudioMode('combo')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
               studioMode === 'combo' 
-                ? 'bg-[#E5BA73] text-[#0A1715] shadow-lg shadow-[#E5BA73]/10' 
-                : 'text-[#A3A19E] hover:text-[#F9F6F0]'
+                ? 'bg-[#F5F2EB] text-[#0A1715] shadow-lg shadow-[#E5BA73]/10' 
+                : 'text-[#ffffff] hover:text-[#000000]'
             }`}
           >
             <Layers size={13} />
-             Studio Lurik Combain ({referenceItems.length})
+             STUDIO LURIK COMBAIN ({referenceItems.length})
           </button>
         </div>
 
@@ -161,7 +161,7 @@ export default function CustomizerPage() {
                   return (
                     <div 
                       key={slotInfo.key} 
-                      className="flex flex-col items-center gap-2 bg-[#12110F] border border-white/10 rounded-xl p-2.5 relative min-w-[120px]"
+                      className="flex flex-col items-center gap-2 bg-[#d5caa8] border border-white/10 rounded-xl p-2.5 relative min-w-[120px]"
                     >
                       <button 
                         type="button" 
@@ -176,7 +176,7 @@ export default function CustomizerPage() {
                       </div>
                       
                       <div className="flex flex-col items-center mt-1 text-center">
-                        <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#E5BA73]">
+                        <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#ffffff]">
                           Gambar {index + 1}
                         </span>
                       </div>
@@ -187,14 +187,14 @@ export default function CustomizerPage() {
                     <Link
                       href="/produk"
                       key={slotInfo.key}
-                      className="flex flex-col items-center justify-center gap-2 bg-[#12110F]/30 hover:bg-[#12110F]/60 border border-dashed border-white/10 hover:border-[#E5BA73]/40 rounded-xl p-2.5 w-[120px] h-[164px] transition-all group"
+                      className="flex flex-col items-center justify-center gap-2 bg-[#bdb7ac] hover:bg-[#12110F]/60 border border-dashed border-white/10 hover:border-[#E5BA73]/40 rounded-xl p-2.5 w-[120px] h-[164px] transition-all group"
                     >
                       <div className="w-24 h-24 rounded-md border border-dashed border-white/5 flex items-center justify-center bg-black/20 group-hover:bg-[#E5BA73]/5 group-hover:border-[#E5BA73]/20 transition-all shrink-0">
                         <Plus className="text-zinc-600 group-hover:text-[#E5BA73] transition-colors" size={24} />
                       </div>
                       
                       <div className="flex flex-col items-center text-center">
-                        <span className="text-[9px] font-bold uppercase tracking-wide text-zinc-500 group-hover:text-[#E5BA73]/80 transition-colors">
+                        <span className="text-[9px] font-bold uppercase tracking-wide text-[#dfdddd] group-hover:text-[#E5BA73]/80 transition-colors">
                           Tambah Kain
                         </span>
                       </div>
