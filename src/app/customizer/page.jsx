@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react' 
+import { useState, useEffect, Suspense } from 'react' // 1. Ditambahkan Suspense di sini
 import { useSearchParams } from 'next/navigation' 
 import Link from 'next/link' 
 import CustomizerCanvas from '../components/home/custom/CustomizerCanvas' 
@@ -14,7 +14,8 @@ import { useComboStore } from '@/app/store/useComboStore'
 import { X, Wand2, Layers, Plus } from 'lucide-react'
 import Swal from 'sweetalert2'
 
-export default function CustomizerPage() {
+// 2. Komponen dipindah ke fungsi internal agar bisa dibungkus Suspense
+function CustomizerContent() {
   const { addToCart } = useCart(); 
   const { combination, clearSlot } = useComboStore();
   
@@ -39,21 +40,14 @@ export default function CustomizerPage() {
     { id: 3, thickness: 6, color: '#2C3E50' }, 
   ]
 
-  // ==========================================
-  // 1. STATE KHUSUS UNTUK MODE CUSTOM
-  // ==========================================
   const [customBgColor, setCustomBgColor] = useState(DEFAULT_BG_COLOR)
   const [customPatternDensity, setCustomPatternDensity] = useState(DEFAULT_DENSITY)
   const [customStripes, setCustomStripes] = useState(DEFAULT_STRIPES)
 
-  // ==========================================
-  // 2. STATE KHUSUS UNTUK MODE COMBO (PADU PADAN)
-  // ==========================================
   const [comboBgColor, setComboBgColor] = useState(DEFAULT_BG_COLOR)
   const [comboPatternDensity, setComboPatternDensity] = useState(DEFAULT_DENSITY)
   const [comboStripes, setComboStripes] = useState(DEFAULT_STRIPES)
 
-  // Menentukan state mana yang aktif & dikirim ke sidebar berdasarkan studioMode
   const activeBgColor = studioMode === 'custom' ? customBgColor : comboBgColor;
   const activePatternDensity = studioMode === 'custom' ? customPatternDensity : comboPatternDensity;
   const activeStripes = studioMode === 'custom' ? customStripes : comboStripes;
@@ -62,7 +56,6 @@ export default function CustomizerPage() {
   const setActivePatternDensity = studioMode === 'custom' ? setCustomPatternDensity : setComboPatternDensity;
   const setActiveStripes = studioMode === 'custom' ? setCustomStripes : setComboStripes;
 
-  // Definisikan struktur slot statis (selalu berurutan: Badan, Lengan, Aksen)
   const slotsConfig = [
     { key: 'badan', label: 'Gambar 1 (Badan)' },
     { key: 'lengan', label: 'Gambar 2 (Lengan)' },
@@ -73,7 +66,6 @@ export default function CustomizerPage() {
     .filter(([_, item]) => item !== null)
     .map(([slot, item]) => ({ slot, ...item }));
 
-  // LOGIKA RESET YANG DIPERBAIKI
   const handleResetAll = () => {
     if (studioMode === 'custom') {
       setCustomBgColor(DEFAULT_BG_COLOR)
@@ -115,8 +107,6 @@ export default function CustomizerPage() {
 
   return (
     <main className="min-h-screen bg-[#ffffff] text-[#000000] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
-      
-      {/* FITUR PEMILIH MODE STUDIO STUDIO v2 */}
       <div className="flex justify-center mx-auto mb-8 max-w-7xl">
         <div className="bg-[#dcbb85] border border-white/5 rounded-xl p-1.5 flex gap-2">
           <button
@@ -143,18 +133,14 @@ export default function CustomizerPage() {
              STUDIO LURIK COMBAIN ({referenceItems.length})
           </button>
         </div>
-
       </div>
 
-      {/* Rincian Kain Referensi Pasangan Padu Padan dengan Slot Tetap Berjumlah 3 */}
       {studioMode === 'combo' && (
         <div className="max-w-3xl mx-auto mb-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
             <div className="flex flex-wrap items-center justify-center gap-4">
-              
               {slotsConfig.map((slotInfo, index) => {
                 const item = combination[slotInfo.key];
-
                 if (item) {
                   return (
                     <div 
@@ -168,11 +154,9 @@ export default function CustomizerPage() {
                       >
                         <X size={12} />
                       </button>
-
                       <div className="w-24 h-24 rounded-md overflow-hidden border border-[#E5BA73]/30 shrink-0">
                         <img src={item.gambar_url} alt={slotInfo.key} className="object-cover w-full h-full" />
                       </div>
-                      
                       <div className="flex flex-col items-center mt-1 text-center">
                         <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#ffffff]">
                           Gambar {index + 1}
@@ -190,7 +174,6 @@ export default function CustomizerPage() {
                       <div className="w-24 h-24 rounded-md border border-dashed border-white/5 flex items-center justify-center bg-black/20 group-hover:bg-[#E5BA73]/5 group-hover:border-[#E5BA73]/20 transition-all shrink-0">
                         <Plus className="text-zinc-600 group-hover:text-[#E5BA73] transition-colors" size={24} />
                       </div>
-                      
                       <div className="flex flex-col items-center text-center">
                         <span className="text-[9px] font-bold uppercase tracking-wide text-[#dfdddd] group-hover:text-[#E5BA73]/80 transition-colors">
                           Tambah Kain
@@ -200,13 +183,11 @@ export default function CustomizerPage() {
                   );
                 }
               })}
-
             </div>
           </div>
         </div>
       )}
 
-      {/* KONDISI SWAP KANVAS & RE-USE SIDEBAR KONTROL */}
       <div className="flex flex-col items-stretch gap-10 p-6 mx-auto max-w-7xl lg:flex-row">
         {studioMode === 'custom' ? (
           <>
@@ -225,7 +206,7 @@ export default function CustomizerPage() {
               setPatternDensity={setActivePatternDensity}
               stripes={activeStripes} 
               setStripes={setActiveStripes} 
-              onOpenCartModal={() => setIsModalOpen(true)} // Mengaktifkan tombol modal kustom
+              onOpenCartModal={() => setIsModalOpen(true)}
             />
           </>
         ) : (
@@ -237,7 +218,7 @@ export default function CustomizerPage() {
               patternDensity={comboPatternDensity}
               stripes={comboStripes}
               setStripes={setComboStripes}
-              onReset={handleResetAll} // Ditambahkan prop onReset di sini
+              onReset={handleResetAll}
             />
             <ComboStudioSidebar 
               combination={combination}
@@ -247,19 +228,30 @@ export default function CustomizerPage() {
               setPatternDensity={setActivePatternDensity}
               stripes={activeStripes}
               setStripes={setActiveStripes}
-              onCheckoutCombo={() => setIsModalOpen(true)} // Tombol Masuk Keranjang dihubungkan ke Modal Ukuran
+              onCheckoutCombo={() => setIsModalOpen(true)}
             />
           </>
         )}
       </div>
 
-      {/* MODAL SPESIFIKASI UKURAN */}
       <CustomCartModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onConfirm={handleAddToCartConfirm} 
-
       />
     </main>
+  )
+}
+
+// 3. EXPORT DEFAULT DIBUNGKUS SUSPENSE BOUNDARY (Solusi Error Vercel)
+export default function CustomizerPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen text-sm text-gray-500 bg-white">
+        Memuat Studio Kustomisasi...
+      </div>
+    }>
+      <CustomizerContent />
+    </Suspense>
   )
 }
