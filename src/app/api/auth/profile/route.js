@@ -1,4 +1,4 @@
-﻿import { createServerClient } from '@supabase/ssr';
+﻿﻿import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -42,7 +42,7 @@ export async function GET() {
     .from('profiles')
     .select('*')
     .eq('id', session.user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Database Error:', error);

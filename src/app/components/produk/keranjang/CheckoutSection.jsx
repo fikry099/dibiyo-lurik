@@ -125,7 +125,7 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
     <div className="max-w-7xl mx-auto space-y-6 font-sans text-[#F9F6F0]">
       
       <div className="flex items-center justify-between pb-4 border-b border-[#E5BA73]/10">
-        <h2 className="text-lg font-bold text-[#E5BA73] tracking-wide">Ringkasan Pembayaran (Check-out)</h2>
+        <h2 className="text-lg font-bold text-[#ba9354] tracking-wide">Ringkasan Pembayaran (Check-out)</h2>
         <button 
           onClick={onBack} 
           disabled={loading}
@@ -162,6 +162,7 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
 
           return (
             <div key={item.id} className="flex items-center gap-4 p-3 border bg-[#0A1715]/40 border-white/5 rounded-xl shadow-md text-xs">
+
               <div className="relative w-24 h-24 overflow-hidden border rounded-lg bg-zinc-900 border-white/5 shrink-0">
                 {miniVisual}
               </div>
@@ -170,6 +171,7 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
                 <div><p className="text-[12px] text-[#A3A19E]">No Gulungan</p><p className="font-semibold text-[#E5BA73] text-[12px]">{isCustomItem ? "-" : `G-${item.gulungan?.nomor_gulungan || '-'}`}</p></div>
                 <div><p className="text-[12px] text-[#A3A19E]">Panjang Potong</p><p className="font-bold text-[#F9F6F0]/90 text-[12px]">{meteran} meter</p></div>
                 <div className="text-right"><p className="text-[12px] text-[#A3A19E]">Subtotal</p><p className="font-black text-[#E5BA73] text-[12px]">Rp{(meteran * hargaKain).toLocaleString('id-ID')}</p></div>
+  
               </div>
             </div>
           );
@@ -180,12 +182,14 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
       <div className="p-4 border bg-[#12110F] border-[#E5BA73]/10 rounded-xl shadow-lg space-y-2">
         <div className="flex justify-between text-xs text-[#A3A19E]"><span>Total Sebelum Pembayaran</span><span>Rp {subTotal.toLocaleString('id-ID')}</span></div>
         <div className="flex justify-between pt-3 text-base font-bold border-t border-white/5 text-[#E5BA73]"><span>Total Pembayaran Net</span><span className="text-lg font-black">Rp {total.toLocaleString('id-ID')}</span></div>
+
       </div>
 
       <button 
         onClick={handleBayarMidtrans}
         disabled={loading || items.length === 0}
         className="flex items-center justify-center w-full gap-2 py-3.5 text-xs font-bold uppercase tracking-wider transition-all text-[#12110F] bg-[#E5BA73] hover:bg-[#f3cb85] rounded-xl shadow-xl disabled:bg-white/5 disabled:text-white/20"
+
       >
         {loading ? (
           <><Loader2 className="animate-spin" size={14} /> Membuka Gerbang Pembayaran...</>
