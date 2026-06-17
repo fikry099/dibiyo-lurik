@@ -267,7 +267,7 @@ export default function ComboStudioCanvas({
   };
 
   return (
-    <div className="w-full lg:w-[55%] flex flex-col bg-[#071110] border border-[#E5BA73]/10 rounded-3xl p-6 relative h-[600px] lg:h-[750px]">
+    <div className="w-full lg:w-[55%] flex flex-col bg-[#F5F2EB] border border-[#E5BA73]/10 rounded-3xl p-6 relative h-[600px] lg:h-[750px]">
       
       <div className="absolute z-20 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center top-6 left-6 right-6">
         <div className="flex items-center gap-2">
@@ -277,12 +277,12 @@ export default function ComboStudioCanvas({
           </span>
         </div>
 
-        <div className="flex gap-1 p-1 border bg-black/40 backdrop-blur-md border-white/10 rounded-xl">
+        <div className="flex gap-1 p-1 border bg-[#aa9e84] backdrop-blur-md border-white/10 rounded-xl">
           <button
             type="button"
             onClick={() => setPreviewView('kain')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-              previewView === 'kain' ? 'bg-[#E5BA73] text-[#0A1715] shadow-md' : 'text-zinc-400 hover:text-[#F9F6F0]'
+              previewView === 'kain' ? 'bg-[#F5F2EB] text-[#0A1715] shadow-md' : 'text-[#ffffff] hover:text-[#000000]'
             }`}
           >
             <Scissors size={11} /> Kain
@@ -291,7 +291,7 @@ export default function ComboStudioCanvas({
             type="button"
             onClick={() => setPreviewView('baju')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-              previewView === 'baju' ? 'bg-[#E5BA73] text-[#0A1715] shadow-md' : 'text-zinc-400 hover:text-[#F9F6F0]'
+              previewView === 'baju' ? 'bg-[#F5F2EB] text-[#0A1715] shadow-md' : 'text-[#ffffff] hover:text-[#000000]'
             }`}
           >
             <Shirt size={11} /> Baju
@@ -300,34 +300,13 @@ export default function ComboStudioCanvas({
             type="button"
             onClick={() => setPreviewView('setelan')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-              previewView === 'setelan' ? 'bg-[#E5BA73] text-[#0A1715] shadow-md' : 'text-zinc-400 hover:text-[#F9F6F0]'
+              previewView === 'setelan' ? 'bg-[#F5F2EB] text-[#0A1715] shadow-md' : 'text-[#ffffff] hover:text-[#000000]'
             }`}
           >
             <Sparkles size={11} /> Setelan
           </button>
         </div>
       </div>
-
-      {previewView === 'setelan' && (
-        <div className="absolute top-20 right-6 z-20 flex flex-col gap-2 items-end bg-[#12110F]/80 p-3 rounded-xl border border-white/5 backdrop-blur-md">
-          <div className="flex gap-1 bg-black/40 p-0.5 rounded-lg border border-white/5">
-            <button 
-              type="button"
-              onClick={() => setSubBawahan('kain')}
-              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-all ${subBawahan === 'kain' ? 'bg-[#E5BA73] text-[#0A1715] font-bold' : 'text-[#A3A19E]'}`}
-            >
-              + Lipatan Kain
-            </button>
-            <button 
-              type="button"
-              onClick={() => setSubBawahan('celana')}
-              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-all ${subBawahan === 'celana' ? 'bg-[#E5BA73] text-[#0A1715] font-bold' : 'text-[#A3A19E]'}`}
-            >
-              + Celana Hitam
-            </button>
-          </div>
-        </div>
-      )}
 
       {isLoading && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/70 backdrop-blur-sm rounded-2xl">

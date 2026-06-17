@@ -120,10 +120,10 @@ export default function CustomizerCanvas({
   };
 
   return (
-    <div className="w-full lg:w-[55%] flex flex-col justify-between items-center bg-[#071110] border border-[#E5BA73]/10 rounded-3xl p-6 relative aspect-square lg:aspect-auto lg:h-[750px]">
+    <div className="w-full lg:w-[55%] flex flex-col justify-between items-center bg-[#F5F2EB] border border-[#E5BA73]/10 rounded-3xl p-6 relative aspect-square lg:aspect-auto lg:h-[750px]">
       
       {/* 1. TOMBOL UTAMA SWITCH PREVIEW MODEL */}
-      <div className="absolute top-6 right-6 bg-[#12110F]/90 backdrop-blur-md border border-[#E5BA73]/20 rounded-xl p-1 flex gap-1 z-20">
+      <div className="absolute top-6 right-6 bg-[#aa9e84] backdrop-blur-md border border-[#E5BA73]/20 rounded-xl p-1 flex gap-1 z-20">
         {[
           { id: 'fabric', label: 'Kain', icon: <Scissors size={13} /> },
           { id: 'shirt', label: 'Baju', icon: <Shirt size={13} /> },
@@ -134,8 +134,8 @@ export default function CustomizerCanvas({
             onClick={() => setPreviewMode(tab.id)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium tracking-wide transition-all duration-300 flex items-center gap-1.5 ${
               previewMode === tab.id 
-                ? 'bg-[#E5BA73] text-[#0A1715] font-bold shadow-md' 
-                : 'text-[#A3A19E] hover:text-[#F9F6F0]'
+                ? 'bg-[#F5F2EB] text-[#0A1715] font-bold shadow-md' 
+                : 'text-[#ffffff] hover:text-[#000000]'
             }`}
           >
             {tab.icon}
@@ -152,26 +152,7 @@ export default function CustomizerCanvas({
         </span>
       </div>
 
-      {/* ================= PANEL PILIHAN KHUSUS MODE SETELAN ================= */}
-      {previewMode === 'outfit' && (
-        <div className="absolute top-20 right-6 z-20 flex flex-col gap-2 items-end bg-[#12110F]/80 p-3 rounded-xl border border-white/5 backdrop-blur-md animate-fade-in">
-          <div className="flex gap-1 bg-black/40 p-0.5 rounded-lg border border-white/5">
-            <button 
-              onClick={() => setSubBawahan('kain')}
-              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-all ${subBawahan === 'kain' ? 'bg-[#E5BA73] text-[#0A1715] font-bold' : 'text-[#A3A19E]'}`}
-            >
-              + Lipatan Kain
-            </button>
-            <button 
-              onClick={() => setSubBawahan('celana')}
-              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-all ${subBawahan === 'celana' ? 'bg-[#E5BA73] text-[#0A1715] font-bold' : 'text-[#A3A19E]'}`}
-            >
-              + Celana Hitam
-            </button>
-          </div>
-        </div>
-      )}
-
+      
       {/* 2. AREA PREVIEW KANVAS UTAMA */}
       <div ref={canvasRef} className="w-full h-full mt-10 rounded-2xl shadow-inner relative overflow-hidden flex items-center justify-center border border-white/5 bg-[#9e9d9b44]">
         
@@ -260,11 +241,7 @@ export default function CustomizerCanvas({
                           }} 
                           className="absolute inset-0 w-full h-full transition-all duration-300"
                         />
-                        <img 
-                          src="/mockups/shirt-long-front-mask.png" 
-                          alt="Tekstur Atasan" 
-                          className="object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-60" 
-                        />
+                       
                       </div>
                     </>
                   );
@@ -273,7 +250,7 @@ export default function CustomizerCanvas({
 
               {/* ================= BARIS KANAN: DISPLAY MOCKUP KAIN GANTUNG BARU (REPRESENTATIF CUSTOM) ================= */}
               <div className="relative w-[32%] h-[55%] flex flex-col items-center justify-between bg-[#12110F]/40 backdrop-blur-sm border border-white/5 rounded-2xl p-3 animate-fade-in shadow-xl">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#E5BA73]/80 mb-2 block text-center w-full border-b border-white/5 pb-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#f6f6f6] mb-2 block text-center w-full border-b border-white/5 pb-1.5">
                   Detail Tekstur
                 </span>
                 
