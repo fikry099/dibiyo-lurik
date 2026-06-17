@@ -199,7 +199,7 @@ export default function Navbar() {
               {showDropdown && (
                 <div className="absolute top-full left-0 mt-1 w-48 bg-[#1A1917] border border-[#E5BA73]/20 rounded-xl shadow-xl overflow-hidden py-1 z-50">
                   <Link 
-                    href="/artikel" 
+                    href="/sejarah" 
                     onClick={() => setShowDropdown(false)}
                     className={`block px-4 py-2.5 text-sm transition-colors ${
                       isActive('/artikel') 
@@ -207,7 +207,7 @@ export default function Navbar() {
                         : 'text-[#A3A19E] hover:bg-[#E5BA73]/10 hover:text-[#E5BA73]'
                     }`}
                   >
-                    Artikel & Edukasi
+                    Sejarah
                   </Link>
                   <Link 
                     href="/produksi" 
@@ -314,8 +314,8 @@ export default function Navbar() {
             Produk
           </Link>
           <div className="border-t border-[#E5BA73]/10 my-2 pt-2">
-            <Link href="/artikel" className={`block py-1.5 text-sm pl-4 ${isActive('/artikel') ? 'text-[#E5BA73] font-medium' : 'text-[#A3A19E]'}`} onClick={() => setIsOpen(false)}>
-              Artikel & Edukasi
+            <Link href="/artikel" className={`block py-1.5 text-sm pl-4 ${isActive('/sejarah') ? 'text-[#E5BA73] font-medium' : 'text-[#A3A19E]'}`} onClick={() => setIsOpen(false)}>
+              Sejarah
             </Link>
             <Link href="/produksi" className={`block py-1.5 text-sm pl-4 ${isActive('/produksi') ? 'text-[#E5BA73] font-medium' : 'text-[#A3A19E]'}`} onClick={() => setIsOpen(false)}>
               Proses Produksi
