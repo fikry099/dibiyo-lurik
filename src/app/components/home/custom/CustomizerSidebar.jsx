@@ -12,7 +12,6 @@ export default function CustomizerSidebar({
   onOpenCartModal 
 }) {
 
-  // 🎨 PALET WARNA LUXURY ETNIK (Disesuaikan berdasarkan UI Light Mode Biyo Lurik)
   const colorPalette = [
     { hex: '#1D2B24', name: 'Hijau Botol / Deep Forest' },
     { hex: '#53593B', name: 'Hijau Zaitun / Olive Green' },
@@ -34,7 +33,6 @@ export default function CustomizerSidebar({
   const addStripe = () => {
     const newId = stripes.length > 0 ? Math.max(...stripes.map(s => s.id)) + 1 : 1;
     setStripes([...stripes, { id: newId, thickness: 8, color: '#E5BA73' }]);
-
   };
 
   const removeStripe = (id) => {
@@ -44,12 +42,11 @@ export default function CustomizerSidebar({
 
   return (
 
-    <div className="w-full lg:w-[45%] bg-[#F5F2EB] border border-[#EBE7E0] flex flex-col justify-between p-4 lg:p-6 overflow-y-auto lg:h-[780px] rounded-2xl shadow-sm custom-scrollbar">
+    <div className="w-full lg:w-[45%] bg-[#F5F2EB] border border-[#EBE7E0] flex flex-col justify-between p-4 lg:p-6 rounded-2xl shadow-sm">
 
       <div className="space-y-6">
         {/* HEADER */}
         <div>
-          {/* Judul menggunakan warna Cokelat Gelap Etnik Premium */}
           <h2 className="text-2xl lg:text-3xl font-bold tracking-wide text-[#3E3431]">
             STUDIO LURIK CUSTOM
           </h2>
@@ -65,7 +62,6 @@ export default function CustomizerSidebar({
           </span>
 
           <div className="space-y-4">
-            {/* Input Warna Dasar dengan Custom Picker & Quick Palette */}
             <div className="p-3 space-y-3 border bg-black/20 rounded-xl border-white/5">
               <div className="flex items-center justify-between">
                 <label className="text-xs text-[#000000] font-medium">Warna Dasar Kanvas</label>
@@ -80,7 +76,6 @@ export default function CustomizerSidebar({
                 </div>
               </div>
               
-              {/* Shortcut Pilihan Palet */}
               <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
                 {colorPalette.map((color, index) => (
                   <button
@@ -99,7 +94,6 @@ export default function CustomizerSidebar({
               </div>
             </div>
 
-            {/* Skala Kerapatan */}
             <div className="p-3 space-y-2 border bg-black/20 rounded-xl border-white/5">
               <div className="flex justify-between text-xs">
                 <span className="text-[#1c1c1c] font-medium">Skala Kerapatan Pola Tenun</span>
@@ -126,8 +120,6 @@ export default function CustomizerSidebar({
               <Palette size={14} /> STRUKTUR BENANG KUSTOM
             </span>
 
-            <span className="text-xs font-bold tracking-widest text-[#4A3F3B]">PENGATURAN HELAI BENANG</span>
-
             <button 
               type="button"
               onClick={addStripe}
@@ -137,13 +129,13 @@ export default function CustomizerSidebar({
             </button>
           </div>
 
-          {/* List Helai Benang dibuat Horizontal melintang agar hemat ruang dan presisi */}
-          <div className="max-h-[250px] overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
+          {/* Sengaja tanpa max-h & overflow-y-auto — list ini sekarang ikut memanjang seiring jumlah benang */}
+          {/* Dibatasi maksimal menampilkan 4 baris benang, lebih dari itu scroll */}
+          <div className="max-h-[230px] overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
             {stripes.map((stripe, index) => (
               <div key={stripe.id} className="flex items-center gap-3 bg-[#cfcfcf] p-2.5 rounded-xl border border-white/5 group transition-all">
                 <div className="text-[10px] text-black font-mono w-4">#{index + 1}</div>
                 
-                {/* Custom Color Picker RGB bebas untuk masing-masing benang */}
                 <div className="flex items-center shrink-0">
                   <input 
                     type="color" 
@@ -154,7 +146,6 @@ export default function CustomizerSidebar({
                   />
                 </div>
 
-                {/* Slider Ketebalan Benang */}
                 <div className="flex items-center flex-1 gap-2">
                   <input 
                     type="range" 
@@ -165,10 +156,8 @@ export default function CustomizerSidebar({
                     className="w-full h-1 rounded-lg appearance-none cursor-pointer accent-zinc-400 bg-zinc-800"
                   />
                   <span className="text-[10px] font-mono font-bold text-black w-7 text-right">{stripe.thickness}px</span>
-
                 </div>
 
-                {/* Tombol Hapus Terkondisi */}
                 {stripes.length > 1 ? (
                   <button 
                     type="button"
@@ -203,7 +192,6 @@ export default function CustomizerSidebar({
           type="button"
           onClick={onOpenCartModal}
           className="w-full py-4 bg-gradient-to-r from-[#E5BA73] to-[#cfa35c] text-[#0A1715] hover:from-[#F9F6F0] hover:to-[#F9F6F0] transition-all duration-300 rounded-xl font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-2 shadow-lg shadow-[#E5BA73]/5"
-
         >
           Masukkan Kain Kustom Ke Keranjang
           <ChevronRight size={14} strokeWidth={2.5} />

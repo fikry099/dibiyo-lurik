@@ -267,8 +267,8 @@ export default function ComboStudioCanvas({
   };
 
   return (
-       <div className="w-full lg:w-[55%] flex flex-col bg-[#F5F2EB] border border-[#E5BA73]/10 rounded-3xl p-6 relative h-[600px] lg:h-[750px]">
-      
+      <div className="w-full lg:w-[55%] flex flex-col bg-[#F5F2EB] border border-[#E5BA73]/10 rounded-3xl p-6 relative h-[600px] lg:h-auto">
+        
       <div className="absolute z-20 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center top-6 left-6 right-6">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
