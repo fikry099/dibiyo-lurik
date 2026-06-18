@@ -33,7 +33,7 @@ export default function ComboStudioSidebar({
   };
 
   return (
-    <div className="w-full lg:w-[45%] bg-[#F5F2EB] flex flex-col justify-between p-2 lg:p-6 lg:h-[750px] overflow-y-auto custom-scrollbar rounded-2xl">
+    <div className="w-full lg:w-[45%] bg-[#F5F2EB] flex flex-col justify-between p-2 lg:p-6 rounded-2xl">
       
       <div className="space-y-6">
         {/* Header */}
@@ -92,15 +92,16 @@ export default function ComboStudioSidebar({
             <button 
               type="button"
               onClick={handleAddStripe}
-              className="text-[10px] font-bold bg-[#E5BA73]/10 hover:bg-[#E5BA73] text-[#E5BA73] hover:text-[#0A1715] px-2.5 py-1 rounded-md transition-all flex items-center gap-1 border border-[#E5BA73]/20"
+              className="text-[10px] font-bold bg-[#aa9e84] hover:bg-[#E5BA73] text-[#ffffff] hover:text-[#0A1715] px-2.5 py-1 rounded-md transition-all flex items-center gap-1 border border-[#E5BA73]/20"
             >
               <Plus size={10} /> Tambah Benang
             </button>
           </div>
 
-          <div className="max-h-[220px] overflow-y-auto pr-1 space-y-2.5">
+          {/* Dibatasi maksimal menampilkan 4 baris benang, lebih dari itu scroll */}
+          <div className="max-h-[215px] overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
             {stripes.map((stripe, index) => (
-              <div key={stripe.id} className="flex items-center gap-3 bg-black/40 p-2.5 rounded-xl border border-white/5">
+              <div key={stripe.id} className="flex items-center gap-3 bg-[#cfcfcf] p-2.5 rounded-xl border border-white/5">
                 <div className="text-[10px] text-zinc-500 font-mono w-4">#{index + 1}</div>
                 
                 <input 
@@ -119,13 +120,13 @@ export default function ComboStudioSidebar({
                     onChange={(e) => handleThicknessChange(stripe.id, e.target.value)}
                     className="w-full h-1 rounded-lg appearance-none cursor-pointer accent-zinc-400 bg-zinc-800"
                   />
-                  <span className="text-[10px] font-mono font-bold text-zinc-400 w-7 text-right">{stripe.thickness}px</span>
+                  <span className="text-[10px] font-mono font-bold text-black w-7 text-right">{stripe.thickness}px</span>
                 </div>
 
                 <button 
                   type="button"
                   onClick={() => handleRemoveStripe(stripe.id)}
-                  className="p-1 transition-colors text-zinc-500 hover:text-red-400"
+                  className="p-1 text-black transition-colors hover:text-red-400"
                   title="Hapus baris benang"
                 >
                   <Trash2 size={12} />
@@ -148,18 +149,17 @@ export default function ComboStudioSidebar({
         </div>
       </div>
 
-<div className="pt-4 mt-4 border-t border-white/5">
-  <button 
-    type="button"
-    onClick={onCheckoutCombo} 
-    disabled={activeItems.length === 0}
-    className="w-full py-4 bg-gradient-to-r from-[#E5BA73] to-[#cfa35c] text-[#0A1715] hover:from-[#F9F6F0] hover:to-[#F9F6F0] disabled:from-zinc-800 disabled:to-zinc-900 disabled:text-zinc-500 disabled:cursor-not-allowed transition-all duration-300 rounded-xl font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-2 shadow-lg"
-  >
-  
-    {activeItems.length === 0 ? 'Proses...' : 'Masukkan Kain Kustom Ke Keranjang'}
-       <ChevronRight size={14} strokeWidth={2.5} />
-  </button>
-</div>
+      <div className="pt-4 mt-4 border-t border-white/5">
+        <button 
+          type="button"
+          onClick={onCheckoutCombo} 
+          disabled={activeItems.length === 0}
+          className="w-full py-4 bg-gradient-to-r from-[#E5BA73] to-[#cfa35c] text-[#0A1715] hover:from-[#F9F6F0] hover:to-[#F9F6F0] disabled:from-zinc-800 disabled:to-zinc-900 disabled:text-zinc-500 disabled:cursor-not-allowed transition-all duration-300 rounded-xl font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-2 shadow-lg"
+        >
+          {activeItems.length === 0 ? 'LAKUKAN PENGEDITAN ' : 'Masukkan Kain Kustom Ke Keranjang'}
+          <ChevronRight size={14} strokeWidth={2.5} />
+        </button>
+      </div>
 
     </div>
   )

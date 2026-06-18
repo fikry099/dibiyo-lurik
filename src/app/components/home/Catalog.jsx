@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import ModalDetail from './catalog/ModalDetail';
-import {ShoppingBag } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 
 export default function Catalog() {
   const [products, setProducts] = useState([])
@@ -47,9 +47,7 @@ export default function Catalog() {
     <section id="produk" className="px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:px-8">
       {/* --- HEADER SEKSI --- */}
       <div className="max-w-2xl mx-auto mb-16 space-y-3 text-center">
-        {/* Perubahan: text-[#F9F6F0] -> text-[#2D2219] */}
         <h2 className="text-3xl font-bold tracking-tight text-[#2D2219]">Koleksi Eksklusif</h2>
-        {/* Perubahan: text-[#A3A19E] -> text-[#6E655C] */}
         <p className="text-sm text-[#6E655C] font-light">
           Temukan keindahan wastra Nusantara yang ditenun dengan presisi tinggi tingkat tinggi, memadukan tradisi berabad-abad dengan estetika kontemporer.
         </p>
@@ -83,34 +81,33 @@ export default function Catalog() {
         </div>
       )}
 
-      {/* --- TAMPILAN DATA PRODUK UTAMA (SESUAI REF) --- */}
+      {/* --- TAMPILAN DATA PRODUK UTAMA (SELARAS DENGAN CARD PRODUK) --- */}
       {!loading && !error && products.length > 0 && (
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {products.map((prod) => {
-            const hargaTertera = prod.gulungan?.[0]?.harga || 0
-            
-            const productTitle = prod.motif?.nama && prod.kategori?.nama
-              ? `${prod.motif.nama} ${prod.kategori.nama}`
-              : prod.kode_produk || "Kain Lurik Premium"
+            const totalStokSisa = prod.gulungan?.reduce((acc, curr) => acc + (curr.panjang_sisa || 0), 0) || 0;
+            const daftarHarga = prod.gulungan?.map(g => g.harga || g.harga_per_meter).filter(Boolean) || [];
+            const hargaTermurah = daftarHarga.length > 0 ? Math.min(...daftarHarga) : 0;
+
+            const namaKategori = typeof prod.kategori === 'object' ? prod.kategori?.nama : (prod.kategori || "Kain");
+            const kodeProduk = typeof prod.kode_produk === 'object' ? prod.kode_produk?.nama : (prod.kode_produk || "-");
+            const namaMotif = typeof prod.motif === 'object' ? prod.motif?.nama : (prod.motif || "Polos");
+            const productTitle = `Lurik ${namaMotif}`;
 
             return (
               <div 
                 key={prod.id} 
-                /* Perubahan Card Luar:
-                  - bg-[#1A1917] -> bg-[#F5F2EB]/70 (Warna krem kontras lembut)
-                  - shadow-lg -> shadow-md dengan transisi hover melayang tipis
-                  - border disesuaikan agar menyatu rapi dengan warna latar
-                */
                 className="bg-[#F5F2EB]/70 border border-[#2D2219]/5 rounded-2xl overflow-hidden shadow-md hover:shadow-xl group flex flex-col h-full transition-all duration-300 transform hover:-translate-y-1"
               >
                 
                 {/* Visual Gambar Produk */}
                 <div className="w-full aspect-[4/3] bg-[#EFEBE3] relative flex items-center justify-center overflow-hidden">
-                  {/* Perubahan Badge Kain:
-                    - Diubah warnanya menjadi Jingga Terrakota Bumi asli sesuai penanda 'SINTETIS' / 'ALAMI' di mockup gambar
-                  */}
-                  <span className="absolute top-3 left-3 text-[9px] font-bold tracking-widest bg-[#D48C45] text-white px-2 py-1 rounded shadow-sm uppercase z-10">
-                    {prod.jenis_pewarna || prod.status || 'ATBM'}
+                  <span
+                    className={`absolute top-3 left-3 text-[9px] font-bold tracking-widest px-2 py-1 rounded shadow-sm uppercase z-10 text-white ${
+                      totalStokSisa > 0 ? "bg-[#D48C45]" : "bg-[#6E655C]"
+                    }`}
+                  >
+                    {totalStokSisa > 0 ? `Tersedia: ${totalStokSisa} m` : "Stok Habis"}
                   </span>
                   
                   {prod.gambar_url ? (
@@ -124,7 +121,7 @@ export default function Catalog() {
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#E5E1D7] to-[#D8D3C5]">
                       <div className="absolute inset-0 opacity-5 bg-[linear-gradient(to_right,#2D2219_1px,transparent_1px)] bg-[size:6px]"></div>
                       <span className="text-2xl opacity-30">🧵</span>
-                      <span className="text-[10px] text-[#6E655C] mt-2 tracking-widest font-mono">{prod.kode_produk}</span>
+                      <span className="text-[10px] text-[#6E655C] mt-2 tracking-widest font-mono">{kodeProduk}</span>
                     </div>
                   )}
                 </div>
@@ -132,33 +129,35 @@ export default function Catalog() {
                 {/* Detail Informasi & Tombol Aksi */}
                 <div className="flex flex-col justify-between flex-1 p-5 space-y-4">
                   <div className="space-y-1">
-                    {/* Perubahan Judul: text-[#F9F6F0] -> text-[#2D2219] */}
-                    <h3 className="font-bold text-base text-[#2D2219] tracking-tight line-clamp-1">
+                    <div className="flex items-center justify-between text-[10px] font-bold tracking-wider uppercase text-[#6E655C]">
+                      <span>{namaKategori}</span>
+                      <span className="font-mono text-[#A67D45]">{kodeProduk}</span>
+                    </div>
+
+                    <h3 className="font-bold text-base text-[#2D2219] tracking-tight line-clamp-1 group-hover:text-[#A67D45] transition-colors">
                       {productTitle}
                     </h3>
                     
                     <div className="flex items-center justify-between pt-0.5">
-                      {/* Perubahan Harga: text-[#E5BA73] -> text-[#A67D45] (Tone emas bumi gelap) */}
                       <p className="text-sm text-[#A67D45] font-bold">
-                        {formatRupiah(hargaTertera)} <span className="text-[#6E655C]/70 text-xs font-light">/ meter</span>
+                        {formatRupiah(hargaTermurah)} <span className="text-[#6E655C]/70 text-xs font-light">/ meter</span>
                       </p>
-                      {/* Perubahan Container Stok: Dibungkus pill warna abu-krem transparan */}
-                      <span className="text-[10px] font-medium text-[#6E655C] bg-[#2D2219]/5 px-2.5 py-0.5 rounded-md border border-[#2D2219]/5">
-                        Stok: {prod.stok || 0}
+                      <span className="text-[10px] font-medium text-[#6E655C] bg-[#2D2219]/5 px-2.5 py-0.5 rounded-md border border-[#2D2219]/5 capitalize">
+                        {prod.jenis_pewarna ? `${prod.jenis_pewarna}` : "ATBM"}
                       </span>
                     </div>
                   </div>
                   
-                  {/* Perubahan Tombol Beli:
-                    - Mengubah style outline lama menjadi tombol solid tebal abu-cokelat gelap pekat sesuai mockup referensi (`bg-[#362E26]`)
-                  */}
-                  <button 
-                    onClick={() => setSelectedProduct(prod)}
-                    className="w-full py-2.5 bg-[#9e6d3c79] hover:bg-[#C59B5F] text-white text-xs font-bold tracking-wider rounded-xl shadow-sm transition-all duration-300 mt-auto flex items-center justify-center gap-1.5"
-                  >
-                    <ShoppingBag size={13} className="stroke-[2.5]" />
-                    Beli
-                  </button>
+                  {/* Tombol Beli — satu tombol full-width, tanpa Kombinasi */}
+                  <div className="mt-auto pt-4 border-t border-[#2D2219]/10">
+                    <button 
+                      onClick={() => setSelectedProduct(prod)}
+                      className="w-full py-3 bg-[#9e6d3c79] hover:bg-[#C59B5F] text-white text-xs font-bold tracking-wide rounded-xl shadow-sm transition-all duration-300 flex items-center justify-center gap-1.5"
+                    >
+                      <ShoppingBag size={13} className="stroke-[2.5]" />
+                      Beli
+                    </button>
+                  </div>
                 </div>
 
               </div>

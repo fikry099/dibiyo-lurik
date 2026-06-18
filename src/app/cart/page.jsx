@@ -111,7 +111,7 @@ export default function CartPage() {
             </div>
 
             {!isCheckout ? (
-              <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 
                 {/* Bagian Kiri */}
                 <div className="space-y-4 lg:col-span-2">

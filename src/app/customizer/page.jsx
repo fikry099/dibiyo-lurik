@@ -11,6 +11,7 @@ import ComboStudioCanvas from '../components/home/custom/ComboStudioCanvas'
 
 import { useCart } from '../context/CartContext' 
 import { useComboStore } from '@/app/store/useComboStore'
+import Footer from '../components/home/Footer'
 import { X, Wand2, Layers, Plus } from 'lucide-react'
 import Swal from 'sweetalert2'
 
@@ -79,8 +80,14 @@ function CustomizerContent() {
     }
   }
 
-  const handleAddToCartConfirm = (specs) => {
+const handleAddToCartConfirm = (specs) => {
     setIsModalOpen(false);
+    
+    // Pastikan kita mengambil konfigurasi warna yang pas berdasarkan mode studio aktif saat itu
+    const currentBgColor = studioMode === 'combo' ? comboBgColor : customBgColor;
+    const currentDensity = studioMode === 'combo' ? comboPatternDensity : customPatternDensity;
+    const currentStripes = studioMode === 'combo' ? comboStripes : customStripes;
+
     const productData = {
       kode_produk: studioMode === 'combo' ? "Lurik Hasil Padu Padan" : "Lurik Desain Kustom",
       gambar_url: '/placeholder-kain.jpg',
@@ -95,17 +102,30 @@ function CustomizerContent() {
       harga_per_meter: specs.hargaPerMeter,
       harga: specs.hargaPerMeter,
       configurasi: { 
-        bgColor: activeBgColor, 
-        patternDensity: activePatternDensity, 
-        stripes: activeStripes 
+        bgColor: currentBgColor, 
+        patternDensity: currentDensity, 
+        stripes: currentStripes 
       }
     };
     
     const qty = specs.panjang; 
-    if (addToCart) addToCart(productData, gulunganData, qty);
+    if (addToCart) {
+      addToCart(productData, gulunganData, qty);
+      
+      // // Opsional: Beri alert sukses kecil agar user tahu barang masuk keranjang
+      // Swal.fire({
+      //   toast: true,
+      //   position: 'top-end',
+      //   icon: 'success',
+      //   title: 'Kain kustom berhasil ditambahkan!',
+      //   showConfirmButton: false,
+      //   timer: 2000
+      // });
+    }
   }
 
   return (
+    <>
     <main className="min-h-screen bg-[#ffffff] text-[#000000] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="flex justify-center mx-auto mb-8 max-w-7xl">
         <div className="bg-[#dcbb85] border border-white/5 rounded-xl p-1.5 flex gap-2">
@@ -238,8 +258,15 @@ function CustomizerContent() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onConfirm={handleAddToCartConfirm} 
+          customProperties={{
+          bgColor: activeBgColor,
+          patternDensity: activePatternDensity,
+          stripes: activeStripes
+        }}
       />
     </main>
+    <Footer />
+    </>
   )
 }
 

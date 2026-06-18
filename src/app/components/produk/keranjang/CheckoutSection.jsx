@@ -7,19 +7,30 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '../../../context/CartContext'; 
 import ModalMidtrans from './ModalMidtrans'; 
 
+// Generator gradien lurik live-vector (Sudah diperbaiki untuk mendukung format RGB & HEX)
 const generateLurikGradient = (stripes) => {
   let gradientString = '';
   let currentOffset = 0;
+  
   if (!stripes || stripes.length === 0) return { gradient: 'none', totalWidth: 0 };
+  
   stripes.forEach((stripe) => {
+    const thickness = Number(stripe.thickness) || 0;
     const startPoint = currentOffset;
-    const endPoint = currentOffset + stripe.thickness;
+    const endPoint = currentOffset + thickness;
+    
+    // Gunakan format standar CSS yang aman dari tabrakan koma RGB
     gradientString += `${stripe.color} ${startPoint}px, ${stripe.color} ${endPoint}px, `;
     gradientString += `transparent ${endPoint}px, transparent ${endPoint + 2}px, `;
+    
     currentOffset = endPoint + 2; 
   });
+  
+  // Deteksi jika string berakhiran koma dan spasi, lalu potong bersih
+  const cleanGradient = gradientString.trim().replace(/,$/, '');
+  
   return {
-    gradient: `linear-gradient(90deg, ${gradientString.slice(0, -2)})`,
+    gradient: `linear-gradient(90deg, ${cleanGradient})`,
     totalWidth: currentOffset
   };
 };
@@ -46,7 +57,6 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
   const handleBayarMidtrans = async () => {
     if (items.length === 0) return;
 
-    // LANGSUNG BUKA MODAL DULUAN (Instant Feedback)
     setIsModalOpen(true);
     setIsLoadingToken(true);
     setLoading(true);
@@ -92,6 +102,7 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
     const targetUserId = currentUser.id || currentUser.user?.id || currentUser.data?.id;
 
     try {
+<<<<<<< HEAD
       // ✨ NORMALISASI PAYLOAD AGAR COCOK DENGAN STRUKTUR BARU BACKEND & DB RELASIONAL
       const normalizedItems = items.map((item) => {
         const meteran = item.input_panjang || item.gulungan?.panjang_sisa || 0;
@@ -105,6 +116,8 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
         };
       });
 
+=======
+>>>>>>> f849c07665e58bbfa9b591d02920f64a37804572
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,24 +162,53 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
         </button>
       </div>
 
-      {/* List Mini Tinjauan Kain */}
-      <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+      {/* List Tinjauan Kain — satu kartu, bersambung, tanpa scrollbar */}
+      <div className="border border-[#2D2219]/10 rounded-2xl overflow-hidden divide-y divide-[#2D2219]/10 bg-white shadow-md">
         {items.map((item) => {
           const hargaKain = item.gulungan?.harga_per_meter || item.gulungan?.harga || 0;
           const meteran = item.input_panjang || item.gulungan?.panjang_sisa || 0;
-          const isCustomItem = item.isCustom || item.gulungan?.nomor_gulungan === "CUSTOM";
+          
+          // 1. Validasi status item kustom (Mendukung CUSTOM & COMBO-STUDIO)
+          const isCustomItem = 
+            item.isCustom === true || 
+            item.product?.isCustom === true || 
+            item.gulungan?.nomor_gulungan === "CUSTOM" || 
+            item.gulungan?.nomor_gulungan === "COMBO-STUDIO";
+
           const kodeProduk = item.kode_produk || item.product?.kode_produk || item.produk?.kode_produk || item.gulungan?.produk?.kode_produk || (isCustomItem ? "Lurik Kustom" : "Lurik Premium");
 
+          // 2. Mengambil objek konfigurasi baik yang ditulis dengan 'c' atau 'g'
+          const configurasi = item.gulungan?.configurasi || item.gulungan?.configuration;
+
           let miniVisual;
-          if (isCustomItem && item.gulungan?.configurasi) {
-            const { bgColor, patternDensity, stripes } = item.gulungan.configurasi;
+          
+          // 3. Render anyaman lurik dinamis jika datanya valid
+          if (isCustomItem && configurasi && configurasi.stripes) {
+            const { bgColor, patternDensity, stripes } = configurasi;
             const { gradient, totalWidth } = generateLurikGradient(stripes);
             const ukuranKerapatanDinamis = (totalWidth * (patternDensity / 100)) || 20;
 
             miniVisual = (
               <div className="relative w-full h-full">
-                <div style={{ backgroundColor: bgColor, backgroundImage: gradient, backgroundSize: `${ukuranKerapatanDinamis}px 100%`, maskImage: "url('/mockups/kain-gantung-mask.png')", WebkitMaskImage: "url('/mockups/kain-gantung-mask.png')", maskSize: 'contain', WebkitMaskSize: 'contain', maskRepeat: 'no-repeat', maskPosition: 'center' }} className="absolute inset-0 w-full h-full" />
-                <img src="/mockups/kain-gantung-mask.png" alt="Shading" className="absolute inset-0 object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-80" />
+                <div 
+                  style={{ 
+                    backgroundColor: bgColor, 
+                    backgroundImage: gradient, 
+                    backgroundSize: `${ukuranKerapatanDinamis}px 100%`, 
+                    maskImage: "url('/mockups/kain-gantung-mask.png')", 
+                    WebkitMaskImage: "url('/mockups/kain-gantung-mask.png')", 
+                    maskSize: 'contain', 
+                    WebkitMaskSize: 'contain', 
+                    maskRepeat: 'no-repeat', 
+                    maskPosition: 'center' 
+                  }} 
+                  className="absolute inset-0 w-full h-full" 
+                />
+                <img 
+                  src="/mockups/kain-gantung-mask.png" 
+                  alt="Shading" 
+                  className="absolute inset-0 object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-80" 
+                />
               </div>
             );
           } else {
@@ -180,10 +222,26 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
                 {miniVisual}
               </div>
               <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
-                <div><p className="text-[12px] text-[#000000]">Kode Kain</p><p className="font-bold text-[#F9F6F0] truncate text-[10px]">{kodeProduk}</p></div>
-                <div><p className="text-[12px] text-[#000000]">No Gulungan</p><p className="font-semibold text-[#E5BA73] text-[12px]">{isCustomItem ? "-" : `G-${item.gulungan?.nomor_gulungan || '-'}`}</p></div>
-                <div><p className="text-[12px] text-[#000000]">Panjang Potong</p><p className="font-bold text-[#F9F6F0]/90 text-[12px]">{meteran} meter</p></div>
-                <div className="text-right"><p className="text-[12px] text-[#A3A19E]">Subtotal</p><p className="font-black text-[#E5BA73] text-[12px]">Rp{(meteran * hargaKain).toLocaleString('id-ID')}</p></div>
+                <div>
+                  <p className="text-[12px] text-[#6E655C]">Kode Kain</p>
+                  <p className="font-bold text-[#2D2219] truncate text-[10px]">{kodeProduk}</p>
+                </div>
+                <div>
+                  <p className="text-[12px] text-[#6E655C]">No Gulungan</p>
+                  <p className="font-semibold text-[#A67D45] text-[12px]">
+                    {item.gulungan?.nomor_gulungan === "CUSTOM" || item.gulungan?.nomor_gulungan === "COMBO-STUDIO" 
+                      ? item.gulungan.nomor_gulungan 
+                      : (isCustomItem ? "CUSTOM" : `G-${item.gulungan?.nomor_gulungan || '-'}`)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[12px] text-[#6E655C]">Panjang Potong</p>
+                  <p className="font-bold text-[#2D2219] text-[12px]">{meteran} meter</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[12px] text-[#6E655C]">Subtotal</p>
+                  <p className="font-black text-[#A67D45] text-[12px]">Rp {(meteran * hargaKain).toLocaleString('id-ID')}</p>
+                </div>
               </div>
             </div>
           );
