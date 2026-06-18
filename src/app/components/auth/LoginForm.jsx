@@ -31,6 +31,77 @@ export default function LoginForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault()
+  //   setError('')
+  //   setSuccess('')
+  //   setLoading(true)
+  //   NProgress.start()
+
+  //   // Menentukan target endpoint berdasarkan state sistem saat ini
+  //   const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
+  //   const payload = isLogin 
+  //     ? { username, password } 
+  //     : { username, nama, email, password }
+
+  //   try {
+  //     const res = await fetch(endpoint, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify(payload),
+  //     })
+
+  //     const data = await res.json()
+
+  //     if (!res.ok) {
+  //       throw new Error(data.message || (isLogin ? 'Username atau password salah' : 'Gagal melakukan registrasi'))
+  //     }
+      
+  //     if (isLogin) {
+  //       setSuccess('Login berhasil! Menyinkronkan keranjang Anda...')
+        
+  //       // ====================================================================
+  //       // KUNCI UTAMA: Jalankan sinkronisasi keranjang tepat setelah login sukses
+  //       // ====================================================================
+  //       const loggedInUserId = data.data?.profile?.id
+  //       if (loggedInUserId) {
+  //         // Tunggu proses looping POST data local storage ke DB selesai
+  //         await syncGuestCartToDatabase(loggedInUserId)
+  //       }
+
+  //       setSuccess('Login berhasil! Mengalihkan...')
+  //       NProgress.done()
+        
+  //       // Pengecekan hak akses (Role-Based Redirect)
+  //       const userRole = data.data?.profile?.role
+  //       if (userRole === 'customer') {
+  //         router.replace('/') // Pengalihan ke halaman utama katalog/landing page
+  //       } else {
+  //         router.replace('/dashboard') // Pengalihan ke ekosistem internal (owner/admin/produksi)
+  //       }
+  //     } else {
+  //       setSuccess('Registrasi berhasil! Silahkan masuk menggunakan akun Anda.')
+  //       NProgress.done()
+  //       setLoading(false)
+        
+  //       // Reset formulir & lempar pengguna kembali ke komponen login
+  //       setIsLogin(true)
+  //       setNama('')
+  //       setEmail('')
+  //     }
+      
+  //   } catch (err) {
+  //     setError(err.message)
+  //     NProgress.done() 
+  //     setLoading(false)
+  //   }
+  // }
+
+  // 🌟 BARU: Fungsi untuk menangani login menggunakan Google OAuth
+ 
+
+  // ... kode bagian atas tetap sama ...
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -38,7 +109,6 @@ export default function LoginForm() {
     setLoading(true)
     NProgress.start()
 
-    // Menentukan target endpoint berdasarkan state sistem saat ini
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
     const payload = isLogin 
       ? { username, password } 
@@ -58,33 +128,20 @@ export default function LoginForm() {
       }
       
       if (isLogin) {
-        setSuccess('Login berhasil! Menyinkronkan keranjang Anda...')
-        
-        // ====================================================================
-        // KUNCI UTAMA: Jalankan sinkronisasi keranjang tepat setelah login sukses
-        // ====================================================================
-        const loggedInUserId = data.data?.profile?.id
-        if (loggedInUserId) {
-          // Tunggu proses looping POST data local storage ke DB selesai
-          await syncGuestCartToDatabase(loggedInUserId)
-        }
-
         setSuccess('Login berhasil! Mengalihkan...')
         NProgress.done()
         
-        // Pengecekan hak akses (Role-Based Redirect)
         const userRole = data.data?.profile?.role
         if (userRole === 'customer') {
-          router.replace('/') // Pengalihan ke halaman utama katalog/landing page
+          window.location.replace('/') 
         } else {
-          router.replace('/dashboard') // Pengalihan ke ekosistem internal (owner/admin/produksi)
+          window.location.replace('/dashboard')
         }
       } else {
         setSuccess('Registrasi berhasil! Silahkan masuk menggunakan akun Anda.')
         NProgress.done()
         setLoading(false)
         
-        // Reset formulir & lempar pengguna kembali ke komponen login
         setIsLogin(true)
         setNama('')
         setEmail('')
@@ -96,8 +153,7 @@ export default function LoginForm() {
       setLoading(false)
     }
   }
-
-  // 🌟 BARU: Fungsi untuk menangani login menggunakan Google OAuth
+ 
   const handleGoogleLogin = async () => {
     setError('')
     setSuccess('')
@@ -436,7 +492,7 @@ export default function LoginForm() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading || googleLoading}
-            className="w-full h-12 bg-white hover:bg-gray-50 text-gray-700 font-bold text-sm rounded-md transition-all border border-gray-300 shadow-xs disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            className="flex items-center justify-center w-full h-12 gap-3 text-sm font-bold text-gray-700 transition-all bg-white border border-gray-300 rounded-md shadow-xs hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {googleLoading ? (
               <span className="flex items-center gap-2">

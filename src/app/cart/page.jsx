@@ -23,7 +23,7 @@ export default function CartPage() {
 
   // Hitung total panjang meter kain real-time
   const totalPanjangMeter = useMemo(() => {
-    return cartItems.reduce((acc, item) => acc + (item.input_panjang || item.gulungan?.panjang_sisa || 0), 0);
+    return cartItems.reduce((acc, item) => acc + (item.input_panjang || 0), 0);
   }, [cartItems]);
 
   // ====================================================================
@@ -39,12 +39,12 @@ export default function CartPage() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Bagian Kiri: List Item Skeleton */}
             <div className="space-y-4 lg:col-span-2">
-              <div className="w-48 h-6 mb-4 rounded bg-white"></div>
+              <div className="w-48 h-6 mb-4 bg-white rounded"></div>
               <div className="space-y-3 bg-[#F5F2EB] p-4 rounded-2xl border border-white/5">
                 {[1, 2].map((i) => (
                   <div
                     key={i}
-                    className="bg-white p-3 rounded-xl flex flex-col sm:flex-row items-center gap-4 border border-white/5"
+                    className="flex flex-col items-center gap-4 p-3 bg-white border rounded-xl sm:flex-row border-white/5"
                   >
                     {/* Kotak Gambar */}
                     <div className="w-full h-24 rounded-lg sm:w-28 bg-white/5 shrink-0"></div>
@@ -128,7 +128,7 @@ export default function CartPage() {
               onClick={() => router.push('/produk')}
               className="px-6 py-2.5 text-xs font-bold rounded-xl text-[#12110F] bg-[#E5BA73] hover:bg-[#f3cb85] transition-all shadow-md"
             >
-              See Catalog
+              Lihat Katalog Kain
             </button>
           </div>
         ) : (
@@ -170,7 +170,7 @@ export default function CartPage() {
                     </div>
                     <div className="flex items-baseline justify-between pt-2 border-t border-white/5">
                       <span className="text-xs text-[#5e5d5b]">Subtotal</span>
-                      <span className="text-xl font-black text-[#E5BA73]">Rp {totalHarga.toLocaleString('id-ID')}</span>
+                      <span className="text-xl font-black text-[#E5BA73]">Rp {(totalHarga || 0).toLocaleString('id-ID')}</span>
                     </div>
                   </div>
 

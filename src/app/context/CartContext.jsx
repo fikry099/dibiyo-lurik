@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, useMemo } from "react"
 
 const CartContext = createContext(null)
 
@@ -123,7 +123,6 @@ export function CartProvider({ children }) {
       })
       await fetchCartFromDatabase()
     } else {
-      // Logic Guest tetap sama
       const updated = [...cartItems, { id: `guest-${Date.now()}`, input_panjang: qty, gulungan, product, isCustom: product.isCustom }]
       setCartItems(updated)
       localStorage.setItem("biyo_guest_cart", JSON.stringify(updated))
@@ -149,8 +148,17 @@ export function CartProvider({ children }) {
     }
   }
 
+  // ─── AMANKAN TOTAL HARGA DENGAN USEMEMO ───
+  const totalHarga = useMemo(() => {
+    return cartItems.reduce((acc, item) => {
+      const hargaKain = item.gulungan?.harga || 0;
+      const panjangOrder = Number(item.input_panjang || 0);
+      return acc + (hargaKain * panjangOrder);
+    }, 0);
+  }, [cartItems]);
+
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQty, isLoggedIn, loading }}>
+    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQty, isLoggedIn, loading, totalHarga }}>
       {children}
     </CartContext.Provider>
   )
