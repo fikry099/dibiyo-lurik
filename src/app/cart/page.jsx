@@ -34,25 +34,45 @@ export default function CartPage() {
       <main className="min-h-screen bg-[#ffffff] text-[#8e8675] pt-28 pb-16 px-2 sm:px-4 lg:px-6">
         <div className="mx-auto space-y-8 max-w-7xl animate-pulse">
           {/* Breadcrumb Skeleton */}
-          <div className="w-40 h-3 rounded bg-white/10"></div>
-          
+          <div className="w-40 h-3 rounded bg-[#F5F2EB]"></div>
+
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Bagian Kiri: List Item Skeleton */}
             <div className="space-y-4 lg:col-span-2">
-              <div className="w-48 h-6 mb-4 rounded bg-white/10"></div>
+              <div className="w-48 h-6 mb-4 rounded bg-white"></div>
               <div className="space-y-3 bg-[#F5F2EB] p-4 rounded-2xl border border-white/5">
                 {[1, 2].map((i) => (
-                  <div key={i} className="bg-[#0A1715]/60 p-3 rounded-xl flex flex-col sm:flex-row items-center gap-4 border border-white/5">
+                  <div
+                    key={i}
+                    className="bg-white p-3 rounded-xl flex flex-col sm:flex-row items-center gap-4 border border-white/5"
+                  >
                     {/* Kotak Gambar */}
                     <div className="w-full h-24 rounded-lg sm:w-28 bg-white/5 shrink-0"></div>
                     {/* Baris data dummy */}
                     <div className="grid flex-1 w-full grid-cols-2 gap-4 md:grid-cols-6">
-                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="w-16 h-4 rounded bg-white/10"></div></div>
-                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="h-4 rounded bg-white/10 w-14"></div></div>
-                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="w-10 h-4 rounded bg-white/10"></div></div>
-                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="w-20 h-4 rounded bg-white/10"></div></div>
-                      <div className="space-y-2"><div className="w-20 rounded h-7 bg-white/5"></div></div>
-                      <div className="space-y-2"><div className="w-12 h-3 rounded bg-white/5"></div><div className="w-24 h-4 rounded bg-white/10"></div></div>
+                      <div className="space-y-2">
+                        <div className="w-12 h-3 rounded bg-white/5"></div>
+                        <div className="w-16 h-4 rounded bg-white/10"></div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="w-12 h-3 rounded bg-white/5"></div>
+                        <div className="h-4 rounded bg-white/10 w-14"></div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="w-12 h-3 rounded bg-white/5"></div>
+                        <div className="w-10 h-4 rounded bg-white/10"></div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="w-12 h-3 rounded bg-white/5"></div>
+                        <div className="w-20 h-4 rounded bg-white/10"></div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="w-20 rounded h-7 bg-white/5"></div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="w-12 h-3 rounded bg-white/5"></div>
+                        <div className="w-24 h-4 rounded bg-white/10"></div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -63,9 +83,18 @@ export default function CartPage() {
             <div className="h-fit space-y-5 p-5 bg-[#F5F2EB] border border-white/5 rounded-2xl">
               <div className="h-4 rounded bg-white/10 w-28"></div>
               <div className="pt-4 space-y-4 border-t border-white/5">
-                <div className="flex justify-between"><div className="w-16 h-3 rounded bg-white/5"></div><div className="w-12 h-3 rounded bg-white/10"></div></div>
-                <div className="flex justify-between"><div className="w-20 h-3 rounded bg-white/5"></div><div className="w-10 h-3 rounded bg-white/10"></div></div>
-                <div className="flex justify-between pt-4 border-t border-white/5"><div className="h-4 rounded bg-white/5 w-14"></div><div className="h-5 rounded bg-white/10 w-28"></div></div>
+                <div className="flex justify-between">
+                  <div className="w-16 h-3 rounded bg-white/5"></div>
+                  <div className="w-12 h-3 rounded bg-white/10"></div>
+                </div>
+                <div className="flex justify-between">
+                  <div className="w-20 h-3 rounded bg-white/5"></div>
+                  <div className="w-10 h-3 rounded bg-white/10"></div>
+                </div>
+                <div className="flex justify-between pt-4 border-t border-white/5">
+                  <div className="h-4 rounded bg-white/5 w-14"></div>
+                  <div className="h-5 rounded bg-white/10 w-28"></div>
+                </div>
               </div>
               <div className="w-full h-10 mt-4 bg-white/5 rounded-xl"></div>
             </div>

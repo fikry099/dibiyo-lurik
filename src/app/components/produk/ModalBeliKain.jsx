@@ -340,11 +340,16 @@ export default function ModalDetail({ isOpen, onClose, product }) {
                 type="button"
                 disabled={panjangSisa <= 0 || isCrumpling}
                 onClick={() => {
-                  if (panjangSisa <= 0) return
+                  if (panjangSisa <= 0) return;
                   const pesan = encodeURIComponent(
-                    `Halo Biyo Lurik, saya tertarik memesan kain "${productTitle}" (Lebar ${lebar}cm) dari Gulungan No. ${gulunganDipilih?.nomor_gulungan} sepanjang ${qty} meter. Total: ${formatRupiah(total)}`
-                  )
-                  window.open(`https://wa.me/6281234567890?text=${pesan}`, "_blank")
+                    `Halo Dibyo Lurik, saya ingin memesan "${product.motif?.nama ?? "—"}"\n\n` +
+                    `- Lebar Kain: ${lebar} cm\n` +
+                    `- Gulungan No. ${gulunganDipilih?.nomor_gulungan}`+
+                    `- Panjang: ${qty} meter\n` +
+                    `- Estimasi Subtotal: ${formatRupiah(total)}\n\n` +
+                    `Mohon informasi lebih lanjut untuk proses produksinya. Terima kasih!`
+                  );
+                  window.open(`https://wa.me/6289692721400?text=${pesan}`, "_blank");
                 }}
                 className={`flex-1 py-2.5 text-center rounded-xl border text-xs font-semibold tracking-wider transition-colors
                   ${panjangSisa > 0 

@@ -4,15 +4,15 @@ import { useState, useEffect } from "react"
 import { useCart } from "@/app/context/CartContext" 
 import { useRouter } from "next/navigation" 
 import { motion, AnimatePresence } from "framer-motion"
-import Swal from "sweetalert2" // Tetap diimport hanya jika terjadi error sistem pada catch block
+import Swal from "sweetalert2"
 
 const formatRupiah = (angka) => {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0
-  }).format(angka)
-}
+  }).format(angka);
+};
 
 // ─── SKELETON INTERNAL UNTUK MODAL DETAIL ───
 function SkeletonModalDetail({ onClose }) {
@@ -67,40 +67,39 @@ function SkeletonModalDetail({ onClose }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function ModalDetail({ isOpen, onClose, product }) {
-  const [qty, setQty] = useState(1) 
-  const [gulunganDipilih, setGulunganDipilih] = useState(null)
-  const [isSubmitting, setIsSubmitting] = useState(false) 
-  const [isCrumpling, setIsCrumpling] = useState(false)
-  const { addToCart } = useCart() 
-  const router = useRouter() 
+  const [qty, setQty] = useState(1);
+  const [gulunganDipilih, setGulunganDipilih] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCrumpling, setIsCrumpling] = useState(false);
+  const { addToCart } = useCart();
+  const router = useRouter();
 
   useEffect(() => {
-    if (!isOpen || !product) return
-    setQty(1)
+    if (!isOpen || !product) return;
+    setQty(1);
 
-    const gulunganAktif = product.gulungan?.find(g => g.panjang_sisa > 0)
-    setGulunganDipilih(gulunganAktif ?? product.gulungan?.[0] ?? null)
-  }, [isOpen, product])
+    const gulunganAktif = product.gulungan?.find(g => g.panjang_sisa > 0);
+    setGulunganDipilih(gulunganAktif ?? product.gulungan?.[0] ?? null);
+  }, [isOpen, product]);
 
-  if (!isOpen) return null
-  if (!product) return <SkeletonModalDetail onClose={onClose} />
+  if (!isOpen) return null;
+  if (!product) return <SkeletonModalDetail onClose={onClose} />;
 
-  const productTitle = product.nama ?? "Lurik Premium"
-  const gulunganList = product.gulungan ?? []
+  const productTitle = product.nama ?? "Lurik Premium";
+  const gulunganList = product.gulungan ?? [];
   
-  const lebar = gulunganDipilih?.lebar ?? product.lebar ?? "—"
-  const panjangSisa = gulunganDipilih?.panjang_sisa ?? 0
-  const panjangTotal = gulunganDipilih?.panjang_total ?? 1 
+  const lebar = gulunganDipilih?.lebar ?? product.lebar ?? "—";
+  const panjangSisa = gulunganDipilih?.panjang_sisa ?? 0;
+  const panjangTotal = gulunganDipilih?.panjang_total ?? 1;
   
-  const stokPersen = (panjangSisa / panjangTotal) * 100
-  const hargaPerMeter = gulunganDipilih?.harga_per_meter ?? gulunganDipilih?.harga ?? 0
-  const total = hargaPerMeter * qty
+  const stokPersen = (panjangSisa / panjangTotal) * 100;
+  const hargaPerMeter = gulunganDipilih?.harga_per_meter ?? gulunganDipilih?.harga ?? 0;
+  const total = hargaPerMeter * qty;
 
-  // ─── VARIAN ANIMASI REMAS & TERBANG (MENUJU TOP-RIGHT / ICON NAVBAR) ───
   const modalVariants = {
     hidden: { scale: 0.95, opacity: 0 },
     visible: { 
@@ -120,7 +119,7 @@ export default function ModalDetail({ isOpen, onClose, product }) {
       skewX: [0, 15, -10, 5, 0],
       skewY: [0, -10, 15, -5, 0],
       rotate: [0, -35, 75, -360, -720], 
-      x: [0, 20, -15, 350, 680], // Mengarah ke kanan atas (lokasi umum badge keranjang navbar)
+      x: [0, 20, -15, 350, 680], 
       y: [0, -10, 30, -160, -380], 
       opacity: [1, 1, 0.9, 0.7, 0],
       transition: {
@@ -134,32 +133,30 @@ export default function ModalDetail({ isOpen, onClose, product }) {
         ]
       }
     }
-  }
+  };
 
   const handleTambahKeranjang = async () => {
-    if (!gulunganDipilih || panjangSisa <= 0) return
+    if (!gulunganDipilih || panjangSisa <= 0) return;
     
     try {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
-      // WAJIB menggunakan await agar Next.js menyelesaikan request POST ke database terlebih dahulu
       if (addToCart) {
-        await addToCart(product, gulunganDipilih, qty)
+        await addToCart(product, gulunganDipilih, qty);
       }
 
-      // Memicu animasi setelah dipastikan proses await di atas selesai/sukses
-      setIsCrumpling(true)
+      setIsCrumpling(true);
 
       setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("updateCartCount", { detail: { itemCount: 1 } }))
-        setIsCrumpling(false)
-        onClose()
-        router.refresh() // Sekarang aman di-refresh karena request POST sudah selesai sepenuhnya
-      }, 900)
+        window.dispatchEvent(new CustomEvent("updateCartCount", { detail: { itemCount: 1 } }));
+        setIsCrumpling(false);
+        onClose();
+        router.refresh();
+      }, 900);
 
     } catch (err) {
-      console.error("Gagal menambahkan ke keranjang:", err)
-      setIsCrumpling(false)
+      console.error("Gagal menambahkan ke keranjang:", err);
+      setIsCrumpling(false);
       Swal.fire({
         title: 'Oops!',
         text: 'Terjadi kesalahan saat menambahkan ke keranjang.',
@@ -167,11 +164,11 @@ export default function ModalDetail({ isOpen, onClose, product }) {
         background: '#1A1917',
         color: '#F9F6F0',
         confirmButtonColor: '#d33'
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <AnimatePresence>
@@ -184,27 +181,24 @@ export default function ModalDetail({ isOpen, onClose, product }) {
           initial="hidden"
           animate={isCrumpling ? "crumpleAndFly" : "visible"}
           exit="hidden"
-          className="bg-[#F5F2EB] border border-[#E5BA73]/25 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row max-h-[90vh]" // max-w diperbesar & flex-row
+          className="bg-[#F5F2EB] border border-[#E5BA73]/25 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row max-h-[90vh]"
           onClick={(e) => e.stopPropagation()} 
         >
           
-          {/* KOLOM KIRI: GAMBAR BESAR — FULL TAMPIL DENGAN PADDING */}
+          {/* KOLOM KIRI: GAMBAR BESAR */}
           <div className="w-full md:w-5/12 bg-[#EAE7E0] md:border-r border-b md:border-b-0 border-[#E5BA73]/10 min-h-[280px] md:min-h-full p-4">
             <div className="relative w-full h-full">
-              {product.gambar_url
-                ? (
-                  <img 
-                    src={product.gambar_url} 
-                    alt={productTitle} 
-                    className="absolute inset-0 w-full h-full object-cover rounded-lg"
-                  />
-                )
-                : (
-                  <div className="flex items-center justify-center w-full h-full">
-                    <span className="text-[#E5BA73]/30 text-6xl">◈</span>
-                  </div>
-                )
-              }
+              {product.gambar_url ? (
+                <img 
+                  src={product.gambar_url} 
+                  alt={productTitle} 
+                  className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full">
+                  <span className="text-[#E5BA73]/30 text-6xl">◈</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -247,13 +241,13 @@ export default function ModalDetail({ isOpen, onClose, product }) {
                   <p className="text-[11px] font-medium tracking-widest uppercase text-[#706E6B] mb-2">Pilih Gulungan Kain</p>
                   <div className="flex flex-wrap gap-2">
                     {gulunganList.map((g) => {
-                      const habis = g.panjang_sisa <= 0
-                      const dipilih = gulunganDipilih?.id === g.id
+                      const habis = g.panjang_sisa <= 0;
+                      const dipilih = gulunganDipilih?.id === g.id;
                       return (
                         <button
                           key={g.id}
                           disabled={habis || isCrumpling}
-                          onClick={() => { setGulunganDipilih(g); setQty(1) }}
+                          onClick={() => { setGulunganDipilih(g); setQty(1); }}
                           className={`px-3 py-2 rounded-lg border text-xs font-medium transition-colors text-left
                             ${habis
                               ? "border-[#3a3835] text-[#4a4845] cursor-not-allowed"
@@ -267,7 +261,7 @@ export default function ModalDetail({ isOpen, onClose, product }) {
                             {habis ? "Habis" : `L: ${g.lebar}cm · Sisa: ${g.panjang_sisa}m`}
                           </span>
                         </button>
-                      )
+                      );
                     })}
                   </div>
                 </div>
@@ -340,11 +334,16 @@ export default function ModalDetail({ isOpen, onClose, product }) {
                 type="button"
                 disabled={panjangSisa <= 0 || isCrumpling}
                 onClick={() => {
-                  if (panjangSisa <= 0) return
+                  if (panjangSisa <= 0) return;
                   const pesan = encodeURIComponent(
-                    `Halo Biyo Lurik, saya tertarik memesan kain "${productTitle}" (Lebar ${lebar}cm) dari Gulungan No. ${gulunganDipilih?.nomor_gulungan} sepanjang ${qty} meter. Total: ${formatRupiah(total)}`
-                  )
-                  window.open(`https://wa.me/6281234567890?text=${pesan}`, "_blank")
+                    `Halo Dibyo Lurik, saya ingin memesan "${product.motif?.nama ?? "—"}"\n\n` +
+                    `- Lebar Kain: ${lebar} cm\n` +
+                    `- Gulungan No. {gulunganDipilih?.nomor_gulungan}\n` +
+                    `- Panjang: ${qty} meter\n` +
+                    `- Estimasi Subtotal: ${formatRupiah(total)}\n\n` +
+                    `Mohon informasi lebih lanjut untuk proses produksinya. Terima kasih!`
+                  );
+                  window.open(`https://wa.me/6289692721400?text=${pesan}`, "_blank");
                 }}
                 className={`flex-1 py-2.5 text-center rounded-xl border text-xs font-semibold tracking-wider transition-colors
                   ${panjangSisa > 0 
@@ -372,5 +371,5 @@ export default function ModalDetail({ isOpen, onClose, product }) {
         </motion.div>
       </div>
     </AnimatePresence>
-  )
+  );
 }
