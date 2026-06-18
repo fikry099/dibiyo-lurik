@@ -129,7 +129,7 @@ export default function CartItem({ item, onChange, onRemove }) {
         {/* Kolom 2: Lebar */}
         <div>
           <p className="text-[9px] text-[#A3A19E] uppercase tracking-wider mb-0.5">Lebar Kain</p>
-          <p className="font-semibold text-[#F9F6F0]/90">{lebar} cm</p>
+          <p className="font-semibold text-[#282727]">{lebar} cm</p>
         </div>
 
         {/* Kolom 3: Sisa Stok / Status */}
@@ -143,7 +143,7 @@ export default function CartItem({ item, onChange, onRemove }) {
         {/* Kolom 4: Harga Per Meter */}
         <div>
           <p className="text-[9px] text-[#A3A19E] uppercase tracking-wider mb-0.5">Harga / Meter</p>
-          <p className="font-semibold text-[#F9F6F0]/90">Rp{hargaPerMeter.toLocaleString('id-ID')}</p>
+          <p className="font-semibold text-[#dcb15a]">Rp{hargaPerMeter.toLocaleString('id-ID')}</p>
         </div>
 
         {/* Kolom 5: Input Panjang Pemesanan */}
