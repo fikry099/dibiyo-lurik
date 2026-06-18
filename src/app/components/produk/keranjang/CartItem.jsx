@@ -121,7 +121,7 @@ export default function CartItem({ item, onChange, onRemove }) {
       </div>
 
       {/* Grid Informasi Kain */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 flex-1 w-full text-xs text-[#2D2219]">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 flex-1 w-full text-xs text-[#2D2219]">
         
         {/* Kolom 1: Kode Produk */}
         <div className="hidden md:block">
