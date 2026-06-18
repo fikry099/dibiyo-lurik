@@ -120,7 +120,7 @@ export default function CustomizerCanvas({
   };
 
   return (
-     <div className="w-full lg:w-[55%] flex flex-col justify-between items-center bg-[#F5F2EB] border border-[#E5BA73]/10 rounded-3xl p-6 relative aspect-square lg:aspect-auto lg:h-[750px]">
+    <div className="w-full lg:w-[55%] flex flex-col justify-between items-center bg-[#F5F2EB] border border-[#E5BA73]/10 rounded-3xl p-6 relative aspect-square lg:aspect-auto">
             
       {/* 1. TOMBOL UTAMA SWITCH PREVIEW MODEL */}
       <div className="absolute top-6 right-6 bg-[#aa9e84] backdrop-blur-md border border-[#E5BA73]/20 rounded-xl p-1 flex gap-1 z-20">        {[

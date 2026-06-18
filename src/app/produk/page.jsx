@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import SkeletonKatalog from '@/app/components/produk/SkeletonKatalog'
 import CardProdukKatalog from '@/app/components/produk/CardProdukKatalog'
 import ModalBeliKain from '@/app/components/produk/ModalBeliKain'
-import FloatingComboBar from '@/app/components/produk/FloatingComboBar'
+import FloatingComboBar from '@/app/components/produk/FloatingComboBar' 
 import { useComboStore } from '@/app/store/useComboStore'
 
 import Footer from '../components/home/Footer'
