@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { Layers, Loader2, Scissors, Shirt, Sparkles } from 'lucide-react'
 import html2canvas from 'html2canvas'
 import JSZip from 'jszip'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const extractDominantColor = (imageUrl) => {
   return new Promise((resolve) => {
@@ -35,13 +36,13 @@ export default function ComboStudioCanvas({
   patternDensity,   
   stripes,          
   setStripes,
-  onReset // Ditambahkan prop onReset jika disuplai dari parent page
+  onReset 
 }) {
   const canvasRef = useRef(null)
-  const containerRef = useRef(null) // Tambahan Ref untuk menembak html2canvas pada area mockup
+  const containerRef = useRef(null) 
   const isExtractedRef = useRef('') 
   const [isLoading, setIsLoading] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false) // State loading unduhan
+  const [isDownloading, setIsDownloading] = useState(false) 
   const [previewView, setPreviewView] = useState('kain')
   const [subBawahan, setSubBawahan] = useState('kain')
   const [canvasUrl, setCanvasUrl] = useState('none')
@@ -54,7 +55,6 @@ export default function ComboStudioCanvas({
     .map(([slot, item]) => `${slot}:${item ? item.id || item.nomor_gulungan : 'null'}`)
     .join('|');
 
-  // Efek Ekstraksi Warna Dominan
   useEffect(() => {
     if (isExtractedRef.current === combinationKey) return;
 
@@ -87,7 +87,6 @@ export default function ComboStudioCanvas({
     }
   }, [combinationKey]); 
 
-  // Efek Menggambar Utama ke Canvas HTML5
   useEffect(() => {
     if (canvasRef.current && stripes.length > 0) {
       const canvas = canvasRef.current;
@@ -111,7 +110,6 @@ export default function ComboStudioCanvas({
       ctx.fillRect(0, 0, w, h);
 
       const scaleMultiplier = (patternDensity / 100) || 1.0;
-      
       const basePatternWidth = stripes.reduce((acc, s) => acc + (parseInt(s.thickness, 10) || 1) + 2, 0);
       const scaledPatternWidth = basePatternWidth * scaleMultiplier;
 
@@ -176,17 +174,6 @@ export default function ComboStudioCanvas({
     backgroundSize: 'cover', 
   };
 
-  // LOGIK RESET DESAIN
-  const handleResetDesain = () => {
-    if (onReset) {
-      onReset();
-    } else {
-      setPreviewView('kain');
-      setSubBawahan('kain');
-    }
-  };
-
-  // LOGIK SCREENSHOT ELEMENT (Html2Canvas & Native Canvas)
   const captureElement = async (viewMode, subMode) => {
     const originalView = previewView;
     const originalSub = subBawahan;
@@ -194,18 +181,15 @@ export default function ComboStudioCanvas({
     setPreviewView(viewMode);
     if (subMode) setSubBawahan(subMode);
 
-    // Beri jeda waktu agar DOM melakukan re-render transisi state secara mulus
     await new Promise((resolve) => setTimeout(resolve, 350));
 
     let base64Data = "";
 
     if (viewMode === 'kain') {
-      // Jika mode kain, langsung ambil dataURL dari native canvas HTML5 (Hasil jauh lebih bersih & HD)
       if (canvasRef.current) {
         base64Data = canvasRef.current.toDataURL('image/png').split(',')[1];
       }
     } else {
-      // Jika mode baju/setelan, gunakan html2canvas pada wrapper containerRef
       if (containerRef.current) {
         const screenshot = await html2canvas(containerRef.current, {
           useCORS: true,
@@ -217,14 +201,12 @@ export default function ComboStudioCanvas({
       }
     }
 
-    // Kembalikan view state awal user ke posisi semula
     setPreviewView(originalView);
-    setSubBawahan(originalSub);
+    if (subMode) setSubBawahan(originalSub);
 
     return base64Data;
   };
 
-  // LOGIK BUNDLE UNDUH ZIP
   const handleUnduhSemuaBerkasZip = async () => {
     if (isDownloading) return;
     setIsDownloading(true);
@@ -233,23 +215,18 @@ export default function ComboStudioCanvas({
       const zip = new JSZip();
       const folderCombo = zip.folder("Hasil_Kombinasi_Studio_Lurik");
 
-      // 1. Capture Pratinjau Serat Kain Murni
       const fabricBase64 = await captureElement('kain');
       if (fabricBase64) folderCombo.file("01_Pratinjau_Serat_Kain.png", fabricBase64, { base64: true });
 
-      // 2. Capture Mockup Baju Kemeja
       const shirtBase64 = await captureElement('baju');
       if (shirtBase64) folderCombo.file("02_Mockup_Kemeja_Lurik.png", shirtBase64, { base64: true });
 
-      // 3. Capture Setelan Pasangan Kain Gantung
       const outfitKainBase64 = await captureElement('setelan', 'kain');
       if (outfitKainBase64) folderCombo.file("03_Setelan_Paduan_Kain.png", outfitKainBase64, { base64: true });
 
-      // 4. Capture Setelan Pasangan Celana Hitam
       const outfitCelanaBase64 = await captureElement('setelan', 'celana');
       if (outfitCelanaBase64) folderCombo.file("04_Setelan_Paduan_Celana.png", outfitCelanaBase64, { base64: true });
 
-      // Generate File biner blob berkas .zip
       const content = await zip.generateAsync({ type: "blob" });
 
       const linkDownload = document.createElement('a');
@@ -260,62 +237,79 @@ export default function ComboStudioCanvas({
       document.body.removeChild(linkDownload);
 
     } catch (error) {
-      console.error("Gagal memproses pembuatan paket unduhan berkas zip:", error);
+      console.error("Gagal memproses paket unduhan zip:", error);
     } finally {
       setIsDownloading(false);
     }
   };
 
+  // Definisi Variasi Animasi Fade + Scale Up (Mirip animasi modal utama)
+  const mockupAnimationVariants = {
+    initial: { opacity: 0, scale: 0.94, filter: 'blur(4px)' },
+    animate: { 
+      opacity: 1, 
+      scale: 1, 
+      filter: 'blur(0px)',
+      transition: { type: 'spring', stiffness: 260, damping: 25 } 
+    },
+    exit: { opacity: 0, scale: 0.96, transition: { duration: 0.15 } }
+  };
+
   return (
-      <div className="w-full lg:w-[55%] flex flex-col bg-[#F5F2EB] border border-[#E5BA73]/10 rounded-3xl p-6 relative h-[600px] lg:h-auto">
+    <div className="w-full lg:w-[55%] flex flex-col bg-[#F5F2EB] border border-[#E5BA73]/10 rounded-3xl p-6 relative h-[600px] lg:h-auto overflow-hidden">
         
+      {/* Top Header & Tab Controls */}
       <div className="absolute z-20 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center top-6 left-6 right-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 bg-[#12110F]/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5">
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
           <span className="text-[10px] font-bold tracking-widest text-amber-400 uppercase">
             {previewView === 'kain' ? 'Pratinjau Tenun Langsung' : 'Mockup Fitting Aktif'}
           </span>
         </div>
 
-         <div className="flex gap-1 p-1 border bg-[#aa9e84] backdrop-blur-md border-white/10 rounded-xl">
-           <button
-            type="button"
-            onClick={() => setPreviewView('kain')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-              previewView === 'kain' ? 'bg-[#F5F2EB] text-[#0A1715] shadow-md' : 'text-[#ffffff] hover:text-[#000000]'
-            }`}
-          >
-            <Scissors size={11} /> Kain
-          </button>
-          <button
-            type="button"
-            onClick={() => setPreviewView('baju')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-              previewView === 'baju' ? 'bg-[#F5F2EB] text-[#0A1715] shadow-md' : 'text-[#ffffff] hover:text-[#000000]'
-            }`}
-          >
-            <Shirt size={11} /> Baju
-          </button>
-          <button
-            type="button"
-            onClick={() => setPreviewView('setelan')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-              previewView === 'setelan' ? 'bg-[#F5F2EB] text-[#0A1715] shadow-md' : 'text-[#ffffff] hover:text-[#000000]'
-            }`}
-          >
-            <Sparkles size={11} /> Setelan
-          </button>
+        <div className="flex gap-1 p-1 border bg-[#aa9e84]/90 backdrop-blur-md border-white/10 rounded-xl relative">
+          {['kain', 'baju', 'setelan'].map((view) => (
+            <button
+              key={view}
+              type="button"
+              onClick={() => setPreviewView(view)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider relative transition-all duration-300 z-10 ${
+                previewView === view ? 'text-[#0A1715]' : 'text-[#ffffff] hover:text-[#0a1715]'
+              }`}
+            >
+              {/* Animasi Pil Background yang Bergeser */}
+              {previewView === view && (
+                <motion.div 
+                  layoutId="activeTabIndicator"
+                  className="absolute inset-0 bg-[#F5F2EB] rounded-lg shadow-md -z-10"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
+              {view === 'kain' && <Scissors size={11} />}
+              {view === 'baju' && <Shirt size={11} />}
+              {view === 'setelan' && <Sparkles size={11} />}
+              {view}
+            </button>
+          ))}
         </div>
       </div>
 
-      {isLoading && (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/70 backdrop-blur-sm rounded-2xl">
-          <Loader2 className="animate-spin text-[#E5BA73]" size={32} />
-          <p className="text-sm text-[#F9F6F0]">Menganalisis jalinan warna serat...</p>
-        </div>
-      )}
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/70 backdrop-blur-sm rounded-2xl"
+          >
+            <Loader2 className="animate-spin text-[#E5BA73]" size={32} />
+            <p className="text-sm text-[#F9F6F0]">Menganalisis jalinan warna serat...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Ditambahkan containerRef di elemen pembungkus ini agar html2canvas merekam aset canvas/baju/outfit secara utuh */}
+      {/* Main Container Studio Mockup Area */}
       <div ref={containerRef} className="w-full h-full mt-10 rounded-2xl shadow-2xl relative overflow-hidden border border-white/5 bg-[#12110F]/40 backdrop-blur-sm flex items-center justify-center">
         {activeImageUrls.length === 0 && stripes.length === 0 ? (
           <div className="flex flex-col items-center gap-2 p-6 text-center">
@@ -323,94 +317,136 @@ export default function ComboStudioCanvas({
             <p className="text-sm text-[#A3A19E]">Belum ada kain yang dipilih.</p>
           </div>
         ) : (
-          <div className="relative flex items-center justify-center w-full h-full">
-            <canvas 
-              ref={canvasRef} 
-              className={`block w-full h-full transition-all duration-300 rounded-2xl ${
-                previewView !== 'kain' ? 'absolute opacity-0 pointer-events-none' : 'relative opacity-100'
-              }`}
-            />
-
-            {previewView === 'baju' && (
-              <div className="relative w-full h-full max-w-2xl max-h-[500px] flex items-center justify-center">
-                <div 
-                  style={{
-                    ...baseCanvasPatternStyle,
-                    maskImage: "url('/mockups/shirt-long-front-mask.png')",
-                    WebkitMaskImage: "url('/mockups/shirt-long-front-mask.png')",
-                    maskSize: 'contain',
-                    WebkitMaskSize: 'contain',
-                    maskRepeat: 'no-repeat',
-                    maskPosition: 'center',
-                  }} 
-                  className="absolute inset-0 w-full h-full transition-all duration-300"
+          <div className="relative flex items-center justify-center w-full h-full p-4">
+            
+            {/* 1. ANIMASI VIEW: KAIN */}
+            <AnimatePresence mode="wait">
+              {previewView === 'kain' && (
+                <motion.canvas 
+                  key="canvas-view"
+                  ref={canvasRef} 
+                  variants={mockupAnimationVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  className="block w-full h-full rounded-2xl shadow-inner"
                 />
-                <img src="/mockups/shirt-long-front-mask.png" alt="Tekstur Baju" className="absolute inset-0 object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-70" />
-              </div>
-            )}
+              )}
 
-            {previewView === 'setelan' && (
-              <div className="absolute inset-0 flex items-center justify-center w-full h-full p-6">
-                <div className="relative w-full h-full max-w-3xl max-h-[600px] flex justify-between items-center">
-                  <div className="relative w-[65%] h-full">
-                    <div className="absolute inset-0 z-0 transform transition-all duration-300 scale-[1.05] translate-x-[-29%] translate-y-[9%]">
-  <img 
-    src="/mockups/pants-black-fixture.png" 
-    alt="Celana Hitam" 
-    className="object-contain w-full h-full pointer-events-none" 
-  />
-</div>
+              {/* 2. ANIMASI VIEW: BAJU */}
+              {previewView === 'baju' && (
+                <motion.div 
+                  key="baju-view"
+                  variants={mockupAnimationVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  className="relative w-full h-full max-w-2xl max-h-[450px] flex items-center justify-center"
+                >
+                  <div 
+                    style={{
+                      ...baseCanvasPatternStyle,
+                      maskImage: "url('/mockups/shirt-long-front-mask.png')",
+                      WebkitMaskImage: "url('/mockups/shirt-long-front-mask.png')",
+                      maskSize: 'contain',
+                      WebkitMaskSize: 'contain',
+                      maskRepeat: 'no-repeat',
+                      maskPosition: 'center',
+                    }} 
+                    className="absolute inset-0 w-full h-full"
+                  />
+                  <img src="/mockups/shirt-long-front-mask.png" alt="Tekstur Baju" className="absolute inset-0 object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-70" />
+                </motion.div>
+              )}
 
-                    <div className="absolute inset-0 z-10 transition-all duration-300 transform translate-y-[-15%]">
-                      <div 
-                        style={{
-                          ...baseCanvasPatternStyle,
-                          maskImage: "url('/mockups/shirt-long-front-mask.png')",
-                          WebkitMaskImage: "url('/mockups/shirt-long-front-mask.png')",
-                          maskSize: 'contain',
-                          WebkitMaskSize: 'contain',
-                          maskRepeat: 'no-repeat',
-                          maskPosition: 'center'
-                        }} 
-                        className="absolute inset-0 w-full h-full transition-all duration-300"
-                      />
-                      <img src="/mockups/shirt-long-front-mask.png" alt="Tekstur Atasan" className="object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-60" />
+              {/* 3. ANIMASI VIEW: SETELAN */}
+              {previewView === 'setelan' && (
+                <motion.div 
+                  key="setelan-view"
+                  variants={mockupAnimationVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  className="absolute inset-0 flex items-center justify-center w-full h-full p-6"
+                >
+                  <div className="relative w-full h-full max-w-3xl max-h-[500px] flex justify-between items-center">
+                    
+                    {/* Sisi Kiri: Manekin Fitting */}
+                    <div className="relative w-[65%] h-full">
+                      {/* Celana */}
+                      <motion.div 
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.15, type: 'spring' }}
+                        className="absolute inset-0 z-0 transform scale-[1.05] translate-x-[-29%] translate-y-[9%]"
+                      >
+                        <img src="/mockups/pants-black-fixture.png" alt="Celana Hitam" className="object-contain w-full h-full pointer-events-none" />
+                      </motion.div>
+
+                      {/* Atasan Baju */}
+                      <motion.div 
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.1, type: 'spring' }}
+                        className="absolute inset-0 z-10 transform translate-y-[-15%]"
+                      >
+                        <div 
+                          style={{
+                            ...baseCanvasPatternStyle,
+                            maskImage: "url('/mockups/shirt-long-front-mask.png')",
+                            WebkitMaskImage: "url('/mockups/shirt-long-front-mask.png')",
+                            maskSize: 'contain',
+                            WebkitMaskSize: 'contain',
+                            maskRepeat: 'no-repeat',
+                            maskPosition: 'center'
+                          }} 
+                          className="absolute inset-0 w-full h-full"
+                        />
+                        <img src="/mockups/shirt-long-front-mask.png" alt="Tekstur Atasan" className="object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-60" />
+                      </motion.div>
                     </div>
-                  </div>
 
-                   <div className="relative w-[32%] h-[55%] flex flex-col items-center justify-between bg-[#12110F]/40 backdrop-blur-sm border border-white/5 rounded-2xl p-3 shadow-xl">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#E5BA73]/80 mb-2 block text-center w-full border-b border-white/5 pb-1.5">
+                    {/* Sisi Kanan: Detail Gantung */}
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="relative w-[32%] h-[60%] flex flex-col items-center justify-between bg-[#12110F]/60 backdrop-blur-sm border border-white/5 rounded-2xl p-3 shadow-xl"
+                    >
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#E5BA73]/80 mb-2 block text-center w-full border-b border-white/5 pb-1.5">
                         Detail Tekstur
-                    </span>
-                    <div className="relative flex items-center justify-center w-full h-full overflow-hidden">
-                      <div 
-                        style={{
-                          ...baseCanvasPatternStyle,
-                          maskImage: "url('/mockups/kain-gantung-mask.png')",
-                          WebkitMaskImage: "url('/mockups/kain-gantung-mask.png')",
-                          maskSize: 'contain',
-                          WebkitMaskSize: 'contain',
-                          maskRepeat: 'no-repeat',
-                          maskPosition: 'center'
-                        }}
-                        className="absolute inset-0 z-0 w-full h-full transition-all duration-300"
-                      />
-                      <img src="/mockups/kain-gantung-mask.png" alt="Tekstur Sampel Kain" className="absolute inset-0 z-10 object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-90" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+                      </span>
+                      <div className="relative flex items-center justify-center w-full h-full overflow-hidden">
+                        <div 
+                          style={{
+                            ...baseCanvasPatternStyle,
+                            maskImage: "url('/mockups/kain-gantung-mask.png')",
+                            WebkitMaskImage: "url('/mockups/kain-gantung-mask.png')",
+                            maskSize: 'contain',
+                            WebkitMaskSize: 'contain',
+                            maskRepeat: 'no-repeat',
+                            maskPosition: 'center'
+                          }}
+                          className="absolute inset-0 z-0 w-full h-full"
+                        />
+                        <img src="/mockups/kain-gantung-mask.png" alt="Tekstur Sampel Kain" className="absolute inset-0 z-10 object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-90" />
+                      </div>
+                    </motion.div>
 
-              <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm border border-white/5 px-2.5 py-1 rounded-md text-[9px] uppercase tracking-widest text-[#E5BA73] font-medium pointer-events-none z-10">
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm border border-white/5 px-2.5 py-1 rounded-md text-[9px] uppercase tracking-widest text-[#E5BA73] font-medium pointer-events-none z-10">
               Mode: {previewView}
             </div>
           </div>
         )}
       </div>
 
-       {/* Floating Action Menu Bagian Bawah (Reset & Unduh ZIP) */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-[#12110F]/80 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 flex items-center gap-8 shadow-2xl z-10">
+      {/* Floating Action Menu Unduh */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-[#12110F]/80 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 flex items-center gap-8 shadow-2xl z-109">
         <button 
           type="button"
           onClick={handleUnduhSemuaBerkasZip}

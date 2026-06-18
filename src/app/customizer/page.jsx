@@ -1,66 +1,72 @@
-"use client"
+"use client";
 
-import { useState, useEffect, Suspense } from 'react' // 1. Ditambahkan Suspense di sini
-import { useSearchParams } from 'next/navigation' 
-import Link from 'next/link' 
-import CustomizerCanvas from '../components/home/custom/CustomizerCanvas' 
-import CustomizerSidebar from '../components/home/custom/CustomizerSidebar'
-import ComboStudioSidebar from '../components/home/custom/ComboStudioSidebar' 
-import CustomCartModal from '../components/home/custom/CustomCartModal'
-import ComboStudioCanvas from '../components/home/custom/ComboStudioCanvas'
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import CustomizerCanvas from "../components/home/custom/CustomizerCanvas";
+import CustomizerSidebar from "../components/home/custom/CustomizerSidebar";
+import ComboStudioSidebar from "../components/home/custom/ComboStudioSidebar";
+import CustomCartModal from "../components/home/custom/CustomCartModal";
+import ComboStudioCanvas from "../components/home/custom/ComboStudioCanvas";
 
-import { useCart } from '../context/CartContext' 
-import { useComboStore } from '@/app/store/useComboStore'
-import Footer from '../components/home/Footer'
-import { X, Wand2, Layers, Plus } from 'lucide-react'
-import Swal from 'sweetalert2'
+import { useCart } from "../context/CartContext";
+import { useComboStore } from "@/app/store/useComboStore";
+import Footer from "../components/home/Footer";
+import { X, Wand2, Layers, Plus } from "lucide-react";
+import Swal from "sweetalert2";
+import { motion, AnimatePresence } from "framer-motion"; // 👈 Mengimpor modul Framer Motion secara penuh
 
-// 2. Komponen dipindah ke fungsi internal agar bisa dibungkus Suspense
 function CustomizerContent() {
-  const { addToCart } = useCart(); 
+  const { addToCart } = useCart();
   const { combination, clearSlot } = useComboStore();
-  
+
   const searchParams = useSearchParams();
-  const [studioMode, setStudioMode] = useState('custom')
+  const [studioMode, setStudioMode] = useState("custom");
 
   useEffect(() => {
-    const mode = searchParams.get('mode');
-    if (mode === 'combo') {
-      setStudioMode('combo');
+    const mode = searchParams.get("mode");
+    if (mode === "combo") {
+      setStudioMode("combo");
     }
-  }, [searchParams]); 
+  }, [searchParams]);
 
-  const [previewMode, setPreviewMode] = useState('fabric')
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [previewMode, setPreviewMode] = useState("fabric");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const DEFAULT_BG_COLOR = '#53593B' 
-  const DEFAULT_DENSITY = 86        
+  const DEFAULT_BG_COLOR = "#53593B";
+  const DEFAULT_DENSITY = 86;
   const DEFAULT_STRIPES = [
-    { id: 1, thickness: 4, color: '#E5BA73' }, 
-    { id: 2, thickness: 2, color: '#4A3429' }, 
-    { id: 3, thickness: 6, color: '#2C3E50' }, 
-  ]
+    { id: 1, thickness: 4, color: "#E5BA73" },
+    { id: 2, thickness: 2, color: "#4A3429" },
+    { id: 3, thickness: 6, color: "#2C3E50" },
+  ];
 
-  const [customBgColor, setCustomBgColor] = useState(DEFAULT_BG_COLOR)
-  const [customPatternDensity, setCustomPatternDensity] = useState(DEFAULT_DENSITY)
-  const [customStripes, setCustomStripes] = useState(DEFAULT_STRIPES)
+  const [customBgColor, setCustomBgColor] = useState(DEFAULT_BG_COLOR);
+  const [customPatternDensity, setCustomPatternDensity] =
+    useState(DEFAULT_DENSITY);
+  const [customStripes, setCustomStripes] = useState(DEFAULT_STRIPES);
 
-  const [comboBgColor, setComboBgColor] = useState(DEFAULT_BG_COLOR)
-  const [comboPatternDensity, setComboPatternDensity] = useState(DEFAULT_DENSITY)
-  const [comboStripes, setComboStripes] = useState(DEFAULT_STRIPES)
+  const [comboBgColor, setComboBgColor] = useState(DEFAULT_BG_COLOR);
+  const [comboPatternDensity, setComboPatternDensity] =
+    useState(DEFAULT_DENSITY);
+  const [comboStripes, setComboStripes] = useState(DEFAULT_STRIPES);
 
-  const activeBgColor = studioMode === 'custom' ? customBgColor : comboBgColor;
-  const activePatternDensity = studioMode === 'custom' ? customPatternDensity : comboPatternDensity;
-  const activeStripes = studioMode === 'custom' ? customStripes : comboStripes;
+  const activeBgColor = studioMode === "custom" ? customBgColor : comboBgColor;
+  const activePatternDensity =
+    studioMode === "custom" ? customPatternDensity : comboPatternDensity;
+  const activeStripes = studioMode === "custom" ? customStripes : comboStripes;
 
-  const setActiveBgColor = studioMode === 'custom' ? setCustomBgColor : setComboBgColor;
-  const setActivePatternDensity = studioMode === 'custom' ? setCustomPatternDensity : setComboPatternDensity;
-  const setActiveStripes = studioMode === 'custom' ? setCustomStripes : setComboStripes;
+  const setActiveBgColor =
+    studioMode === "custom" ? setCustomBgColor : setComboBgColor;
+  const setActivePatternDensity =
+    studioMode === "custom" ? setCustomPatternDensity : setComboPatternDensity;
+  const setActiveStripes =
+    studioMode === "custom" ? setCustomStripes : setComboStripes;
 
   const slotsConfig = [
-    { key: 'badan', label: 'Gambar 1 (Badan)' },
-    { key: 'lengan', label: 'Gambar 2 (Lengan)' },
-    { key: 'aksen', label: 'Gambar 3 (Aksen)' },
+    { key: "badan", label: "Gambar 1 (Badan)" },
+    { key: "lengan", label: "Gambar 2 (Lengan)" },
+    { key: "aksen", label: "Gambar 3 (Aksen)" },
   ];
 
   const referenceItems = Object.entries(combination)
@@ -68,217 +74,267 @@ function CustomizerContent() {
     .map(([slot, item]) => ({ slot, ...item }));
 
   const handleResetAll = () => {
-    if (studioMode === 'custom') {
-      setCustomBgColor(DEFAULT_BG_COLOR)
-      setCustomPatternDensity(DEFAULT_DENSITY)
-      setCustomStripes(DEFAULT_STRIPES)
-      setPreviewMode('fabric') 
+    if (studioMode === "custom") {
+      setCustomBgColor(DEFAULT_BG_COLOR);
+      setCustomPatternDensity(DEFAULT_DENSITY);
+      setCustomStripes(DEFAULT_STRIPES);
+      setPreviewMode("fabric");
     } else {
-      setComboBgColor(DEFAULT_BG_COLOR)
-      setComboPatternDensity(DEFAULT_DENSITY)
-      setComboStripes(DEFAULT_STRIPES)
+      setComboBgColor(DEFAULT_BG_COLOR);
+      setComboPatternDensity(DEFAULT_DENSITY);
+      setComboStripes(DEFAULT_STRIPES);
     }
-  }
+  };
 
-const handleAddToCartConfirm = (specs) => {
+  const handleAddToCartConfirm = (specs) => {
     setIsModalOpen(false);
-    
-    // Pastikan kita mengambil konfigurasi warna yang pas berdasarkan mode studio aktif saat itu
-    const currentBgColor = studioMode === 'combo' ? comboBgColor : customBgColor;
-    const currentDensity = studioMode === 'combo' ? comboPatternDensity : customPatternDensity;
-    const currentStripes = studioMode === 'combo' ? comboStripes : customStripes;
+
+    const currentBgColor =
+      studioMode === "combo" ? comboBgColor : customBgColor;
+    const currentDensity =
+      studioMode === "combo" ? comboPatternDensity : customPatternDensity;
+    const currentStripes =
+      studioMode === "combo" ? comboStripes : customStripes;
 
     const productData = {
-      kode_produk: studioMode === 'combo' ? "Lurik Hasil Padu Padan" : "Lurik Desain Kustom",
-      gambar_url: '/placeholder-kain.jpg',
-      isCustom: true 
+      kode_produk:
+        studioMode === "combo"
+          ? "Lurik Hasil Padu Padan"
+          : "Lurik Desain Kustom",
+      gambar_url: "/placeholder-kain.jpg",
+      isCustom: true,
     };
-    
+
     const gulunganData = {
       id: `CUSTOM-${Date.now()}`,
-      nomor_gulungan: studioMode === 'combo' ? "COMBO-STUDIO" : "CUSTOM",
+      nomor_gulungan: studioMode === "combo" ? "COMBO-STUDIO" : "CUSTOM",
       lebar: specs.lebar,
-      panjang_sisa: 999, 
+      panjang_sisa: 999,
       harga_per_meter: specs.hargaPerMeter,
       harga: specs.hargaPerMeter,
-      configurasi: { 
-        bgColor: currentBgColor, 
-        patternDensity: currentDensity, 
-        stripes: currentStripes 
-      }
+      configurasi: {
+        bgColor: currentBgColor,
+        patternDensity: currentDensity,
+        stripes: currentStripes,
+      },
     };
-    
-    const qty = specs.panjang; 
+
+    const qty = specs.panjang;
     if (addToCart) {
       addToCart(productData, gulunganData, qty);
-      
-      // // Opsional: Beri alert sukses kecil agar user tahu barang masuk keranjang
-      // Swal.fire({
-      //   toast: true,
-      //   position: 'top-end',
-      //   icon: 'success',
-      //   title: 'Kain kustom berhasil ditambahkan!',
-      //   showConfirmButton: false,
-      //   timer: 2000
-      // });
     }
-  }
+  };
+
+  // 💡 VARIAN ANIMASI UNTUK PANEL TOMBOL MENU UTAMA ATAS
+  const topButtonVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
+  };
+
+  // 💡 VARIAN ANIMASI UNTUK SLOT EXTRA KAIN PADA MODE COMBO
+  const comboSlotsVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, ease: "easeOut" },
+    },
+    exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
+  };
 
   return (
     <>
-    <main className="min-h-screen bg-[#ffffff] text-[#000000] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
-      <div className="flex justify-center mx-auto mb-8 max-w-7xl">
-        <div className="bg-[#dcbb85] border border-white/5 rounded-xl p-1.5 flex gap-2">
-          <button
-            onClick={() => setStudioMode('custom')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-              studioMode === 'custom' 
-                ? 'bg-[#F5F2EB] text-[#0A1715] shadow-lg shadow-[#E5BA73]/10' 
-                : 'text-[#ffffff] hover:text-[#000000]'
-            }`}
-          >
-            <Wand2 size={13} />
-            STUDIO LURIK CUSTOM
-          </button>
-          
-          <button
-            onClick={() => setStudioMode('combo')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-              studioMode === 'combo' 
-                ? 'bg-[#F5F2EB] text-[#0A1715] shadow-lg shadow-[#E5BA73]/10' 
-                : 'text-[#ffffff] hover:text-[#000000]'
-            }`}
-          >
-            <Layers size={13} />
-             STUDIO LURIK COMBAIN ({referenceItems.length})
-          </button>
-        </div>
-      </div>
+      <main className="min-h-screen bg-[#ffffff] text-[#000000] pt-28 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* AREA TOGGLE BUTTON HEADER (DENGAN VARIATION ANIMATED) */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={topButtonVariants}
+          className="flex justify-center mx-auto mb-8 max-w-7xl"
+        >
+          <div className="bg-[#dcbb85] border border-white/5 rounded-xl p-1.5 flex gap-2 shadow-md">
+            <button
+              onClick={() => setStudioMode("custom")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                studioMode === "custom"
+                  ? "bg-[#F5F2EB] text-[#0A1715] shadow-lg shadow-[#E5BA73]/20"
+                  : "text-[#ffffff] hover:text-[#000000]"
+              }`}
+            >
+              <Wand2 size={13} />
+              STUDIO LURIK CUSTOM
+            </button>
 
-      {studioMode === 'combo' && (
-        <div className="max-w-3xl mx-auto mb-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              {slotsConfig.map((slotInfo, index) => {
-                const item = combination[slotInfo.key];
-                if (item) {
-                  return (
-                    <div 
-                      key={slotInfo.key} 
-                      className="flex flex-col items-center gap-2 bg-[#d5caa8] border border-white/10 rounded-xl p-2.5 relative min-w-[120px]"
-                    >
-                      <button 
-                        type="button" 
-                        onClick={() => clearSlot(slotInfo.key)} 
-                        className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/40 text-zinc-400 hover:text-red-400 transition-colors z-10"
-                      >
-                        <X size={12} />
-                      </button>
-                      <div className="w-24 h-24 rounded-md overflow-hidden border border-[#E5BA73]/30 shrink-0">
-                        <img src={item.gambar_url} alt={slotInfo.key} className="object-cover w-full h-full" />
-                      </div>
-                      <div className="flex flex-col items-center mt-1 text-center">
-                        <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#ffffff]">
-                          Gambar {index + 1}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                } else {
-                  return (
-                    <Link
-                      href="/produk"
-                      key={slotInfo.key}
-                      className="flex flex-col items-center justify-center gap-2 bg-[#bdb7ac] hover:bg-[#12110F]/60 border border-dashed border-white/10 hover:border-[#E5BA73]/40 rounded-xl p-2.5 w-[120px] h-[164px] transition-all group"
-                    >
-                      <div className="w-24 h-24 rounded-md border border-dashed border-white/5 flex items-center justify-center bg-black/20 group-hover:bg-[#E5BA73]/5 group-hover:border-[#E5BA73]/20 transition-all shrink-0">
-                        <Plus className="text-zinc-600 group-hover:text-[#E5BA73] transition-colors" size={24} />
-                      </div>
-                      <div className="flex flex-col items-center text-center">
-                        <span className="text-[9px] font-bold uppercase tracking-wide text-[#dfdddd] group-hover:text-[#E5BA73]/80 transition-colors">
-                          Tambah Kain
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                }
-              })}
-            </div>
+            <button
+              onClick={() => setStudioMode("combo")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                studioMode === "combo"
+                  ? "bg-[#F5F2EB] text-[#0A1715] shadow-lg shadow-[#E5BA73]/20"
+                  : "text-[#ffffff] hover:text-[#000000]"
+              }`}
+            >
+              <Layers size={13} />
+              STUDIO LURIK COMBAIN ({referenceItems.length})
+            </button>
           </div>
+        </motion.div>
+
+        {/* SLOT DATA PADU PADAN (MENGGUNAKAN ANIMATE PRESENCE UNTUK KEMUNCULAN HALUS) */}
+        <AnimatePresence mode="wait">
+          {studioMode === "combo" && (
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={comboSlotsVariants}
+              className="max-w-3xl mx-auto mb-8"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  {slotsConfig.map((slotInfo, index) => {
+                    const item = combination[slotInfo.key];
+                    if (item) {
+                      return (
+                        <div
+                          key={slotInfo.key}
+                          className="flex flex-col items-center gap-2 bg-[#d5caa8] border border-white/10 rounded-xl p-2.5 relative min-w-[120px]"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => clearSlot(slotInfo.key)}
+                            className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/40 text-zinc-400 hover:text-red-400 transition-colors z-10"
+                          >
+                            <X size={12} />
+                          </button>
+                          <div className="w-24 h-24 rounded-md overflow-hidden border border-[#E5BA73]/30 shrink-0">
+                            <img
+                              src={item.gambar_url}
+                              alt={slotInfo.key}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                          <div className="flex flex-col items-center mt-1 text-center">
+                            <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#ffffff]">
+                              Gambar {index + 1}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <Link
+                          href="/produk"
+                          key={slotInfo.key}
+                          className="flex flex-col items-center justify-center gap-2 bg-[#bdb7ac] hover:bg-[#12110F]/60 border border-dashed border-white/10 hover:border-[#E5BA73]/40 rounded-xl p-2.5 w-[120px] h-[164px] transition-all group"
+                        >
+                          <div className="w-24 h-24 rounded-md border border-dashed border-white/5 flex items-center justify-center bg-black/20 group-hover:bg-[#E5BA73]/5 group-hover:border-[#E5BA73]/20 transition-all shrink-0">
+                            <Plus
+                              className="text-zinc-600 group-hover:text-[#E5BA73] transition-colors"
+                              size={24}
+                            />
+                          </div>
+                          <div className="flex flex-col items-center text-center">
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-[#dfdddd] group-hover:text-[#E5BA73]/80 transition-colors">
+                              Tambah Kain
+                            </span>
+                          </div>
+                        </Link>
+                      );
+                    }
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AREA WORKSPACE UTAMA (LAYOUT BERSIH DENGAN TRANSISE ANIMATE PRESENCE INDUK) */}
+        <div className="mx-auto max-w-7xl p-6">
+          <AnimatePresence mode="wait">
+            {studioMode === "custom" ? (
+              <div
+                key="custom-layout"
+                className="flex flex-col lg:flex-row items-stretch gap-8 w-full justify-between"
+              >
+                <CustomizerCanvas
+                  bgColor={customBgColor}
+                  patternDensity={customPatternDensity}
+                  stripes={customStripes}
+                  previewMode={previewMode}
+                  setPreviewMode={setPreviewMode}
+                  onReset={handleResetAll}
+                />
+
+                <CustomizerSidebar
+                  bgColor={activeBgColor}
+                  setBgColor={setActiveBgColor}
+                  patternDensity={activePatternDensity}
+                  setPatternDensity={setActivePatternDensity}
+                  stripes={activeStripes}
+                  setStripes={setActiveStripes}
+                  onOpenCartModal={() => setIsModalOpen(true)}
+                />
+              </div>
+            ) : (
+              <div
+                key="combo-layout"
+                className="flex flex-col lg:flex-row items-stretch gap-8 w-full justify-between"
+              >
+                <ComboStudioCanvas
+                  combination={combination}
+                  bgColor={comboBgColor}
+                  setBgColor={setComboBgColor}
+                  patternDensity={comboPatternDensity}
+                  stripes={comboStripes}
+                  setStripes={setComboStripes}
+                  onReset={handleResetAll}
+                />
+
+                <ComboStudioSidebar
+                  combination={combination}
+                  bgColor={activeBgColor}
+                  setBgColor={setActiveBgColor}
+                  patternDensity={activePatternDensity}
+                  setPatternDensity={setActivePatternDensity}
+                  stripes={activeStripes}
+                  setStripes={setActiveStripes}
+                  onCheckoutCombo={() => setIsModalOpen(true)}
+                />
+              </div>
+            )}
+          </AnimatePresence>
         </div>
-      )}
 
-      <div className="flex flex-col items-stretch gap-10 p-6 mx-auto max-w-7xl lg:flex-row">
-        {studioMode === 'custom' ? (
-          <>
-            <CustomizerCanvas 
-              bgColor={customBgColor} 
-              patternDensity={customPatternDensity} 
-              stripes={customStripes}
-              previewMode={previewMode} 
-              setPreviewMode={setPreviewMode} 
-              onReset={handleResetAll} 
-            />
-            <CustomizerSidebar 
-              bgColor={activeBgColor} 
-              setBgColor={setActiveBgColor} 
-              patternDensity={activePatternDensity} 
-              setPatternDensity={setActivePatternDensity}
-              stripes={activeStripes} 
-              setStripes={setActiveStripes} 
-              onOpenCartModal={() => setIsModalOpen(true)}
-            />
-          </>
-        ) : (
-          <>
-            <ComboStudioCanvas 
-              combination={combination}
-              bgColor={comboBgColor}
-              setBgColor={setComboBgColor}
-              patternDensity={comboPatternDensity}
-              stripes={comboStripes}
-              setStripes={setComboStripes}
-              onReset={handleResetAll}
-            />
-            <ComboStudioSidebar 
-              combination={combination}
-              bgColor={activeBgColor}
-              setBgColor={setActiveBgColor}
-              patternDensity={activePatternDensity}
-              setPatternDensity={setActivePatternDensity}
-              stripes={activeStripes}
-              setStripes={setActiveStripes}
-              onCheckoutCombo={() => setIsModalOpen(true)}
-            />
-          </>
-        )}
-      </div>
-
-      <CustomCartModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onConfirm={handleAddToCartConfirm} 
+        <CustomCartModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={handleAddToCartConfirm}
           customProperties={{
-          bgColor: activeBgColor,
-          patternDensity: activePatternDensity,
-          stripes: activeStripes
-        }}
-      />
-    </main>
-    <Footer />
+            bgColor: activeBgColor,
+            patternDensity: activePatternDensity,
+            stripes: activeStripes,
+          }}
+        />
+      </main>
+      <Footer />
     </>
-  )
+  );
 }
 
-// 3. EXPORT DEFAULT DIBUNGKUS SUSPENSE BOUNDARY (Solusi Error Vercel)
 export default function CustomizerPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen text-sm text-gray-500 bg-white">
-        Memuat Studio Kustomisasi...
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen text-sm text-gray-500 bg-white">
+          Memuat Studio Kustomisasi...
+        </div>
+      }
+    >
       <CustomizerContent />
     </Suspense>
-  )
+  );
 }
