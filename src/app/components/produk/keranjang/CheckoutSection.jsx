@@ -46,7 +46,6 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
   const handleBayarMidtrans = async () => {
     if (items.length === 0) return;
 
-    // LANGSUNG BUKA MODAL DULUAN (Instant Feedback)
     setIsModalOpen(true);
     setIsLoadingToken(true);
     setLoading(true);
@@ -58,7 +57,6 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
         const profileRes = await fetch('/api/auth/profile');
         if (profileRes.ok) {
           const profileData = await profileRes.json();
-          // ✨ PERBAIKAN 1: Tambahkan profileData.data agar cocok dengan respon API profile terbaru
           currentUser = profileData.user || profileData.data || profileData; 
         }
       } catch (error) {
@@ -90,11 +88,9 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
       return; 
     }
 
-    // Ekstraksi ID User secara aman dari berbagai kemungkinan struktur objek auth/profile Anda
     const targetUserId = currentUser.id || currentUser.user?.id || currentUser.data?.id;
 
     try {
-      // ✨ PERBAIKAN 2: Kirimkan user_id ke dalam body request API Checkout
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,8 +135,8 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
         </button>
       </div>
 
-      {/* List Mini Tinjauan Kain */}
-      <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+      {/* List Tinjauan Kain — satu kartu, bersambung, tanpa scrollbar */}
+      <div className="border border-[#2D2219]/10 rounded-2xl overflow-hidden divide-y divide-[#2D2219]/10 bg-white shadow-md">
         {items.map((item) => {
           const hargaKain = item.gulungan?.harga_per_meter || item.gulungan?.harga || 0;
           const meteran = item.input_panjang || item.gulungan?.panjang_sisa || 0;
@@ -165,16 +161,15 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
           }
 
           return (
-
-            <div key={item.id} className="flex items-center gap-4 p-3 border bg-[#ffffff] border-white/5 rounded-xl shadow-md text-xs">
-              <div className="relative w-24 h-24 overflow-hidden border rounded-lg bg-zinc-900 border-white/5 shrink-0">
+            <div key={item.id} className="flex items-center gap-4 p-3 text-xs">
+              <div className="relative w-24 h-24 overflow-hidden border rounded-lg bg-[#EFEBE3] border-[#2D2219]/10 shrink-0">
                 {miniVisual}
               </div>
               <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
-                <div><p className="text-[12px] text-[#000000]">Kode Kain</p><p className="font-bold text-[#F9F6F0] truncate text-[10px]">{kodeProduk}</p></div>
-                <div><p className="text-[12px] text-[#000000]">No Gulungan</p><p className="font-semibold text-[#E5BA73] text-[12px]">{isCustomItem ? "-" : `G-${item.gulungan?.nomor_gulungan || '-'}`}</p></div>
-                <div><p className="text-[12px] text-[#000000]">Panjang Potong</p><p className="font-bold text-[#F9F6F0]/90 text-[12px]">{meteran} meter</p></div>
-                <div className="text-right"><p className="text-[12px] text-[#A3A19E]">Subtotal</p><p className="font-black text-[#E5BA73] text-[12px]">Rp{(meteran * hargaKain).toLocaleString('id-ID')}</p></div>
+                <div><p className="text-[12px] text-[#6E655C]">Kode Kain</p><p className="font-bold text-[#2D2219] truncate text-[10px]">{kodeProduk}</p></div>
+                <div><p className="text-[12px] text-[#6E655C]">No Gulungan</p><p className="font-semibold text-[#A67D45] text-[12px]">{isCustomItem ? "-" : `G-${item.gulungan?.nomor_gulungan || '-'}`}</p></div>
+                <div><p className="text-[12px] text-[#6E655C]">Panjang Potong</p><p className="font-bold text-[#2D2219] text-[12px]">{meteran} meter</p></div>
+                <div className="text-right"><p className="text-[12px] text-[#6E655C]">Subtotal</p><p className="font-black text-[#A67D45] text-[12px]">Rp{(meteran * hargaKain).toLocaleString('id-ID')}</p></div>
               </div>
             </div>
           );
@@ -185,15 +180,12 @@ export default function CheckoutSection({ items, onBack, onOrderSuccess }) {
       <div className="p-4 border bg-[#d7b46d] border-[#E5BA73]/10 rounded-xl shadow-lg space-y-2">
         <div className="flex justify-between text-xs text-[#2a2826]"><span>Total Sebelum Pembayaran</span><span>Rp {subTotal.toLocaleString('id-ID')}</span></div>
         <div className="flex justify-between pt-3 text-base font-bold border-t border-white/5 text-[#000000]"><span>Total Pembayaran Net</span><span className="text-lg font-black">Rp {total.toLocaleString('id-ID')}</span></div>
-
       </div>
 
       <button 
         onClick={handleBayarMidtrans}
         disabled={loading || items.length === 0}
-
         className="flex items-center justify-center w-full gap-2 py-3.5 text-xs font-bold uppercase tracking-wider transition-all text-[#ffffff] bg-[#635032] hover:bg-[#d4982f] rounded-xl shadow-xl disabled:bg-white/5 disabled:text-white/20"
-
       >
         {loading ? (
           <><Loader2 className="animate-spin" size={14} /> Membuka Gerbang Pembayaran...</>

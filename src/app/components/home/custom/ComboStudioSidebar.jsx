@@ -92,7 +92,7 @@ export default function ComboStudioSidebar({
             <button 
               type="button"
               onClick={handleAddStripe}
-              className="text-[10px] font-bold bg-[#E5BA73]/10 hover:bg-[#E5BA73] text-[#E5BA73] hover:text-[#0A1715] px-2.5 py-1 rounded-md transition-all flex items-center gap-1 border border-[#E5BA73]/20"
+              className="text-[10px] font-bold bg-[#aa9e84] hover:bg-[#E5BA73] text-[#ffffff] hover:text-[#0A1715] px-2.5 py-1 rounded-md transition-all flex items-center gap-1 border border-[#E5BA73]/20"
             >
               <Plus size={10} /> Tambah Benang
             </button>
