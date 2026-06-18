@@ -11,6 +11,7 @@ import ComboStudioCanvas from '../components/home/custom/ComboStudioCanvas'
 
 import { useCart } from '../context/CartContext' 
 import { useComboStore } from '@/app/store/useComboStore'
+import Footer from '../components/home/Footer'
 import { X, Wand2, Layers, Plus } from 'lucide-react'
 import Swal from 'sweetalert2'
 
@@ -106,6 +107,7 @@ function CustomizerContent() {
   }
 
   return (
+    <>
     <main className="min-h-screen bg-[#ffffff] text-[#000000] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="flex justify-center mx-auto mb-8 max-w-7xl">
         <div className="bg-[#dcbb85] border border-white/5 rounded-xl p-1.5 flex gap-2">
@@ -240,6 +242,8 @@ function CustomizerContent() {
         onConfirm={handleAddToCartConfirm} 
       />
     </main>
+    <Footer />
+    </>
   )
 }
 
