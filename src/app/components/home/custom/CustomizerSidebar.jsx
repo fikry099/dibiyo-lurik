@@ -44,7 +44,7 @@ export default function CustomizerSidebar({
 
   return (
 
-    <div className="w-full lg:w-[45%] bg-[#FDFCFA] border border-[#EBE7E0] flex flex-col justify-between p-4 lg:p-6 overflow-y-auto lg:h-[780px] rounded-2xl shadow-sm custom-scrollbar">
+    <div className="w-full lg:w-[45%] bg-[#F5F2EB] border border-[#EBE7E0] flex flex-col justify-between p-4 lg:p-6 overflow-y-auto lg:h-[780px] rounded-2xl shadow-sm custom-scrollbar">
 
       <div className="space-y-6">
         {/* HEADER */}
@@ -59,7 +59,7 @@ export default function CustomizerSidebar({
         </div>
 
         {/* ================= BAGIAN A: KONTROL KAIN UTAMA ================= */}
-        <div className="bg-[#F5F2EB] border border-white/5 rounded-2xl p-4 space-y-4">
+        <div className="bg-[#ffffff] border border-white/5 rounded-2xl p-4 space-y-4">
           <span className="text-xs font-bold tracking-widest text-[#E5BA73] flex items-center gap-1.5">
             <Sliders size={14} /> KONTROL DENSITY & BASE
           </span>
@@ -68,9 +68,9 @@ export default function CustomizerSidebar({
             {/* Input Warna Dasar dengan Custom Picker & Quick Palette */}
             <div className="p-3 space-y-3 border bg-black/20 rounded-xl border-white/5">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-[#F9F6F0]/80 font-medium">Warna Dasar Kanvas</label>
+                <label className="text-xs text-[#000000] font-medium">Warna Dasar Kanvas</label>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-zinc-400 uppercase font-mono">{bgColor}</span>
+                  <span className="text-[11px] text-black uppercase font-mono">{bgColor}</span>
                   <input 
                     type="color" 
                     value={bgColor} 
@@ -102,8 +102,8 @@ export default function CustomizerSidebar({
             {/* Skala Kerapatan */}
             <div className="p-3 space-y-2 border bg-black/20 rounded-xl border-white/5">
               <div className="flex justify-between text-xs">
-                <span className="text-[#F9F6F0]/80 font-medium">Skala Kerapatan Pola Tenun</span>
-                <span className="text-[#E5BA73] font-bold">{patternDensity}%</span>
+                <span className="text-[#1c1c1c] font-medium">Skala Kerapatan Pola Tenun</span>
+                <span className="text-[#303030] font-bold">{patternDensity}%</span>
               </div>
               <input 
                 type="range" 
@@ -111,7 +111,7 @@ export default function CustomizerSidebar({
                 max="250" 
                 value={patternDensity} 
                 onChange={(e) => setPatternDensity(parseInt(e.target.value, 10))}
-                className="w-full accent-[#E5BA73] bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer"
+                className="w-full accent-[#ffffff] bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer"
               />
             </div>
 
@@ -119,7 +119,7 @@ export default function CustomizerSidebar({
         </div>
 
         {/* ================= BAGIAN B: EDIT PER HELAI BENANG (STRIPES) ================= */}
-        <div className="bg-[#STRUKTUR BENANG KUSTOM] border border-white/5 rounded-2xl p-4 space-y-4">
+        <div className="bg-[#ffffff] border border-white rounded-2xl p-4 space-y-4">
           <div className="flex items-center justify-between">
 
             <span className="text-xs font-bold tracking-widest text-[#E5BA73] flex items-center gap-1.5">
@@ -131,7 +131,7 @@ export default function CustomizerSidebar({
             <button 
               type="button"
               onClick={addStripe}
-              className="text-[10px] font-bold bg-[#E5BA73]/10 hover:bg-[#E5BA73] text-[#E5BA73] hover:text-[#0A1715] px-2.5 py-1 rounded-md transition-all flex items-center gap-1 border border-[#E5BA73]/20"
+              className="text-[10px] font-bold bg-[#aa9e84] hover:bg-[#E5BA73] text-[#ffffff] hover:text-[#0A1715] px-2.5 py-1 rounded-md transition-all flex items-center gap-1 border border-[#E5BA73]/20"
             >
               <Plus size={10} /> Tambah Garis
             </button>
@@ -140,8 +140,8 @@ export default function CustomizerSidebar({
           {/* List Helai Benang dibuat Horizontal melintang agar hemat ruang dan presisi */}
           <div className="max-h-[250px] overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
             {stripes.map((stripe, index) => (
-              <div key={stripe.id} className="flex items-center gap-3 bg-black/40 p-2.5 rounded-xl border border-white/5 group transition-all">
-                <div className="text-[10px] text-zinc-500 font-mono w-4">#{index + 1}</div>
+              <div key={stripe.id} className="flex items-center gap-3 bg-[#cfcfcf] p-2.5 rounded-xl border border-white/5 group transition-all">
+                <div className="text-[10px] text-black font-mono w-4">#{index + 1}</div>
                 
                 {/* Custom Color Picker RGB bebas untuk masing-masing benang */}
                 <div className="flex items-center shrink-0">
@@ -164,7 +164,7 @@ export default function CustomizerSidebar({
                     onChange={(e) => handleThicknessChange(stripe.id, e.target.value)}
                     className="w-full h-1 rounded-lg appearance-none cursor-pointer accent-zinc-400 bg-zinc-800"
                   />
-                  <span className="text-[10px] font-mono font-bold text-zinc-400 w-7 text-right">{stripe.thickness}px</span>
+                  <span className="text-[10px] font-mono font-bold text-black w-7 text-right">{stripe.thickness}px</span>
 
                 </div>
 

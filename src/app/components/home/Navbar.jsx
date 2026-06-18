@@ -156,7 +156,6 @@ export default function Navbar() {
               }`}
             >
               Lurik Customizer
-              <span className="text-[9px] bg-[#C59B5F] text-[#F5F2EB] px-1.5 py-0.5 rounded-full font-bold">NEW</span>
             </Link>
 
             <Link 
