@@ -4,11 +4,14 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation' 
 import Swal from 'sweetalert2' 
+import { useCart } from '../../context/CartContext' 
 
 export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname() 
   
+  const { cartItems, clearCartState } = useCart()
+
   const [isOpen, setIsOpen] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
@@ -16,55 +19,29 @@ export default function Navbar() {
   const [user, setUser] = useState(null)
   const [loadingUser, setLoadingUser] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  
-  const [cartCount, setCartCount] = useState(0)
+
+  const cartCount = cartItems.length
 
   useEffect(() => {
-    async function fetchInitialData() {
+    async function fetchUserProfile() {
       try {
         const resProfile = await fetch('/api/auth/profile', { cache: 'no-store' })
         
         if (resProfile.ok) {
           const jsonProfile = await resProfile.json()
           setUser(jsonProfile.data)
-
-          const resCart = await fetch('/api/keranjang', { cache: 'no-store' })
-          if (resCart.ok) {
-            const jsonCart = await resCart.json()
-            const totalItems = jsonCart.data?.length ?? 0
-            setCartCount(totalItems)
-          }
         } else {
           setUser(null)
-          const localData = localStorage.getItem("biyo_guest_cart")
-          if (localData) {
-            const parsedCart = JSON.parse(localData) || []
-            setCartCount(parsedCart.length)
-          } else {
-            setCartCount(0)
-          }
         }
       } catch (err) {
-        console.error("Gagal memuat data awal navbar:", err)
+        console.error("Gagal memuat data profil navbar:", err)
         setUser(null)
       } finally {
-        setLoadingUser(false)
+        loadingUser && setLoadingUser(false)
       }
     }
-    fetchInitialData()
+    fetchUserProfile()
   }, [pathname])
-
-  useEffect(() => {
-    const handleCartUpdate = (event) => {
-      const addedItemCount = event.detail?.itemCount || 1
-      setCartCount((prevCount) => prevCount + addedItemCount)
-    }
-
-    window.addEventListener("updateCartCount", handleCartUpdate)
-    return () => {
-      window.removeEventListener("updateCartCount", handleCartUpdate)
-    }
-  }, [])
 
   const handleLogout = async () => {
     setShowUserDropdown(false)
@@ -88,10 +65,9 @@ export default function Navbar() {
           const res = await fetch('/api/auth/logout', { method: 'POST' })
           
           if (res.ok) {
-            localStorage.removeItem("biyo_guest_cart");
+            clearCartState()
             setUser(null)
-            setCartCount(0) 
-            window.location.href = '/auth/login'
+            window.location.href = '/'
           } else {
             throw new Error("Gagal menghapus sesi di server")
           }
@@ -232,28 +208,26 @@ export default function Navbar() {
             </Link>
 
             {loadingUser ? (
-  <div className="w-20 h-8 rounded-lg bg-gray-300/50 animate-pulse"></div>
-) : user ? (
-  <div 
-    className="relative py-2"
-    onMouseEnter={() => setShowUserDropdown(true)}
-    onMouseLeave={() => setShowUserDropdown(false)}
-  >
-    <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#2D2219]/20 hover:border-[#C59B5F] transition-all bg-transparent text-[#2D2219]">
-      {/* 🌟 Cadangan: Jika username null, gunakan inisial dari Nama */}
-      <div className="w-6 h-6 rounded-full bg-[#C59B5F] text-[#F5F2EB] flex items-center justify-center font-bold text-xs">
-        {(user.username || user.nama || 'U').charAt(0).toUpperCase()}
-      </div>
-      
-      {/* 🌟 Cadangan: Jika username null, tampilkan nama panggilannya */}
-      <span className="text-xs font-semibold tracking-wide truncate max-w-[100px]">
-        {user.username ? `@${user.username}` : user.nama.split(' ')[0]}
-      </span>
-      
-      <svg className={`w-3 h-3 text-[#7A7167] transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-      </svg>
-    </button>
+              <div className="w-20 h-8 rounded-lg bg-gray-300/50 animate-pulse"></div>
+            ) : user ? (
+              <div 
+                className="relative py-2"
+                onMouseEnter={() => setShowUserDropdown(true)}
+                onMouseLeave={() => setShowUserDropdown(false)}
+              >
+                <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#2D2219]/20 hover:border-[#C59B5F] transition-all bg-transparent text-[#2D2219]">
+                  <div className="w-6 h-6 rounded-full bg-[#C59B5F] text-[#F5F2EB] flex items-center justify-center font-bold text-xs">
+                    {(user.username || user.nama || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  
+                  <span className="text-xs font-semibold tracking-wide truncate max-w-[100px]">
+                    {user.username ? `@${user.username}` : user.nama.split(' ')[0]}
+                  </span>
+                  
+                  <svg className={`w-3 h-3 text-[#7A7167] transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
 
                 {showUserDropdown && (
                   <div className="absolute right-0 top-full mt-1 w-48 bg-[#EFEBE3] border border-[#2D2219]/10 rounded-xl shadow-xl overflow-hidden py-1 z-50">
@@ -261,7 +235,6 @@ export default function Navbar() {
                       <p className="text-sm font-semibold text-[#C59B5F] truncate">{user.nama}</p>
                     </div>
 
-                    {/* ✨ MENU BARU DESKTOP: Kelola Akun */}
                     <Link 
                       href="/kelola-akun-saya" 
                       className={`block px-4 py-2.5 text-xs transition-colors ${
@@ -273,7 +246,6 @@ export default function Navbar() {
                       Kelola Akun
                     </Link>
 
-                    {/* ✨ MENU DESKTOP: Pesanan Saya */}
                     <Link 
                       href="/pesanan-saya" 
                       className={`block px-4 py-2.5 text-xs transition-colors ${
@@ -347,15 +319,16 @@ export default function Navbar() {
               <div className="space-y-2">
                 <div className="px-4 py-2 bg-[#F5F2EB] rounded-lg border border-[#2D2219]/10 flex items-center gap-3">
                   <div className="w-7 h-7 rounded-full bg-[#C59B5F] text-[#F5F2EB] flex items-center justify-center font-bold text-sm">
-                    {user.username?.charAt(0).toUpperCase()}
+                    {(user.username || user.nama || 'U').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Hai, @{user.username}</p>
-                    <p className="text-sm font-bold text-[#C59B5F]">{user.nama}</p>
+                    <p className="text-xs text-gray-500">
+                      Hai, {user.username ? `@${user.username}` : user.nama.split(' ')[0]}
+                    </p>
+                    <p className="text-sm font-bold text-[#C59B5F] truncate">{user.nama}</p>
                   </div>
                 </div>
 
-                {/* ✨ MENU BARU MOBILE: Kelola Akun */}
                 <Link 
                   href="/kelola-akun-saya" 
                   className={`block w-full text-center py-2 font-medium rounded-lg text-sm transition-colors ${
@@ -368,7 +341,6 @@ export default function Navbar() {
                   Kelola Akun
                 </Link>
 
-                {/* ✨ MENU MOBILE: Pesanan Saya */}
                 <Link 
                   href="/pesanan-saya" 
                   className={`block w-full text-center py-2 font-medium rounded-lg text-sm transition-colors ${

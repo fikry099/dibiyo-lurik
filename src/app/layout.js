@@ -31,12 +31,12 @@ export default function RootLayout({ children }) {
           <ProgressBar />
         </Suspense>
         
-        <Navbar />
-        
         <CartProvider>
+
+          <Navbar />
+          
           {children}
           
-          {/* 2. Taruh di sini agar aktif di SEMUA halaman web */}
           <ScrollToTop /> 
         </CartProvider>
       </body>

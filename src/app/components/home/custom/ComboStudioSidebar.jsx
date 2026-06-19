@@ -14,18 +14,32 @@ export default function ComboStudioSidebar({
 }) {
   const activeItems = Object.entries(combination).filter(([_, item]) => item !== null);
 
-  const handleStripeColorChange = (id, newColor) => {
-    setStripes(stripes.map(s => s.id === id ? { ...s, color: newColor } : s));
-  };
+  // Mengumpulkan semua warna yang valid dari gambar referensi aktif untuk dipakai sebagai palet acak
+  const availableReferenceColors = stripes.length > 0 ? stripes.map(s => s.color) : ['#E5BA73'];
 
   const handleThicknessChange = (id, newThickness) => {
     const parsedValue = parseInt(newThickness, 10);
-    setStripes(stripes.map(s => s.id === id ? { ...s, thickness: isNaN(parsedValue) ? 1 : parsedValue } : s));
+    setStripes(prevStripes => 
+      prevStripes.map(s => s.id === id ? { ...s, thickness: isNaN(parsedValue) ? 1 : parsedValue } : s)
+    );
   };
 
   const handleAddStripe = () => {
+    if (stripes.length === 0) return;
+
     const newId = stripes.length > 0 ? Math.max(...stripes.map(s => s.id)) + 1 : 1;
-    setStripes([...stripes, { id: newId, thickness: 8, color: '#E5BA73' }]);
+    const lastStripeColor = stripes[stripes.length - 1].color;
+
+    // Proteksi Selang-Seling: Buang warna yang persis sama dengan helai paling bawah/terakhir saat ini
+    const alternativeColors = availableReferenceColors.filter(color => color !== lastStripeColor);
+
+    // Jika gambar referensi hanya punya 1 warna tunggal, fallback kembali ke pool utama
+    const finalPool = alternativeColors.length > 0 ? alternativeColors : availableReferenceColors;
+
+    const randomIndex = Math.floor(Math.random() * finalPool.length);
+    const randomReferenceColor = finalPool[randomIndex];
+
+    setStripes([...stripes, { id: newId, thickness: 8, color: randomReferenceColor }]);
   };
 
   const handleRemoveStripe = (id) => {
@@ -86,29 +100,34 @@ export default function ComboStudioSidebar({
         {/* PANEL 3: EDITOR HELAI BENANG (STRIPES) */}
         <div className="bg-[#ffffff] border border-white/5 rounded-2xl p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold tracking-widest text-[#E5BA73] flex items-center gap-1.5">
-              <Palette size={14} /> STRUKTUR BENANG EKSTRAKSI
-            </span>
-            <button 
-              type="button"
-              onClick={handleAddStripe}
-              className="text-[10px] font-bold bg-[#aa9e84] hover:bg-[#E5BA73] text-[#ffffff] hover:text-[#0A1715] px-2.5 py-1 rounded-md transition-all flex items-center gap-1 border border-[#E5BA73]/20"
-            >
-              <Plus size={10} /> Tambah Benang
-            </button>
-          </div>
+  {/* Pembungkus Judul dan Sub-teks baru */}
+  <div className="flex flex-col gap-0.5">
+    <span className="text-xs font-bold tracking-widest text-[#E5BA73] flex items-center gap-1.5">
+      <Palette size={14} /> STRUKTUR BENANG EKSTRAKSI
+    </span>
+    <span className="pl-5 text-xs font-light text-gray-500">
+      Hapus benang yg tdak di inginkan
+    </span>
+  </div>
 
-          {/* Dibatasi maksimal menampilkan 4 baris benang, lebih dari itu scroll */}
+  <button 
+    type="button"
+    onClick={handleAddStripe}
+    className="text-[10px] font-bold bg-[#aa9e84] hover:bg-[#E5BA73] text-[#ffffff] hover:text-[#0A1715] px-2.5 py-1 rounded-md transition-all flex items-center gap-1 border border-[#E5BA73]/20"
+  >
+    <Plus size={10} /> Tambah Benang
+  </button>
+</div>
+
           <div className="max-h-[215px] overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
             {stripes.map((stripe, index) => (
               <div key={stripe.id} className="flex items-center gap-3 bg-[#cfcfcf] p-2.5 rounded-xl border border-white/5">
                 <div className="text-[10px] text-zinc-500 font-mono w-4">#{index + 1}</div>
                 
-                <input 
-                  type="color" 
-                  value={stripe.color} 
-                  onChange={(e) => handleStripeColorChange(stripe.id, e.target.value)}
-                  className="w-6 h-6 bg-transparent rounded cursor-pointer shrink-0"
+                <div 
+                  className="w-6 h-6 border rounded shadow-sm border-black/10 shrink-0"
+                  style={{ backgroundColor: stripe.color }}
+                  title={`Warna terekstraksi: ${stripe.color}`}
                 />
 
                 <div className="flex items-center flex-1 gap-2">
@@ -126,7 +145,7 @@ export default function ComboStudioSidebar({
                 <button 
                   type="button"
                   onClick={() => handleRemoveStripe(stripe.id)}
-                  className="p-1 text-black transition-colors hover:text-red-400"
+                  className="p-1 text-red-500 transition-colors hover:text-red-700"
                   title="Hapus baris benang"
                 >
                   <Trash2 size={12} />
@@ -144,7 +163,7 @@ export default function ComboStudioSidebar({
         <div className="bg-[#E5BA73]/5 border border-[#E5BA73]/10 rounded-xl p-4 flex gap-3">
           <Info className="text-[#E5BA73] shrink-0" size={16} />
           <p className="text-xs text-[#A3A19E] leading-relaxed">
-            Warna di atas diekstrak otomatis dari katalog kain referensi. Anda dapat memodifikasi ketebalannya secara bebas untuk mendapatkan ritme lurik baru.
+            Warna di atas dikunci berdasarkan hasil ekstrak katalog kain referensi. Klik <strong>Tambah Benang</strong> untuk menduplikasi warna referensi secara acak secara selang-seling, dan Anda tetap dapat memodifikasi ketebalannya secara bebas.
           </p>
         </div>
       </div>

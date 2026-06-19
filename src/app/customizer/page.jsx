@@ -14,7 +14,7 @@ import { useComboStore } from "@/app/store/useComboStore";
 import Footer from "../components/home/Footer";
 import { X, Wand2, Layers, Plus } from "lucide-react";
 import Swal from "sweetalert2";
-import { motion, AnimatePresence } from "framer-motion"; // 👈 Mengimpor modul Framer Motion secara penuh
+import { motion, AnimatePresence } from "framer-motion"; 
 
 function CustomizerContent() {
   const { addToCart } = useCart();
@@ -253,12 +253,12 @@ function CustomizerContent() {
         </AnimatePresence>
 
         {/* AREA WORKSPACE UTAMA (LAYOUT BERSIH DENGAN TRANSISE ANIMATE PRESENCE INDUK) */}
-        <div className="mx-auto max-w-7xl p-6">
+        <div className="p-6 mx-auto max-w-7xl">
           <AnimatePresence mode="wait">
             {studioMode === "custom" ? (
               <div
                 key="custom-layout"
-                className="flex flex-col lg:flex-row items-stretch gap-8 w-full justify-between"
+                className="flex flex-col items-stretch justify-between w-full gap-8 lg:flex-row"
               >
                 <CustomizerCanvas
                   bgColor={customBgColor}
@@ -282,7 +282,7 @@ function CustomizerContent() {
             ) : (
               <div
                 key="combo-layout"
-                className="flex flex-col lg:flex-row items-stretch gap-8 w-full justify-between"
+                className="flex flex-col items-stretch justify-between w-full gap-8 lg:flex-row"
               >
                 <ComboStudioCanvas
                   combination={combination}

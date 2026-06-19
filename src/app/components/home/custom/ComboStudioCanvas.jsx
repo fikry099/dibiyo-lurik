@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas'
 import JSZip from 'jszip'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// PERBAIKAN UTAMA: Mengambil 4 kombinasi warna berbeda dalam satu gambar referensi lurik
 const extractDominantColor = (imageUrl) => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -13,19 +14,29 @@ const extractDominantColor = (imageUrl) => {
     img.src = imageUrl;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = 1;
-      canvas.height = 1;
+      canvas.width = 10;
+      canvas.height = 10;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, 1, 1);
+      ctx.drawImage(img, 0, 0, 10, 10);
       
       try {
-        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-        resolve(`rgb(${r}, ${g}, ${b})`);
+        // Mengambil sampel di beberapa titik koordinat koordinat jalinan benang kain yang bervariasi
+        const points = [
+          ctx.getImageData(5, 5, 1, 1).data, // Tengah gambar
+          ctx.getImageData(2, 3, 1, 1).data, // Kiri atas
+          ctx.getImageData(8, 7, 1, 1).data, // Kanan bawah
+          ctx.getImageData(4, 8, 1, 1).data  // Bawah tengah
+        ];
+        
+        const extractedColors = points.map(([r, g, b]) => `rgb(${r}, ${g}, ${b})`);
+        // Hapus duplikasi jika ada warna piksel yang terlalu identik
+        const uniqueColors = [...new Set(extractedColors)];
+        resolve(uniqueColors);
       } catch (e) {
-        resolve('#E5BA73');
+        resolve(['#E5BA73']);
       }
     };
-    img.onerror = () => resolve('transparent');
+    img.onerror = () => resolve(['transparent']);
   });
 };
 
@@ -44,7 +55,7 @@ export default function ComboStudioCanvas({
   const [isLoading, setIsLoading] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false) 
   const [previewView, setPreviewView] = useState('kain')
-  const [subBawahan, setSubBawahan] = useState('kain')
+  const [subBawahan, setSubBawahan] = useState('kain') 
   const [canvasUrl, setCanvasUrl] = useState('none')
 
   const activeImageUrls = Object.values(combination)
@@ -62,15 +73,17 @@ export default function ComboStudioCanvas({
       setIsLoading(true);
       
       const promises = activeImageUrls.map(url => extractDominantColor(url));
-      Promise.all(promises).then(colors => {
-        const validColors = colors.filter(c => c !== 'transparent');
+      Promise.all(promises).then(colorsArrays => {
+        // Karena extractDominantColor mengembalikan array, ratakan dengan .flat()
+        const validColors = colorsArrays.flat().filter(c => c !== 'transparent');
         
         if (validColors.length > 0 && setBgColor) {
           setBgColor(validColors[0]);
         }
 
         if (setStripes) {
-          const initialStripes = validColors.map((color, idx) => ({
+          // Bentuk struktur benang awal berdasarkan variasi warna yang terekstraksi
+          const initialStripes = validColors.slice(0, 8).map((color, idx) => ({
             id: idx + 1,
             thickness: 16, 
             color: color
@@ -92,9 +105,8 @@ export default function ComboStudioCanvas({
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const actualWidth = rect.width || 500;
-      const actualHeight = rect.height || 500;
+      const actualWidth = canvas.parentElement?.getBoundingClientRect().width || 500;
+      const actualHeight = canvas.parentElement?.getBoundingClientRect().height || 500;
 
       canvas.width = actualWidth * window.devicePixelRatio;
       canvas.height = actualHeight * window.devicePixelRatio;
@@ -166,7 +178,7 @@ export default function ComboStudioCanvas({
 
       setCanvasUrl(`url(${canvas.toDataURL()})`);
     }
-  }, [bgColor, patternDensity, stripes, previewView]);
+  }, [bgColor, patternDensity, stripes]); 
 
   const baseCanvasPatternStyle = {
     backgroundColor: bgColor || '#132237',
@@ -243,7 +255,6 @@ export default function ComboStudioCanvas({
     }
   };
 
-  // Definisi Variasi Animasi Fade + Scale Up (Mirip animasi modal utama)
   const mockupAnimationVariants = {
     initial: { opacity: 0, scale: 0.94, filter: 'blur(4px)' },
     animate: { 
@@ -258,6 +269,11 @@ export default function ComboStudioCanvas({
   return (
     <div className="w-full lg:w-[55%] flex flex-col bg-[#F5F2EB] border border-[#E5BA73]/10 rounded-3xl p-6 relative h-[600px] lg:h-auto overflow-hidden">
         
+      <canvas 
+        ref={canvasRef} 
+        className="hidden" 
+      />
+
       {/* Top Header & Tab Controls */}
       <div className="absolute z-20 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center top-6 left-6 right-6">
         <div className="flex items-center gap-2 bg-[#12110F]/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5">
@@ -268,27 +284,28 @@ export default function ComboStudioCanvas({
         </div>
 
         <div className="flex gap-1 p-1 border bg-[#aa9e84]/90 backdrop-blur-md border-white/10 rounded-xl relative">
-          {['kain', 'baju', 'setelan'].map((view) => (
+          {[
+            { id: 'kain', label: 'Kain', icon: <Scissors size={11} /> },
+            { id: 'baju', label: 'Baju', icon: <Shirt size={11} /> },
+            { id: 'setelan', label: 'Setelan', icon: <Sparkles size={11} /> }
+          ].map((view) => (
             <button
-              key={view}
+              key={view.id}
               type="button"
-              onClick={() => setPreviewView(view)}
+              onClick={() => setPreviewView(view.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider relative transition-all duration-300 z-10 ${
-                previewView === view ? 'text-[#0A1715]' : 'text-[#ffffff] hover:text-[#0a1715]'
+                previewView === view.id ? 'text-[#0A1715]' : 'text-[#ffffff] hover:text-[#0a1715]'
               }`}
             >
-              {/* Animasi Pil Background yang Bergeser */}
-              {previewView === view && (
+              {previewView === view.id && (
                 <motion.div 
                   layoutId="activeTabIndicator"
                   className="absolute inset-0 bg-[#F5F2EB] rounded-lg shadow-md -z-10"
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               )}
-              {view === 'kain' && <Scissors size={11} />}
-              {view === 'baju' && <Shirt size={11} />}
-              {view === 'setelan' && <Sparkles size={11} />}
-              {view}
+              {view.icon}
+              {view.label}
             </button>
           ))}
         </div>
@@ -319,21 +336,21 @@ export default function ComboStudioCanvas({
         ) : (
           <div className="relative flex items-center justify-center w-full h-full p-4">
             
-            {/* 1. ANIMASI VIEW: KAIN */}
             <AnimatePresence mode="wait">
+              {/* 1. VIEW: KAIN */}
               {previewView === 'kain' && (
-                <motion.canvas 
+                <motion.div 
                   key="canvas-view"
-                  ref={canvasRef} 
                   variants={mockupAnimationVariants}
                   initial="initial"
                   animate="animate"
                   exit="exit"
-                  className="block w-full h-full rounded-2xl shadow-inner"
+                  style={baseCanvasPatternStyle}
+                  className="w-full h-full shadow-inner rounded-2xl"
                 />
               )}
 
-              {/* 2. ANIMASI VIEW: BAJU */}
+              {/* 2. VIEW: BAJU */}
               {previewView === 'baju' && (
                 <motion.div 
                   key="baju-view"
@@ -341,7 +358,7 @@ export default function ComboStudioCanvas({
                   initial="initial"
                   animate="animate"
                   exit="exit"
-                  className="relative w-full h-full max-w-2xl max-h-[450px] flex items-center justify-center"
+                  className="relative w-full h-full max-w-2xl max-h-[500px] flex items-center justify-center"
                 >
                   <div 
                     style={{
@@ -359,7 +376,7 @@ export default function ComboStudioCanvas({
                 </motion.div>
               )}
 
-              {/* 3. ANIMASI VIEW: SETELAN */}
+              {/* 3. VIEW: SETELAN */}
               {previewView === 'setelan' && (
                 <motion.div 
                   key="setelan-view"
@@ -369,50 +386,56 @@ export default function ComboStudioCanvas({
                   exit="exit"
                   className="absolute inset-0 flex items-center justify-center w-full h-full p-6"
                 >
-                  <div className="relative w-full h-full max-w-3xl max-h-[500px] flex justify-between items-center">
+                  <div className="relative w-full h-full max-w-3xl max-h-[600px] flex justify-between items-center">
                     
                     {/* Sisi Kiri: Manekin Fitting */}
                     <div className="relative w-[65%] h-full">
-                      {/* Celana */}
-                      <motion.div 
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.15, type: 'spring' }}
-                        className="absolute inset-0 z-0 transform scale-[1.05] translate-x-[-29%] translate-y-[9%]"
-                      >
-                        <img src="/mockups/pants-black-fixture.png" alt="Celana Hitam" className="object-contain w-full h-full pointer-events-none" />
-                      </motion.div>
+                      {(() => {
+                        const posisiSetelan = {
+                          baju: { X: "0%", Y: "-15%" },
+                          bawahan: { X: "-29%", Y: "9%" },
+                        };
 
-                      {/* Atasan Baju */}
-                      <motion.div 
-                        initial={{ y: -20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.1, type: 'spring' }}
-                        className="absolute inset-0 z-10 transform translate-y-[-15%]"
-                      >
-                        <div 
-                          style={{
-                            ...baseCanvasPatternStyle,
-                            maskImage: "url('/mockups/shirt-long-front-mask.png')",
-                            WebkitMaskImage: "url('/mockups/shirt-long-front-mask.png')",
-                            maskSize: 'contain',
-                            WebkitMaskSize: 'contain',
-                            maskRepeat: 'no-repeat',
-                            maskPosition: 'center'
-                          }} 
-                          className="absolute inset-0 w-full h-full"
-                        />
-                        <img src="/mockups/shirt-long-front-mask.png" alt="Tekstur Atasan" className="object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-60" />
-                      </motion.div>
+                        return (
+                          <>
+                            {/* Celana */}
+                            <div 
+                              className="absolute inset-0 z-0 transform transition-all duration-300 scale-[1.05]"
+                              style={{
+                                transform: `translate(${posisiSetelan.bawahan.X}, ${posisiSetelan.bawahan.Y})`,
+                              }}
+                            >
+                              <img src="/mockups/pants-black-fixture.png" alt="Celana Hitam Pasangan Kemeja" className="object-contain w-full h-full pointer-events-none" />
+                            </div>
+
+                            {/* Atasan Baju */}
+                            <div 
+                              className="absolute inset-0 z-10 transition-all duration-300 transform"
+                              style={{
+                                transform: `translate(${posisiSetelan.baju.X}, ${posisiSetelan.baju.Y})`,
+                              }}
+                            >
+                              <div 
+                                style={{
+                                  ...baseCanvasPatternStyle,
+                                  maskImage: "url('/mockups/shirt-long-front-mask.png')",
+                                  WebkitMaskImage: "url('/mockups/shirt-long-front-mask.png')",
+                                  maskSize: 'contain',
+                                  WebkitMaskSize: 'contain',
+                                  maskRepeat: 'no-repeat',
+                                  maskPosition: 'center'
+                                }} 
+                                className="absolute inset-0 w-full h-full transition-all duration-300"
+                              />
+                              <img src="/mockups/shirt-long-front-mask.png" alt="Tekstur Atasan" className="object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-60" />
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {/* Sisi Kanan: Detail Gantung */}
-                    <motion.div 
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="relative w-[32%] h-[60%] flex flex-col items-center justify-between bg-[#12110F]/60 backdrop-blur-sm border border-white/5 rounded-2xl p-3 shadow-xl"
-                    >
+                    <div className="relative w-[32%] h-[55%] flex flex-col items-center justify-between bg-[#12110F]/40 backdrop-blur-sm border border-white/5 rounded-2xl p-3 shadow-xl">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-[#E5BA73]/80 mb-2 block text-center w-full border-b border-white/5 pb-1.5">
                         Detail Tekstur
                       </span>
@@ -427,11 +450,11 @@ export default function ComboStudioCanvas({
                             maskRepeat: 'no-repeat',
                             maskPosition: 'center'
                           }}
-                          className="absolute inset-0 z-0 w-full h-full"
+                          className="absolute inset-0 z-0 w-full h-full transition-all duration-300 ease-in-out"
                         />
-                        <img src="/mockups/kain-gantung-mask.png" alt="Tekstur Sampel Kain" className="absolute inset-0 z-10 object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-90" />
+                        <img src="/mockups/kain-gantung-mask.png" alt="Tekstur Sampel Kain Kustom" className="absolute inset-0 z-10 object-contain w-full h-full pointer-events-none mix-blend-multiply opacity-90" />
                       </div>
-                    </motion.div>
+                    </div>
 
                   </div>
                 </motion.div>
